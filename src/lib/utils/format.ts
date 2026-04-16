@@ -55,3 +55,6 @@ export const getInitials = (name: string): string => {
     .toUpperCase()
     .slice(0, 2);
 };
+
+/** Alias for formatRelativeTime — used as timeAgo(dateString) */
+export const timeAgo = formatRelativeTime;
