@@ -1,0 +1,14 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm install:*)",
+      "Bash(npm list:*)",
+      "Bash(npx tsc:*)",
+      "Bash(./node_modules/.bin/tsc --noEmit --skipLibCheck)",
+      "Bash(/d/Work/roommate-website/node_modules/.bin/tsc --noEmit --skipLibCheck)",
+      "Bash(node /d/Work/roommate-website/node_modules/typescript/bin/tsc --noEmit --skipLibCheck --project /d/Work/roommate-website/tsconfig.json)",
+      "Bash(npx --no tsc --noEmit)",
+      "Bash(./node_modules/.bin/tsc --noEmit)"
+    ]
+  }
+}

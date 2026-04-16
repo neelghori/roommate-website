@@ -1,0 +1,229 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  USER
+  ADMIN
+}
+
+enum ListingStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum RequestStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
+}
+
+enum ReportStatus {
+  OPEN
+  RESOLVED
+  DISMISSED
+}
+
+enum ReportTargetType {
+  USER
+  LISTING
+  MESSAGE
+}
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String    @unique
+  emailVerified DateTime?
+  password      String?
+  image         String?
+  role          Role      @default(USER)
+  bio           String?
+  phone         String?
+  isVerified    Boolean   @default(false)
+  isActive      Boolean   @default(true)
+  onboardingDone Boolean  @default(false)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  profile          Profile?
+  listings         Listing[]
+  sentRequests     RoommateRequest[] @relation("SentRequests")
+  receivedRequests RoommateRequest[] @relation("ReceivedRequests")
+  matchesAsUser1   Match[]           @relation("MatchUser1")
+  matchesAsUser2   Match[]           @relation("MatchUser2")
+  messages         Message[]
+  savedListings    SavedListing[]
+  reports          Report[]          @relation("ReporterReports")
+  reportedBy       Report[]          @relation("ReportedUser")
+
+  @@map("users")
+}
+
+model Profile {
+  id          String   @id @default(cuid())
+  userId      String   @unique
+  budget      Float?
+  minBudget   Float?
+  maxBudget   Float?
+  location    String?
+  city        String?
+  state       String?
+  moveInDate  DateTime?
+  occupation  String?
+  gender      String?
+  age         Int?
+  lifestyle   String[] // e.g. ["pet-friendly", "non-smoker", "early-riser"]
+  languages   String[]
+  about       String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("profiles")
+}
+
+model Listing {
+  id          String        @id @default(cuid())
+  title       String
+  description String
+  price       Float
+  address     String
+  city        String
+  state       String
+  zipCode     String?
+  country     String        @default("US")
+  bedrooms    Int
+  bathrooms   Float
+  area        Float?
+  furnished   Boolean       @default(false)
+  petFriendly Boolean       @default(false)
+  smokingAllowed Boolean    @default(false)
+  amenities   String[]
+  images      String[]
+  status      ListingStatus @default(PENDING)
+  rejectionReason String?
+  authorId    String
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  author       User           @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  savedBy      SavedListing[]
+  reports      Report[]       @relation("ReportedListing")
+
+  @@index([status])
+  @@index([city])
+  @@index([price])
+  @@map("listings")
+}
+
+model RoommateRequest {
+  id         String        @id @default(cuid())
+  senderId   String
+  receiverId String
+  status     RequestStatus @default(PENDING)
+  message    String?
+  createdAt  DateTime      @default(now())
+  updatedAt  DateTime      @updatedAt
+
+  sender   User   @relation("SentRequests", fields: [senderId], references: [id], onDelete: Cascade)
+  receiver User   @relation("ReceivedRequests", fields: [receiverId], references: [id], onDelete: Cascade)
+  match    Match?
+
+  @@unique([senderId, receiverId])
+  @@map("roommate_requests")
+}
+
+model Match {
+  id        String   @id @default(cuid())
+  user1Id   String
+  user2Id   String
+  requestId String   @unique
+  createdAt DateTime @default(now())
+
+  user1    User            @relation("MatchUser1", fields: [user1Id], references: [id], onDelete: Cascade)
+  user2    User            @relation("MatchUser2", fields: [user2Id], references: [id], onDelete: Cascade)
+  request  RoommateRequest @relation(fields: [requestId], references: [id])
+  messages Message[]
+
+  @@map("matches")
+}
+
+model Message {
+  id        String   @id @default(cuid())
+  matchId   String
+  senderId  String
+  content   String
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  match  Match @relation(fields: [matchId], references: [id], onDelete: Cascade)
+  sender User  @relation(fields: [senderId], references: [id], onDelete: Cascade)
+
+  @@index([matchId])
+  @@map("messages")
+}
+
+model SavedListing {
+  id        String   @id @default(cuid())
+  userId    String
+  listingId String
+  createdAt DateTime @default(now())
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  listing Listing @relation(fields: [listingId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, listingId])
+  @@map("saved_listings")
+}
+
+model Report {
+  id           String           @id @default(cuid())
+  reporterId   String
+  targetId     String
+  targetType   ReportTargetType
+  reason       String
+  description  String?
+  status       ReportStatus     @default(OPEN)
+  adminNotes   String?
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
+
+  reporter      User     @relation("ReporterReports", fields: [reporterId], references: [id], onDelete: Cascade)
+  reportedUser  User?    @relation("ReportedUser", fields: [targetId], references: [id])
+  reportedListing Listing? @relation("ReportedListing", fields: [targetId], references: [id])
+
+  @@map("reports")
+}
+
+model CmsPage {
+  id        String   @id @default(cuid())
+  slug      String   @unique
+  title     String
+  content   String
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("cms_pages")
+}
+
+model SiteSettings {
+  id          String   @id @default(cuid())
+  key         String   @unique
+  value       String
+  description String?
+  updatedAt   DateTime @updatedAt
+
+  @@map("site_settings")
+}

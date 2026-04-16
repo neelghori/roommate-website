@@ -1,0 +1,24 @@
+{
+  "permissions": {
+    "allow": [
+      "Read(//c/Users/MCS/Desktop/**)",
+      "Read(//c/Users/MCS/**)",
+      "Bash(node -e \"const fs=require\\('fs'\\); console.log\\('node ok'\\);\")",
+      "Bash(node -e \"const fs=require\\('fs'\\); console.log\\(fs.readdirSync\\('D:/Work/roommate-website/src/components/features'\\)\\);\")",
+      "Bash(node -e \"const fs=require\\('fs'\\); const dirs=['D:/Work','E:/Work','C:/Work','D:/roommate-website']; dirs.forEach\\(d=>{try{console.log\\(d, fs.readdirSync\\(d\\).slice\\(0,5\\)\\);}catch\\(e\\){console.log\\(d,'not found'\\);}}\\);\")",
+      "Bash(node -e \"const fs=require\\('fs'\\); console.log\\(fs.readdirSync\\('D:/Work'\\).filter\\(d=>d.toLowerCase\\(\\).includes\\('room'\\)\\)\\);\")",
+      "Bash(node -e \"const fs=require\\('fs'\\); console.log\\(fs.readdirSync\\('D:/Work/roommate-website'\\)\\);\")",
+      "Bash(node -e \"console.log\\('Node cwd:', process.cwd\\(\\)\\)\")",
+      "Read(//d//**)",
+      "Bash(node -e \"const fs=require\\('fs'\\); console.log\\('D: contents:', fs.readdirSync\\('D:/'\\).slice\\(0,5\\)\\);\")",
+      "Bash(node -e ':*)",
+      "Bash(node -e \"const fs=require\\('fs'\\); console.log\\(JSON.stringify\\(fs.readdirSync\\('D:/Work/roommate-website'\\)\\)\\);\")",
+      "Bash(git -C \"D:/Work/roommate-website\" diff --name-only)",
+      "Bash(git --git-dir=\"D:/Work/roommate-website/.git\" --work-tree=\"D:/Work/roommate-website\" diff --name-only)",
+      "Bash(mount)",
+      "Bash(git -C /d/Work/roommate-website status --short)",
+      "Bash(node -e \"const fs=require\\('fs'\\); console.log\\(fs.readdirSync\\('D:/Work/roommate-website/src'\\)\\);\")",
+      "Bash(GIT_DIR=/d/Work/roommate-website/.git GIT_WORK_TREE=/d/Work/roommate-website git status --short)"
+    ]
+  }
+}
