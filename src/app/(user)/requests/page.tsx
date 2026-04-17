@@ -1,114 +1,212 @@
-import { auth } from "@/lib/auth";
-import { db } from "@/lib/db";
-import { redirect } from "next/navigation";
-import { Container, PageHeader } from "@/components/layout/Footer";
-import { Avatar } from "@/components/ui/Avatar";
-import { Badge, StatusBadge } from "@/components/ui/Badge";
-import { Button } from "@/components/ui/Button";
-import { timeAgo } from "@/lib/utils";
-import { Tabs } from "@/components/ui/Tabs";
-import Link from "next/link";
-import { Check, X, Clock } from "lucide-react";
+'use client';
 
-export default async function RequestsPage() {
-  const session = await auth();
-  if (!session?.user?.id) redirect("/login");
+import React, { useState } from 'react';
+import { UserLayout } from '@/components/shared/UserLayout';
+import { Button } from '@/components/ui/Button';
+import { Badge } from '@/components/ui/Badge';
+import { EmptyState } from '@/components/shared/EmptyState';
+import { useToast } from '@/hooks/useToast';
+import { timeAgo } from '@/lib/utils/format';
+import { ROOMMATE_REQUESTS_RECEIVED, ROOMMATE_REQUESTS_SENT } from '@/mock/data/users';
+import { RoommateRequest } from '@/types';
+import { Users, Check, X, Clock, Send } from 'lucide-react';
 
-  const [received, sent] = await Promise.all([
-    db.roommateRequest.findMany({
-      where: { receiverId: session.user.id },
-      include: {
-        sender: { include: { profile: true } },
-      },
-      orderBy: { createdAt: "desc" },
-    }),
-    db.roommateRequest.findMany({
-      where: { senderId: session.user.id },
-      include: {
-        receiver: { include: { profile: true } },
-      },
-      orderBy: { createdAt: "desc" },
-    }),
-  ]);
+// ── Status badge helper ───────────────────────────────────────────────────────
+const statusVariant = (status: RoommateRequest['status']) => {
+  if (status === 'ACCEPTED') return 'success';
+  if (status === 'REJECTED') return 'danger';
+  return 'warning';
+};
 
-  const pendingReceived = received.filter((r) => r.status === "PENDING").length;
+const statusLabel = (status: RoommateRequest['status']) => {
+  if (status === 'ACCEPTED') return '✓ Accepted';
+  if (status === 'REJECTED') return '✗ Rejected';
+  return '⏳ Pending';
+};
+
+// ── Avatar ────────────────────────────────────────────────────────────────────
+const Avatar = ({ name }: { name: string }) => {
+  const initials = name
+    .split(' ')
+    .map((n) => n[0])
+    .join('')
+    .toUpperCase()
+    .slice(0, 2);
+  return (
+    <div
+      className="w-11 h-11 rounded-full flex items-center justify-center text-white font-bold text-sm flex-shrink-0"
+      style={{ backgroundColor: '#1B8F8F' }}
+    >
+      {initials}
+    </div>
+  );
+};
+
+export default function RequestsPage() {
+  const toast = useToast();
+  const [activeTab, setActiveTab] = useState<'received' | 'sent'>('received');
+  const [received, setReceived] = useState<RoommateRequest[]>(ROOMMATE_REQUESTS_RECEIVED);
+  const [sent] = useState<RoommateRequest[]>(ROOMMATE_REQUESTS_SENT);
+
+  const pendingCount = received.filter((r) => r.status === 'PENDING').length;
+
+  // ── Accept / Reject handlers ──────────────────────────────────────────────
+  const handleAccept = (id: string) => {
+    // BACKEND: await userService.acceptRequest(id)
+    setReceived((prev) =>
+      prev.map((r) => (r.id === id ? { ...r, status: 'ACCEPTED' } : r))
+    );
+    toast.success('Request accepted!', 'You are now connected.');
+  };
+
+  const handleReject = (id: string) => {
+    // BACKEND: await userService.rejectRequest(id)
+    setReceived((prev) =>
+      prev.map((r) => (r.id === id ? { ...r, status: 'REJECTED' } : r))
+    );
+    toast.info('Request rejected.');
+  };
+
+  // ── Tab bar ───────────────────────────────────────────────────────────────
+  const tabs = [
+    { key: 'received', label: `Received${pendingCount ? ` (${pendingCount})` : ''}` },
+    { key: 'sent', label: `Sent (${sent.length})` },
+  ] as const;
 
   return (
-    <Container className="py-8 max-w-3xl">
-      <PageHeader title="Roommate Requests" breadcrumbs={[{ label: "Home", href: "/" }, { label: "Requests" }]} />
+    <UserLayout pageSuffix="Requests" showSearch={false} showFab={false}>
+      <div className="max-w-lg mx-auto px-4 py-4 space-y-4">
 
-      <div className="space-y-6">
-        {/* Received Requests */}
-        <section>
-          <h2 className="text-lg font-semibold text-text-primary mb-4 flex items-center gap-2">
-            Received <span className="text-xs bg-primary-100 text-primary-700 rounded-full px-2 py-0.5">{received.length}</span>
-            {pendingReceived > 0 && <span className="text-xs bg-warning-100 text-warning-700 rounded-full px-2 py-0.5">{pendingReceived} pending</span>}
-          </h2>
-          {received.length === 0 ? (
-            <p className="text-text-muted text-sm py-6 text-center">No requests received yet</p>
-          ) : (
-            <div className="space-y-3">
-              {received.map((req) => (
-                <div key={req.id} className="flex items-center gap-4 rounded-xl border border-border bg-surface p-4">
-                  <Link href={`/roommates/${req.sender.id}`}>
-                    <Avatar src={req.sender.image} name={req.sender.name ?? ""} size="md" />
-                  </Link>
+        {/* Tab switcher */}
+        <div className="flex bg-white rounded-xl p-1 shadow-sm gap-1">
+          {tabs.map((tab) => (
+            <button
+              key={tab.key}
+              onClick={() => setActiveTab(tab.key)}
+              className="flex-1 py-2 text-sm font-semibold rounded-lg transition-all"
+              style={
+                activeTab === tab.key
+                  ? { backgroundColor: '#1B8F8F', color: '#fff' }
+                  : { color: '#6B7280' }
+              }
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
+
+        {/* ── Received tab ─────────────────────────────────────────────────── */}
+        {activeTab === 'received' && (
+          <div className="space-y-3">
+            {received.length === 0 ? (
+              <EmptyState
+                icon={Users}
+                title="No requests received yet"
+                description="When someone sends you a roommate request, it'll appear here."
+              />
+            ) : (
+              received.map((req) => (
+                <div
+                  key={req.id}
+                  className="bg-white rounded-2xl p-4 shadow-sm flex items-start gap-3"
+                >
+                  <Avatar name={req.senderName} />
+
                   <div className="flex-1 min-w-0">
-                    <p className="font-semibold text-text-primary">{req.sender.name}</p>
-                    {req.message && <p className="text-sm text-text-secondary truncate">&quot;{req.message}&quot;</p>}
-                    <p className="text-xs text-text-muted mt-1 flex items-center gap-1"><Clock className="h-3 w-3" /> {timeAgo(req.createdAt)}</p>
-                  </div>
-                  <div className="flex items-center gap-2 shrink-0">
-                    <StatusBadge status={req.status} />
-                    {req.status === "PENDING" && (
-                      <>
-                        <form action={`/api/requests/${req.id}`} method="PATCH">
-                          <input type="hidden" name="status" value="ACCEPTED" />
-                          <Button size="icon-sm" variant="success" type="submit" aria-label="Accept">
-                            <Check className="h-3.5 w-3.5" />
-                          </Button>
-                        </form>
-                        <form action={`/api/requests/${req.id}`} method="PATCH">
-                          <input type="hidden" name="status" value="REJECTED" />
-                          <Button size="icon-sm" variant="danger-outline" type="submit" aria-label="Reject">
-                            <X className="h-3.5 w-3.5" />
-                          </Button>
-                        </form>
-                      </>
+                    <div className="flex items-center justify-between gap-2">
+                      <p className="font-semibold text-gray-900 text-sm truncate">
+                        {req.senderName}
+                      </p>
+                      <Badge variant={statusVariant(req.status)} size="sm">
+                        {statusLabel(req.status)}
+                      </Badge>
+                    </div>
+
+                    {req.message && (
+                      <p className="text-xs text-gray-500 mt-0.5 truncate">
+                        &ldquo;{req.message}&rdquo;
+                      </p>
+                    )}
+
+                    <p className="text-xs text-gray-400 mt-1 flex items-center gap-1">
+                      <Clock size={11} />
+                      {timeAgo(req.createdAt)}
+                    </p>
+
+                    {req.status === 'PENDING' && (
+                      <div className="flex gap-2 mt-3">
+                        <Button
+                          variant="primary"
+                          size="sm"
+                          onClick={() => handleAccept(req.id)}
+                          leftIcon={<Check size={13} />}
+                        >
+                          Accept
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleReject(req.id)}
+                          leftIcon={<X size={13} />}
+                          className="text-red-500 border-red-200 hover:bg-red-50"
+                        >
+                          Reject
+                        </Button>
+                      </div>
                     )}
                   </div>
                 </div>
-              ))}
-            </div>
-          )}
-        </section>
+              ))
+            )}
+          </div>
+        )}
 
-        {/* Sent Requests */}
-        <section>
-          <h2 className="text-lg font-semibold text-text-primary mb-4 flex items-center gap-2">
-            Sent <span className="text-xs bg-surface-overlay text-text-secondary rounded-full px-2 py-0.5">{sent.length}</span>
-          </h2>
-          {sent.length === 0 ? (
-            <p className="text-text-muted text-sm py-6 text-center">No requests sent yet. <Link href="/roommates" className="text-primary-600 hover:underline">Browse roommates →</Link></p>
-          ) : (
-            <div className="space-y-3">
-              {sent.map((req) => (
-                <div key={req.id} className="flex items-center gap-4 rounded-xl border border-border bg-surface p-4">
-                  <Link href={`/roommates/${req.receiver.id}`}>
-                    <Avatar src={req.receiver.image} name={req.receiver.name ?? ""} size="md" />
-                  </Link>
+        {/* ── Sent tab ─────────────────────────────────────────────────────── */}
+        {activeTab === 'sent' && (
+          <div className="space-y-3">
+            {sent.length === 0 ? (
+              <EmptyState
+                icon={Send}
+                title="No requests sent yet"
+                description="Browse roommates and send a connection request to get started."
+                actionLabel="Find Roommates"
+                onAction={() => (window.location.href = '/roommates')}
+              />
+            ) : (
+              sent.map((req) => (
+                <div
+                  key={req.id}
+                  className="bg-white rounded-2xl p-4 shadow-sm flex items-start gap-3"
+                >
+                  <Avatar name={req.receiverName} />
+
                   <div className="flex-1 min-w-0">
-                    <p className="font-semibold text-text-primary">{req.receiver.name}</p>
-                    {req.message && <p className="text-sm text-text-secondary truncate">&quot;{req.message}&quot;</p>}
-                    <p className="text-xs text-text-muted mt-1 flex items-center gap-1"><Clock className="h-3 w-3" /> {timeAgo(req.createdAt)}</p>
+                    <div className="flex items-center justify-between gap-2">
+                      <p className="font-semibold text-gray-900 text-sm truncate">
+                        {req.receiverName}
+                      </p>
+                      <Badge variant={statusVariant(req.status)} size="sm">
+                        {statusLabel(req.status)}
+                      </Badge>
+                    </div>
+
+                    {req.message && (
+                      <p className="text-xs text-gray-500 mt-0.5 truncate">
+                        &ldquo;{req.message}&rdquo;
+                      </p>
+                    )}
+
+                    <p className="text-xs text-gray-400 mt-1 flex items-center gap-1">
+                      <Clock size={11} />
+                      {timeAgo(req.createdAt)}
+                    </p>
                   </div>
-                  <StatusBadge status={req.status} />
                 </div>
-              ))}
-            </div>
-          )}
-        </section>
+              ))
+            )}
+          </div>
+        )}
       </div>
-    </Container>
+    </UserLayout>
   );
 }

@@ -2,44 +2,67 @@
  * middleware.ts
  * Route protection middleware.
  *
- * Security:
- * - Protects /admin/* routes (requires ADMIN role)
- * - Protects user routes (requires authentication)
- * - BACKEND INTEGRATION: Replace mock check with JWT verification
+ * Security model:
+ * - Public routes: /login, /register, /forgot-password, /reset-password
+ * - Admin routes: /admin/* — requires ADMIN role
+ * - All other routes: require authentication
  *
- * Note: Real auth uses httpOnly cookies verified server-side.
- * Client-side auth check in components is a UX layer only —
- * server middleware is the real security gate.
+ * BACKEND INTEGRATION: Uncomment the JWT validation block below.
+ * The mock implementation allows all requests through (auth enforced client-side).
+ *
+ * CSP, XSS, and secure-cookie headers are set in next.config.ts.
  */
+
 import { NextRequest, NextResponse } from 'next/server';
 
-// Routes accessible without authentication
-const PUBLIC_ROUTES = ['/login', '/register', '/forgot-password', '/reset-password'];
-// Routes requiring admin role
-const ADMIN_ROUTES = ['/admin'];
+const PUBLIC_ROUTES = [
+  '/login',
+  '/register',
+  '/forgot-password',
+  '/reset-password',
+];
+
+const ADMIN_PREFIX = '/admin';
 
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  // Allow public routes
+  // ── Always allow public routes ──────────────────────────────────────────────
   if (PUBLIC_ROUTES.some((route) => pathname.startsWith(route))) {
     return NextResponse.next();
   }
 
-  // BACKEND INTEGRATION:
-  // const sessionToken = request.cookies.get('session-token')?.value;
+  // ── BACKEND INTEGRATION: Replace mock block with real JWT check ─────────────
+  //
+  // const sessionToken = request.cookies.get('roommat-session')?.value;
+  //
   // if (!sessionToken) {
-  //   return NextResponse.redirect(new URL('/login', request.url));
+  //   const loginUrl = new URL('/login', request.url);
+  //   loginUrl.searchParams.set('next', pathname);
+  //   return NextResponse.redirect(loginUrl);
   // }
-  // const session = await validateJWT(sessionToken);
-  // if (ADMIN_ROUTES.some(r => pathname.startsWith(r)) && session.role !== 'ADMIN') {
+  //
+  // const payload = await verifyJWT(sessionToken);
+  //
+  // if (!payload) {
+  //   const res = NextResponse.redirect(new URL('/login', request.url));
+  //   res.cookies.delete('roommat-session');
+  //   return res;
+  // }
+  //
+  // if (pathname.startsWith(ADMIN_PREFIX) && payload.role !== 'ADMIN') {
   //   return NextResponse.redirect(new URL('/403', request.url));
   // }
+  //
+  // ── End of BACKEND INTEGRATION block ────────────────────────────────────────
 
-  // MOCK: Allow all for now (auth enforced client-side)
+  void ADMIN_PREFIX; // referenced in backend block above
+
   return NextResponse.next();
 }
 
 export const config = {
-  matcher: ['/((?!_next/static|_next/image|favicon.ico|images|icons|api).*)'],
+  matcher: [
+    '/((?!_next/static|_next/image|favicon\\.ico|images|icons|fonts|api).*)',
+  ],
 };

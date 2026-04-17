@@ -4,7 +4,22 @@
  * All fields match the Listing interface exactly.
  */
 
-import { Listing } from '@/types';
+import { Listing, Category } from '@/types';
+
+export const CATEGORIES: Category[] = [
+  { id: 'c1', label: 'PG',       icon: '🏠', count: 4,  unit: 'listings' },
+  { id: 'c2', label: 'Rent',     icon: '🔑', count: 5,  unit: 'listings' },
+  { id: 'c3', label: 'Roommate', icon: '👥', count: 12, unit: 'profiles' },
+  { id: 'c4', label: 'Studio',   icon: '🏡', count: 2,  unit: 'listings' },
+  { id: 'c5', label: 'Bachelor', icon: '👤', count: 1,  unit: 'listings' },
+  { id: 'c6', label: 'Family',   icon: '👨‍👩‍👧', count: 2, unit: 'listings' },
+];
+
+export const POPULAR_AREAS: string[] = [
+  'Prahladnagar', 'Satellite', 'Navrangpura', 'Bodakdev',
+  'Vastrapur', 'Chandkheda', 'Ambawadi', 'Thaltej',
+  'SG Highway', 'Gota', 'Maninagar', 'Prahlad Nagar',
+];
 
 export const MOCK_LISTINGS: Listing[] = [
   {

@@ -238,12 +238,13 @@ export const AddListingModal: React.FC<AddListingModalProps> = ({
                   e.currentTarget.style.boxShadow = '0 0 0 3px rgba(27,143,143,0.15)';
                 }
               }}
-              onBlur={(e) => {
-                e.currentTarget.style.borderColor = errors.description ? '#f87171' : '#e5e7eb';
-                e.currentTarget.style.boxShadow = 'none';
-              }}
               aria-invalid={!!errors.description}
-              {...register('description')}
+              {...register('description', {
+                onBlur: (e: React.FocusEvent<HTMLTextAreaElement>) => {
+                  e.currentTarget.style.borderColor = errors.description ? '#f87171' : '#e5e7eb';
+                  e.currentTarget.style.boxShadow = 'none';
+                },
+              })}
             />
             {errors.description && (
               <p className="text-xs text-red-500">{errors.description.message}</p>

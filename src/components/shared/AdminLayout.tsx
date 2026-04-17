@@ -24,7 +24,7 @@ import { useAuthStore } from '@/store/authStore';
 
 // ─── Nav items ────────────────────────────────────────────────────────────────
 
-const NAV_ITEMS = [
+const NAV_ITEMS: { label: string; href: string; icon: React.ElementType; exact?: boolean }[] = [
   { label: 'Dashboard', href: '/admin', icon: LayoutDashboard, exact: true },
   { label: 'Users', href: '/admin/users', icon: Users },
   { label: 'Listings', href: '/admin/listings', icon: Home },

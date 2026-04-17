@@ -1,21 +1,13 @@
 /**
  * profile.schema.ts
- * Zod validation schemas for user profile update forms.
- * Security: All inputs validated before API calls.
+ * Zod v4 validation schemas for user profile update forms.
  */
 import { z } from 'zod';
 
 const GENDER_PREFERENCES = ['Male', 'Female', 'Any'] as const;
 const LIFESTYLE_TAGS = [
-  'STUDENT',
-  'WORKING',
-  'VEGETARIAN',
-  'NON_VEG',
-  'SMOKER',
-  'NON_SMOKER',
-  'PET_FRIENDLY',
-  'NIGHT_OWL',
-  'EARLY_BIRD',
+  'STUDENT', 'WORKING', 'VEGETARIAN', 'NON_VEG',
+  'SMOKER', 'NON_SMOKER', 'PET_FRIENDLY', 'NIGHT_OWL', 'EARLY_BIRD',
 ] as const;
 
 export const profileSchema = z.object({
@@ -25,23 +17,17 @@ export const profileSchema = z.object({
     .max(50, 'Name must be 50 characters or less')
     .regex(/^[a-zA-Z\s]+$/, 'Name can only contain letters and spaces'),
 
-  bio: z
-    .string()
-    .max(500, 'Bio must be 500 characters or less')
-    .optional()
-    .or(z.literal('')),
+  bio: z.string().max(500, 'Bio must be 500 characters or less').optional().or(z.literal('')),
 
   location: z
     .string()
     .max(100, 'Location must be 100 characters or less')
-    .regex(/^[a-zA-Z0-9\s\-,.'()]*$/, 'Location contains invalid characters')
     .optional()
     .or(z.literal('')),
 
+  // Zod v4: use `error` instead of `invalid_type_error`
   budget: z
-    .number({
-      invalid_type_error: 'Budget must be a number',
-    })
+    .number({ error: 'Budget must be a number' })
     .positive('Budget must be greater than 0')
     .min(500, 'Minimum budget is ₹500')
     .max(200000, 'Maximum budget is ₹2,00,000')
@@ -63,9 +49,7 @@ export const profileSchema = z.object({
     .or(z.literal('')),
 
   genderPreference: z
-    .enum(GENDER_PREFERENCES, {
-      errorMap: () => ({ message: 'Select a valid gender preference' }),
-    })
+    .enum(GENDER_PREFERENCES, { message: 'Select a valid gender preference' })
     .optional(),
 
   lifestyle: z

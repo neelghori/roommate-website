@@ -3,10 +3,12 @@
  * Listing domain types. Backend: map to Listing Prisma model.
  */
 
+import type { GenderPreference } from './user.types';
+export type { GenderPreference };
+
 export type ListingStatus = 'Hot' | 'Limited Offer' | 'New' | null;
 export type ListingType = 'PG' | 'Rent' | 'Roommate' | 'Studio' | 'Bachelor' | 'Family';
 export type ListingApprovalStatus = 'PENDING' | 'APPROVED' | 'REJECTED' | 'UNDER_REVIEW';
-export type GenderPreference = 'Male' | 'Female' | 'Any';
 
 export type Amenity = 'WiFi' | 'AC' | 'Kitchen' | 'Food' | 'Laundry' | 'Parking' | 'Gym' | 'Security' | 'Power Backup' | 'CCTV';
 
