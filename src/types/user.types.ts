@@ -81,6 +81,8 @@ export interface ChatMessage {
   timestamp: string;
   isRead: boolean;
   type: 'text' | 'image';
+  /** Optimistic-send failure flag — set by chatStore.failMessage() */
+  failed?: boolean;
 }
 
 export interface ChatConversation {

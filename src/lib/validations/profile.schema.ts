@@ -55,8 +55,7 @@ export const profileSchema = z.object({
   lifestyle: z
     .array(z.enum(LIFESTYLE_TAGS))
     .max(9, 'Cannot select more than 9 lifestyle tags')
-    .optional()
-    .default([]),
+    .optional(),
 });
 
 export const phoneVerificationSchema = z.object({
