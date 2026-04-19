@@ -16,7 +16,6 @@ import {
   Star, Heart, UserCheck,
 } from 'lucide-react';
 
-/** FAQ accordion item */
 const FAQS = [
   { q: 'How do I post a listing?', a: 'Go to My Listings → + Add Listing. Listings are reviewed within 24 hours.' },
   { q: 'Is Roommat free to use?', a: 'Basic browsing and profile creation are free. Premium features require a subscription.' },
@@ -43,180 +42,197 @@ export default function ProfilePage() {
   };
 
   const menuItems = [
-    { icon: Settings, label: 'Super Admin Panel', href: '/admin/dashboard', admin: true },
-    { icon: Home,     label: 'My Listings',        href: '/my-listings' },
-    { icon: Users,    label: 'Tenant Profiles',     href: '/roommates' },
-    { icon: BadgeCheck, label: 'Verify Identity',  onClick: () => setShowVerify(true) },
-    { icon: HelpCircle, label: 'Help & Support',   onClick: () => setShowHelp(true) },
+    { icon: Settings, label: 'Super Admin Panel', href: '/admin', admin: true },
+    { icon: Home, label: 'My Listings', href: '/my-listings' },
+    { icon: Users, label: 'Tenant Profiles', href: '/roommates' },
+    { icon: BadgeCheck, label: 'Verify Identity', onClick: () => setShowVerify(true) },
+    { icon: HelpCircle, label: 'Help & Support', onClick: () => setShowHelp(true) },
   ];
 
   return (
-    <UserLayout pageSuffix="Profile" showSearch={false} showFab={true}>
-      {/* Edit icon in top-right — rendered via a portal-style absolute */}
-      <div className="relative max-w-lg mx-auto">
-
-        {/* Edit button pinned top-right */}
-        <Link
-          href="/profile/edit"
-          className="absolute top-2 right-4 z-10 p-2 rounded-full hover:bg-black/10 transition-colors"
-          aria-label="Edit profile"
-        >
-          <Pencil size={18} className="text-white" />
-        </Link>
-
-        {/* Teal banner */}
-        <div
-          className="h-32 w-full"
-          style={{ background: 'linear-gradient(135deg, #1B8F8F 0%, #0f6060 100%)' }}
-        />
-
-        {/* Avatar overlapping banner */}
-        <div className="px-4">
-          <div className="relative -mt-10 mb-3">
-            <div
-              className="w-20 h-20 rounded-full border-4 border-white flex items-center justify-center text-white text-2xl font-bold shadow-md"
-              style={{ backgroundColor: '#1B8F8F' }}
-            >
-              {profile.avatarInitial}
-            </div>
-          </div>
-
-          {/* Name + role */}
-          <h1 className="text-xl font-bold text-gray-900">{profile.name}</h1>
-          <p className="text-sm text-gray-500 mb-3">
-            {profile.role === 'TENANT' ? 'Tenant' : profile.role === 'OWNER' ? 'Owner' : 'Admin'}
-          </p>
-
-          {/* Verified badges */}
-          <div className="flex flex-wrap gap-2 mb-5">
-            {profile.isPhoneVerified && (
-              <span className="flex items-center gap-1 text-xs font-semibold text-green-700 bg-green-100 px-3 py-1 rounded-full">
-                <Phone size={11} /> Phone Verified
-              </span>
-            )}
-            {profile.isCompanyVerified && (
-              <span className="flex items-center gap-1 text-xs font-semibold text-orange-700 bg-orange-100 px-3 py-1 rounded-full">
-                <Building2 size={11} /> Company Verified
-              </span>
-            )}
-          </div>
-
-          {/* Stats */}
-          <div className="bg-white rounded-2xl shadow-sm p-4 mb-4">
-            <div className="grid grid-cols-3 divide-x divide-gray-100">
-              {[
-                { icon: Home,     value: profile.listingCount,     label: 'Listings' },
-                { icon: Heart,    value: profile.shortlistedCount,  label: 'Shortlisted' },
-                { icon: UserCheck, value: profile.connectCount,    label: 'Connects' },
-              ].map(({ icon: Icon, value, label }) => (
-                <div key={label} className="flex flex-col items-center gap-0.5 px-2">
-                  <span className="text-xl font-bold text-gray-900">{value}</span>
-                  <span className="text-xs text-gray-500">{label}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Match score (cosmetic) */}
-          {profile.role === 'TENANT' && (
-            <div
-              className="flex items-center justify-between rounded-2xl p-3 mb-4"
-              style={{ backgroundColor: '#E8F7F7' }}
-            >
-              <div className="flex items-center gap-2">
-                <Star size={16} style={{ color: '#1B8F8F' }} fill="#1B8F8F" />
-                <span className="text-sm font-semibold" style={{ color: '#1B8F8F' }}>
-                  Profile Strength
-                </span>
-              </div>
-              <div className="flex items-center gap-2">
-                <div className="w-24 h-2 bg-gray-200 rounded-full overflow-hidden">
-                  <div className="h-full rounded-full" style={{ width: '65%', backgroundColor: '#1B8F8F' }} />
-                </div>
-                <span className="text-xs font-bold" style={{ color: '#1B8F8F' }}>65%</span>
-              </div>
-            </div>
-          )}
-
-          {/* Menu items */}
-          <div className="bg-white rounded-2xl shadow-sm overflow-hidden mb-4">
-            {menuItems.map(({ icon: Icon, label, href, onClick, admin }) => {
-              if (admin && profile.role !== 'ADMIN') return null;
-              const inner = (
-                <div className="flex items-center gap-3 px-4 py-3.5 hover:bg-gray-50 transition-colors cursor-pointer border-b border-gray-50 last:border-0">
-                  <div className="w-8 h-8 rounded-xl bg-gray-100 flex items-center justify-center flex-shrink-0">
-                    <Icon size={16} className="text-gray-600" />
+    <UserLayout pageSuffix="Profile" showSearch={false} showFab={false}>
+      <div className="max-w-5xl mx-auto lg:py-8 pb-safe">
+        
+        <div className="lg:px-0">
+          {/* Main Card */}
+          <div className="bg-white lg:rounded-3xl lg:shadow-sm border-b lg:border border-gray-100 lg:border-primary/10 px-5 lg:px-12 py-8 lg:py-12 relative z-10">
+            
+            {/* ── Header: Avatar + Info ── */}
+            <div className="flex flex-col lg:flex-row gap-6 lg:gap-12 items-start lg:items-center mb-10 lg:mb-16">
+              {/* Avatar & Edit Icon Row (Mobile) */}
+              <div className="w-full flex items-center justify-between lg:w-auto lg:block relative">
+                <div className="relative group shrink-0">
+                  <div className="w-24 h-24 lg:w-48 lg:h-48 rounded-3xl lg:rounded-[3.5rem] bg-primary/5 border-2 border-primary/10 flex items-center justify-center text-primary text-3xl lg:text-6xl font-black shadow-inner transition-transform group-hover:scale-[1.02]">
+                    {profile.avatarInitial}
                   </div>
-                  <span className="flex-1 text-sm font-medium text-gray-800">{label}</span>
-                  <ChevronRight size={16} className="text-gray-400" />
+                  <div className="absolute bottom-1 right-1 w-6 h-6 lg:w-10 lg:h-10 bg-green-500 border-4 border-white rounded-full shadow-md" />
                 </div>
-              );
-              return href
-                ? <Link key={label} href={href}>{inner}</Link>
-                : <div key={label} onClick={onClick}>{inner}</div>;
-            })}
-          </div>
 
-          {/* Logout button */}
-          <Button
-            variant="outline"
-            fullWidth
-            size="lg"
-            className="mb-6 border-red-200 text-red-500 hover:bg-red-50"
-            leftIcon={<LogOut size={16} />}
-            onClick={() => setShowLogoutConfirm(true)}
-          >
-            Logout
-          </Button>
-        </div>
-      </div>
+                <Link
+                  href="/profile/edit"
+                  className="p-3 rounded-2xl bg-gray-50 hover:bg-primary/10 text-gray-400 hover:text-primary transition-all border border-gray-100 lg:hidden"
+                >
+                  <Pencil size={22} />
+                </Link>
+              </div>
 
-      {/* ── Logout confirm modal ─────────────────────────────────────────────── */}
-      <Modal isOpen={showLogoutConfirm} onClose={() => setShowLogoutConfirm(false)} title="Logout?" size="sm">
-        <p className="text-sm text-gray-500 mb-4">Are you sure you want to log out of Roommat?</p>
-        <div className="flex gap-3">
-          <Button variant="outline" fullWidth onClick={() => setShowLogoutConfirm(false)}>Cancel</Button>
-          <Button variant="danger" fullWidth onClick={handleLogout}>Logout</Button>
-        </div>
-      </Modal>
+              {/* Info */}
+              <div className="w-full lg:flex-1 space-y-4 lg:space-y-5 text-left">
+                <div className="space-y-1.5 lg:space-y-2">
+                  <div className="flex items-center gap-3 lg:gap-4">
+                    <h1 className="text-3xl lg:text-5xl font-black text-gray-900 tracking-tight leading-tight">{profile.name}</h1>
+                    {profile.role === 'ADMIN' && (
+                      <span className="bg-primary/10 text-primary text-[10px] lg:text-xs font-bold px-2 py-0.5 lg:px-3 lg:py-1 rounded-full uppercase tracking-wider">Admin</span>
+                    )}
+                  </div>
+                  <p className="text-base lg:text-2xl text-gray-500 font-medium leading-tight">
+                    {profile.role === 'TENANT' ? 'Looking for a home' : 'Property Owner'} • {profile.location || 'Ahmedabad'}
+                  </p>
+                </div>
+                
+                {/* Verification badges */}
+                <div className="flex flex-wrap gap-2 lg:gap-3 pt-1">
+                  {profile.isPhoneVerified && (
+                    <span className="flex items-center gap-1.5 text-[11px] lg:text-sm font-bold text-green-600 bg-green-50 px-3.5 py-1.5 lg:px-5 lg:py-2.5 rounded-full border border-green-100">
+                      <UserCheck size={16} className="shrink-0" /> Verified
+                    </span>
+                  )}
+                  {profile.isCompanyVerified && (
+                    <span className="flex items-center gap-1.5 text-[11px] lg:text-sm font-bold text-orange-600 bg-orange-50 px-3.5 py-1.5 lg:px-5 lg:py-2.5 rounded-full border border-orange-100">
+                      <Building2 size={16} className="shrink-0" /> Company
+                    </span>
+                  )}
+                </div>
+              </div>
 
-      {/* ── Verify Identity modal ────────────────────────────────────────────── */}
-      <Modal isOpen={showVerify} onClose={() => setShowVerify(false)} title="🪪 Verify Identity" size="md">
-        <div className="space-y-4">
-          <p className="text-sm text-gray-600">Upload your Aadhar card to get verified. Verification is completed within 2 business days.</p>
-          <div className="border-2 border-dashed border-gray-200 rounded-xl p-8 text-center">
-            <BadgeCheck size={32} className="mx-auto mb-2 text-gray-400" />
-            <p className="text-sm text-gray-500">Tap to upload Aadhar card</p>
-            <p className="text-xs text-gray-400 mt-1">JPG, PNG or PDF · Max 5 MB</p>
-          </div>
-          <Button variant="primary" fullWidth onClick={() => { setShowVerify(false); toast.success('Document submitted!', 'Verification takes up to 2 business days.'); }}>
-            Submit for Verification
-          </Button>
-        </div>
-      </Modal>
-
-      {/* ── Help & Support modal ─────────────────────────────────────────────── */}
-      <Modal isOpen={showHelp} onClose={() => setShowHelp(false)} title="❓ Help & Support" size="md">
-        <div className="space-y-2">
-          {FAQS.map((faq, i) => (
-            <div key={i} className="border border-gray-100 rounded-xl overflow-hidden">
-              <button
-                onClick={() => setOpenFaq(openFaq === i ? null : i)}
-                className="w-full flex items-center justify-between px-4 py-3 text-left text-sm font-medium text-gray-900 hover:bg-gray-50"
-              >
-                {faq.q}
-                <ChevronRight size={16} className={`text-gray-400 transition-transform ${openFaq === i ? 'rotate-90' : ''}`} />
-              </button>
-              {openFaq === i && (
-                <div className="px-4 pb-3 text-sm text-gray-600">{faq.a}</div>
-              )}
+              {/* Actions (Desktop Only) */}
+              <div className="hidden lg:flex flex-col gap-3">
+                <Link href="/profile/edit">
+                  <Button variant="secondary" size="lg" className="rounded-3xl px-10 font-bold shadow-sm hover:shadow-md transition-all h-14" leftIcon={<Pencil size={20} />}>Edit Profile</Button>
+                </Link>
+                <Button variant="outline" size="lg" className="rounded-3xl px-10 border-gray-200 hover:bg-red-50 hover:border-red-100 transition-all group h-14" onClick={() => setShowLogoutConfirm(true)}>
+                  <LogOut size={20} className="text-gray-400 group-hover:text-red-500 transition-colors mr-2" />
+                  <span className="text-gray-600 group-hover:text-red-500 font-bold transition-colors">Logout</span>
+                </Button>
+              </div>
             </div>
-          ))}
-          <div className="pt-2 text-center">
-            <p className="text-xs text-gray-400">Contact us: <a href="mailto:support@roommat.in" className="underline">support@roommat.in</a></p>
+
+            {/* ── Content Grid ── */}
+            <div className="grid lg:grid-cols-3 gap-8 lg:gap-12">
+              <div className="lg:col-span-1 space-y-6 lg:space-y-8">
+                {/* Stats */}
+                <div className="bg-gray-50 lg:bg-primary/5 rounded-3xl p-6 lg:p-8 border border-gray-100 lg:border-primary/10 grid grid-cols-3 gap-4">
+                  {[
+                    { value: profile.listingCount,    label: 'Listings' },
+                    { value: profile.shortlistedCount, label: 'Saved' },
+                    { value: profile.connectCount,    label: 'Matches' },
+                  ].map(({ value, label }) => (
+                    <div key={label} className="text-center space-y-1">
+                      <div className="text-2xl lg:text-3xl font-black text-primary">{value}</div>
+                      <div className="text-[10px] lg:text-[11px] font-bold text-gray-400 uppercase tracking-widest">{label}</div>
+                    </div>
+                  ))}
+                </div>
+
+                {profile.role === 'TENANT' && (
+                <div className="bg-white lg:bg-gray-50/50 rounded-3xl p-6 lg:p-8 border border-gray-100 lg:border-primary/10 space-y-4">
+                    <div className="flex items-center justify-between">
+                      <h3 className="text-sm lg:text-base font-bold text-gray-900">Profile Strength</h3>
+                      <span className="text-xs lg:text-sm font-black text-primary">65%</span>
+                    </div>
+                    <div className="w-full h-2.5 bg-gray-100 rounded-full overflow-hidden">
+                      <div className="h-full bg-primary rounded-full transition-all duration-1000" style={{ width: '65%' }} />
+                    </div>
+                    <p className="text-[11px] lg:text-xs text-gray-400 leading-relaxed font-medium">
+                      Complete your profile to get 2x more matches.
+                    </p>
+                  </div>
+                )}
+              </div>
+
+              <div className="lg:col-span-2 space-y-6 lg:space-y-8">
+                <div className="bg-white lg:bg-gray-50/50 rounded-3xl border border-gray-100 lg:border-primary/10 overflow-hidden">
+                  {menuItems.map(({ icon: Icon, label, href, onClick, admin }, i) => {
+                    if (admin && profile.role !== 'ADMIN') return null;
+                    const content = (
+                      <div className="flex items-center gap-4 px-5 py-5 lg:px-8 lg:py-6 hover:bg-gray-50 lg:hover:bg-white active:bg-gray-100 transition-all cursor-pointer group">
+                        <div className="w-11 h-11 lg:w-14 lg:h-14 rounded-2xl bg-gray-50 lg:bg-white shadow-sm flex items-center justify-center text-gray-400 group-hover:text-primary group-hover:scale-105 transition-all border border-gray-100">
+                          <Icon size={20} />
+                        </div>
+                        <div className="flex-1">
+                          <span className="text-sm lg:text-lg font-bold text-gray-800 group-hover:text-primary transition-colors">{label}</span>
+                        </div>
+                        <ChevronRight size={18} className="text-gray-300 group-hover:text-primary group-hover:translate-x-1 transition-all" />
+                      </div>
+                    );
+
+                    return (
+                      <React.Fragment key={label}>
+                        {i > 0 && <div className="mx-5 lg:mx-8 border-t border-gray-50" />}
+                        {href ? <Link href={href}>{content}</Link> : <div onClick={onClick}>{content}</div>}
+                      </React.Fragment>
+                    );
+                  })}
+                </div>
+
+                <Button
+                  variant="outline"
+                  fullWidth
+                  className="lg:hidden rounded-2xl border-red-100 text-red-500 bg-white h-16 shadow-sm active:bg-red-50 transition-colors font-black text-base uppercase tracking-wider"
+                  leftIcon={<LogOut size={22} />}
+                  onClick={() => setShowLogoutConfirm(true)}
+                >
+                  Logout
+                </Button>
+              </div>
+            </div>
+
           </div>
         </div>
-      </Modal>
+
+        {/* ── Modals ── */}
+        <Modal isOpen={showLogoutConfirm} onClose={() => setShowLogoutConfirm(false)} title="Logout?" size="sm">
+          <p className="text-sm text-gray-500 mb-4">Are you sure you want to log out of Roommat?</p>
+          <div className="flex gap-3">
+            <Button variant="outline" fullWidth onClick={() => setShowLogoutConfirm(false)}>Cancel</Button>
+            <Button variant="danger" fullWidth onClick={handleLogout}>Logout</Button>
+          </div>
+        </Modal>
+
+        <Modal isOpen={showVerify} onClose={() => setShowVerify(false)} title="🪪 Verify Identity" size="md">
+          <div className="space-y-4">
+            <p className="text-sm text-gray-600">Upload your Aadhar card to get verified. Verification is completed within 2 business days.</p>
+            <div className="border-2 border-dashed border-gray-200 rounded-xl p-8 text-center">
+              <BadgeCheck size={32} className="mx-auto mb-2 text-gray-400" />
+              <p className="text-sm text-gray-500">Tap to upload Aadhar card</p>
+              <p className="text-xs text-gray-400 mt-1">JPG, PNG or PDF · Max 5 MB</p>
+            </div>
+            <Button variant="primary" fullWidth onClick={() => { setShowVerify(false); toast.success('Document submitted!', 'Verification takes up to 2 business days.'); }}>
+              Submit for Verification
+            </Button>
+          </div>
+        </Modal>
+
+        <Modal isOpen={showHelp} onClose={() => setShowHelp(false)} title="❓ Help & Support" size="md">
+          <div className="space-y-2">
+            {FAQS.map((faq, i) => (
+              <div key={i} className="border border-gray-100 rounded-xl overflow-hidden">
+                <button
+                  onClick={() => setOpenFaq(openFaq === i ? null : i)}
+                  className="w-full flex items-center justify-between px-4 py-3 text-left text-sm font-medium text-gray-900 hover:bg-gray-50"
+                >
+                  {faq.q}
+                  <ChevronRight size={16} className={`text-gray-400 transition-transform ${openFaq === i ? 'rotate-90' : ''}`} />
+                </button>
+                {openFaq === i && <div className="px-4 pb-3 text-sm text-gray-600">{faq.a}</div>}
+              </div>
+            ))}
+            <div className="pt-2 text-center">
+              <p className="text-xs text-gray-400">Contact us: <a href="mailto:support@roommat.in" className="underline">support@roommat.in</a></p>
+            </div>
+          </div>
+        </Modal>
+      </div>
     </UserLayout>
   );
 }

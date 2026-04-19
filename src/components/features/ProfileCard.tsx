@@ -83,8 +83,7 @@ export const ProfileCard: React.FC<ProfileCardProps> = ({ profile, onChatClick }
       <div className="flex items-center gap-3">
         {/* Avatar */}
         <div
-          className="w-11 h-11 rounded-full flex items-center justify-center text-white text-sm font-bold flex-shrink-0"
-          style={{ backgroundColor: '#1B8F8F' }}
+          className="w-11 h-11 rounded-full flex items-center justify-center text-white text-sm font-bold flex-shrink-0 bg-primary"
           aria-label={`${profile.name}'s avatar`}
         >
           {profile.avatarInitial}
@@ -100,7 +99,7 @@ export const ProfileCard: React.FC<ProfileCardProps> = ({ profile, onChatClick }
 
         {/* Match % */}
         <div className="flex items-center gap-0.5 flex-shrink-0">
-          <Star size={11} fill="#F57C00" stroke="#F57C00" />
+          <Star size={11} className="text-secondary fill-secondary" />
           <span className="text-xs font-semibold text-gray-700">{profile.matchPercent}%</span>
         </div>
       </div>
@@ -136,33 +135,42 @@ export const ProfileCard: React.FC<ProfileCardProps> = ({ profile, onChatClick }
 
       {/* Action buttons */}
       <div className="flex gap-2">
-        <Button
-          variant="outline"
-          size="sm"
-          fullWidth
-          onClick={handleChat}
-          leftIcon={<MessageCircle size={13} />}
-          className="text-xs"
-        >
-          Chat
-        </Button>
-        <Button
-          variant={isConnected ? 'primary' : 'secondary'}
-          size="sm"
-          fullWidth
-          isLoading={isConnecting}
-          onClick={handleConnect}
-          leftIcon={
-            !isConnecting
-              ? isConnected
-                ? <UserCheck size={13} />
-                : <UserPlus size={13} />
-              : undefined
-          }
-          className="text-xs"
-        >
-          {isConnected ? 'Connected' : 'Connect'}
-        </Button>
+        {isConnected ? (
+          <Button
+            variant="primary"
+            size="sm"
+            fullWidth
+            onClick={handleChat}
+            leftIcon={<MessageCircle size={14} />}
+            className="text-xs font-bold h-9 shadow-sm"
+          >
+            Chat Now
+          </Button>
+        ) : (
+          <>
+            <Button
+              variant="outline"
+              size="sm"
+              fullWidth
+              onClick={handleChat}
+              leftIcon={<MessageCircle size={13} />}
+              className="text-xs font-semibold text-gray-600 border-gray-200 hover:border-primary hover:text-primary"
+            >
+              Chat
+            </Button>
+            <Button
+              variant="secondary"
+              size="sm"
+              fullWidth
+              isLoading={isConnecting}
+              onClick={handleConnect}
+              leftIcon={!isConnecting && <UserPlus size={13} />}
+              className="text-xs font-bold"
+            >
+              Connect
+            </Button>
+          </>
+        )}
       </div>
     </div>
   );

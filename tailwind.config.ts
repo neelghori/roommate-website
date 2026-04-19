@@ -39,6 +39,7 @@ const config: Config = {
         },
         /**
          * Accent — Orange CTA (#F57C00)
+         * Primary — Teal (#1B8F8F)
          * Used for: "Book Visit", "Apply Now", "Add Listing", referral banner,
          *           any primary call-to-action button in orange.
          * CSS vars defined in globals.css :root

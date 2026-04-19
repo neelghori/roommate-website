@@ -80,7 +80,7 @@ export default function AdminReportsPage() {
             placeholder="Search by reporter, target, or reason…"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full pl-9 pr-4 py-2 text-sm bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-teal-500/30 focus:border-teal-500 transition-colors"
+            className="w-full pl-9 pr-4 py-2 text-sm bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:border-teal-500 transition-colors"
           />
         </div>
         <div className="flex gap-2 flex-wrap">

@@ -9,6 +9,7 @@ import { ChatHeader } from '@/components/features/chat/ChatHeader';
 import { MessageBubble } from '@/components/features/chat/MessageBubble';
 import { MessageInput } from '@/components/features/chat/MessageInput';
 import { TypingIndicator } from '@/components/features/chat/TypingIndicator';
+import { ChatSidebar } from '@/components/features/chat/ChatSidebar';
 import { ChatMessage } from '@/types';
 import { TopBar } from '@/components/shared/TopBar';
 import { BottomNav } from '@/components/shared/BottomNav';
@@ -134,74 +135,101 @@ export default function ChatThreadPage() {
     wsService.send('typing:stop', { chatId });
   }, [chatId]);
 
-  // ── Layout ───────────────────────────────────────────────────────────────────
-  // Chat thread uses a special full-viewport layout:
-  //   TopBar (56px) + thread content fills remaining + BottomNav (64px)
-  return (
-    <div className="flex flex-col" style={{ minHeight: '100dvh' }}>
-      {/* App topbar */}
-      <TopBar showSearch={false} />
+  // ── Chat thread panel (shared between desktop and mobile) ─────────────────────
+  const chatPanel = (
+    <>
+      {/* Chat header */}
+      {conversation ? (
+        <ChatHeader conversation={conversation} isTyping={isTyping} />
+      ) : (
+        <ChatHeaderSkeleton />
+      )}
 
-      {/* Chat area: fixed height between topbar and bottom nav */}
+      {/* Message list */}
       <div
-        className="flex flex-col flex-1 overflow-hidden"
-        style={{ paddingTop: '3.5rem', paddingBottom: '4rem' }}
+        className="flex-1 overflow-y-auto bg-[#efeae2] py-2"
+        style={{
+          backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23c8bfb0' fill-opacity='0.15'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`,
+        }}
+        aria-live="polite"
+        aria-label="Messages"
       >
-        {/* Chat header */}
-        {conversation ? (
-          <ChatHeader conversation={conversation} isTyping={isTyping} />
+        {loading ? (
+          <MessagesSkeleton />
+        ) : messages.length === 0 ? (
+          <div className="flex flex-col items-center justify-center h-full text-center px-6 py-12">
+            <div className="text-4xl mb-3">👋</div>
+            <p className="text-sm text-gray-500">
+              Say hello to {conversation?.participantName ?? 'your contact'}!
+            </p>
+          </div>
         ) : (
-          <ChatHeaderSkeleton />
+          <>
+            {messages.map((msg, index) => {
+              const prevMsg = index > 0 ? messages[index - 1] : null;
+              const showSep = !prevMsg || isDifferentDay(prevMsg.timestamp, msg.timestamp);
+              return (
+                <MessageBubble
+                  key={msg.id}
+                  message={msg}
+                  isOwn={msg.senderId === CURRENT_USER_ID}
+                  showDateSeparator={showSep}
+                  separatorDate={msg.timestamp}
+                />
+              );
+            })}
+            {isTyping && <TypingIndicator />}
+            <div ref={bottomRef} className="h-2" />
+          </>
         )}
-
-        {/* Message list */}
-        <div
-          className="flex-1 overflow-y-auto bg-gray-50 py-2"
-          aria-live="polite"
-          aria-label="Messages"
-        >
-          {loading ? (
-            <MessagesSkeleton />
-          ) : messages.length === 0 ? (
-            <div className="flex flex-col items-center justify-center h-full text-center px-6 py-12">
-              <div className="text-4xl mb-3">👋</div>
-              <p className="text-sm text-gray-500">
-                Say hello to {conversation?.participantName ?? 'your contact'}!
-              </p>
-            </div>
-          ) : (
-            <>
-              {messages.map((msg, index) => {
-                const prevMsg = index > 0 ? messages[index - 1] : null;
-                const showSep = !prevMsg || isDifferentDay(prevMsg.timestamp, msg.timestamp);
-                return (
-                  <MessageBubble
-                    key={msg.id}
-                    message={msg}
-                    isOwn={msg.senderId === CURRENT_USER_ID}
-                    showDateSeparator={showSep}
-                    separatorDate={msg.timestamp}
-                  />
-                );
-              })}
-              {isTyping && <TypingIndicator />}
-              <div ref={bottomRef} className="h-2" />
-            </>
-          )}
-        </div>
-
-        {/* Message input */}
-        <MessageInput
-          onSend={handleSend}
-          onTypingStart={handleTypingStart}
-          onTypingStop={handleTypingStop}
-          disabled={loading}
-        />
       </div>
 
-      {/* Bottom nav */}
-      <BottomNav />
-    </div>
+      {/* Message input */}
+      <MessageInput
+        onSend={handleSend}
+        onTypingStart={handleTypingStart}
+        onTypingStop={handleTypingStop}
+        disabled={loading}
+      />
+    </>
+  );
+
+  return (
+    <>
+      {/* ── DESKTOP (lg+): WhatsApp two-panel layout ── */}
+      <div className="hidden lg:flex flex-col" style={{ height: '100dvh' }}>
+        <TopBar showSearch={false} />
+
+        {/* Two-panel area below TopBar */}
+        <div className="flex flex-1 overflow-hidden pt-16">
+          {/* Left sidebar */}
+          <div className="w-[340px] xl:w-[380px] flex-shrink-0 h-full">
+            <ChatSidebar activeChatId={chatId} />
+          </div>
+
+          {/* Right chat panel */}
+          <div className="flex flex-col flex-1 overflow-hidden border-l border-gray-200">
+            {chatPanel}
+          </div>
+        </div>
+      </div>
+
+      {/* ── MOBILE / TABLET: original full-screen layout (unchanged) ── */}
+      <div className="flex flex-col lg:hidden" style={{ minHeight: '100dvh' }}>
+        {/* App topbar */}
+        <TopBar showSearch={false} />
+
+        {/* Chat area */}
+        <div
+          className="flex flex-col flex-1 overflow-hidden max-w-3xl mx-auto w-full pt-14 pb-16"
+        >
+          {chatPanel}
+        </div>
+
+        {/* Bottom nav */}
+        <BottomNav />
+      </div>
+    </>
   );
 }
 

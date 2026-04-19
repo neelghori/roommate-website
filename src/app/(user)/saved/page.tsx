@@ -27,7 +27,8 @@ export default function SavedPage() {
 
   return (
     <UserLayout showSearch={false} showFab={false} pageSuffix="Saved">
-      <div className="px-4 pt-4 pb-2">
+      <div className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-10 xl:px-14">
+      <div className="pt-4 pb-2">
         <div className="flex items-center gap-2 mb-1">
           <Heart className="w-5 h-5 fill-red-500 text-red-500" />
           <h1 className="text-xl font-bold text-gray-900">Saved Listings</h1>
@@ -53,7 +54,7 @@ export default function SavedPage() {
           </Link>
         </div>
       ) : (
-        <div className="px-4 pb-4 space-y-3">
+        <div className="pb-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
           {savedListings.map((listing) => (
             <SavedListingCard
               key={listing.id}
@@ -63,6 +64,7 @@ export default function SavedPage() {
           ))}
         </div>
       )}
+      </div>{/* max-w-7xl */}
     </UserLayout>
   );
 }

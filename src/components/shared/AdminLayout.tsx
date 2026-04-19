@@ -7,6 +7,7 @@
 'use client';
 import React, { useState } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { usePathname, useRouter } from 'next/navigation';
 import {
   LayoutDashboard,
@@ -59,20 +60,17 @@ const SidebarContent: React.FC<SidebarProps> = ({ onClose }) => {
       {/* Logo */}
       <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
         <Link href="/admin" className="flex items-center gap-2" onClick={onClose}>
-          <div
-            className="w-8 h-8 rounded-lg flex items-center justify-center text-white text-sm font-black"
-            style={{ backgroundColor: '#1B8F8F' }}
-          >
-            R
-          </div>
-          <div className="leading-tight">
-            <span className="block text-sm font-black tracking-tight" style={{ color: '#1B8F8F' }}>
-              Roommat
-            </span>
-            <span className="block text-[10px] text-gray-400 font-medium uppercase tracking-widest">
-              Admin
-            </span>
-          </div>
+          <Image
+            src="/logo.png"
+            alt="Roommat"
+            width={100}
+            height={32}
+            className="h-7 w-auto object-contain"
+            priority
+          />
+          <span className="text-[10px] text-gray-400 font-semibold uppercase tracking-widest border-l border-gray-200 pl-2">
+            Admin
+          </span>
         </Link>
         {onClose && (
           <button
@@ -98,10 +96,9 @@ const SidebarContent: React.FC<SidebarProps> = ({ onClose }) => {
                   className={[
                     'flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors',
                     active
-                      ? 'text-white'
+                      ? 'bg-primary text-white'
                       : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900',
                   ].join(' ')}
-                  style={active ? { backgroundColor: '#1B8F8F' } : undefined}
                   aria-current={active ? 'page' : undefined}
                 >
                   <Icon size={18} strokeWidth={active ? 2.5 : 1.8} />
@@ -119,8 +116,7 @@ const SidebarContent: React.FC<SidebarProps> = ({ onClose }) => {
         {user && (
           <div className="flex items-center gap-3 px-3 py-2 mb-2">
             <div
-              className="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold flex-shrink-0"
-              style={{ backgroundColor: '#1B8F8F' }}
+              className="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold flex-shrink-0 bg-primary"
             >
               {user.avatarInitial ?? user.name?.[0] ?? 'A'}
             </div>
@@ -163,7 +159,7 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
   return (
     <div className="min-h-screen bg-gray-50 flex">
       {/* ── Desktop sidebar ── */}
-      <aside className="hidden lg:flex lg:flex-col w-60 bg-white border-r border-gray-100 flex-shrink-0 fixed inset-y-0 left-0 z-30">
+      <aside className="hidden lg:flex lg:flex-col w-60 xl:w-64 bg-white border-r border-gray-100 flex-shrink-0 fixed inset-y-0 left-0 z-30">
         <SidebarContent />
       </aside>
 
@@ -189,7 +185,7 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
       </aside>
 
       {/* ── Main content area ── */}
-      <div className="flex-1 flex flex-col lg:ml-60">
+      <div className="flex-1 flex flex-col lg:ml-60 xl:ml-64">
         {/* Admin top bar */}
         <header
           className="sticky top-0 z-20 bg-white border-b border-gray-100 flex items-center gap-3 px-4 h-14"

@@ -72,8 +72,9 @@ export default function RoommateDetailPage() {
 
   return (
     <UserLayout showSearch={false} showFab={false}>
+      <div className="max-w-4xl mx-auto">
       {/* Back button */}
-      <div className="px-4 pt-4 pb-2">
+      <div className="px-4 lg:px-8 pt-4 pb-2">
         <button
           onClick={() => router.back()}
           className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-700 transition-colors"
@@ -84,7 +85,7 @@ export default function RoommateDetailPage() {
       </div>
 
       {/* Profile card */}
-      <div className="mx-4 bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+      <div className="mx-4 lg:mx-8 bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
         {/* Hero banner */}
         <div
           className="h-24 w-full"
@@ -151,14 +152,14 @@ export default function RoommateDetailPage() {
 
       {/* About */}
       {profile.bio && (
-        <div className="mx-4 mt-3 bg-white rounded-2xl p-4 border border-gray-100 shadow-sm">
+        <div className="mx-4 lg:mx-8 mt-3 bg-white rounded-2xl p-4 border border-gray-100 shadow-sm">
           <h2 className="text-sm font-semibold text-gray-700 mb-2">About</h2>
           <p className="text-sm text-gray-600 leading-relaxed">{profile.bio}</p>
         </div>
       )}
 
       {/* Lifestyle */}
-      <div className="mx-4 mt-3 bg-white rounded-2xl p-4 border border-gray-100 shadow-sm">
+      <div className="mx-4 lg:mx-8 mt-3 bg-white rounded-2xl p-4 border border-gray-100 shadow-sm">
         <h2 className="text-sm font-semibold text-gray-700 mb-3">Lifestyle</h2>
         <div className="flex flex-wrap gap-2">
           {profile.tags.map((tag) => (
@@ -174,7 +175,7 @@ export default function RoommateDetailPage() {
       </div>
 
       {/* Verification / trust badges */}
-      <div className="mx-4 mt-3 bg-white rounded-2xl p-4 border border-gray-100 shadow-sm">
+      <div className="mx-4 lg:mx-8 mt-3 bg-white rounded-2xl p-4 border border-gray-100 shadow-sm">
         <h2 className="text-sm font-semibold text-gray-700 mb-3">Verified Details</h2>
         <div className="space-y-2">
           {[
@@ -197,7 +198,7 @@ export default function RoommateDetailPage() {
       </div>
 
       {/* Reviews stub */}
-      <div className="mx-4 mt-3 bg-white rounded-2xl p-4 border border-gray-100 shadow-sm">
+      <div className="mx-4 lg:mx-8 mt-3 bg-white rounded-2xl p-4 border border-gray-100 shadow-sm">
         <div className="flex items-center justify-between mb-2">
           <h2 className="text-sm font-semibold text-gray-700">Reviews</h2>
           <div className="flex items-center gap-1">
@@ -212,7 +213,7 @@ export default function RoommateDetailPage() {
       </div>
 
       {/* CTA buttons */}
-      <div className="px-4 pt-4 pb-6 flex gap-3">
+      <div className="px-4 lg:px-8 pt-4 pb-6 flex gap-3">
         <button
           onClick={handleSave}
           className={`flex items-center gap-2 px-4 py-3 rounded-xl border font-medium text-sm transition-colors ${
@@ -246,6 +247,7 @@ export default function RoommateDetailPage() {
           </button>
         )}
       </div>
+      </div>{/* max-w-4xl */}
     </UserLayout>
   );
 }

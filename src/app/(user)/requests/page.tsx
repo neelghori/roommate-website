@@ -75,7 +75,7 @@ export default function RequestsPage() {
 
   return (
     <UserLayout pageSuffix="Requests" showSearch={false} showFab={false}>
-      <div className="max-w-lg mx-auto px-4 py-4 space-y-4">
+      <div className="max-w-2xl mx-auto px-4 lg:px-8 py-4 space-y-4">
 
         {/* Tab switcher */}
         <div className="flex bg-white rounded-xl p-1 shadow-sm gap-1">

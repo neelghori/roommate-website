@@ -21,7 +21,7 @@ export const ChatHeader: React.FC<ChatHeaderProps> = React.memo(
 
     return (
       <header
-        className="flex items-center gap-3 px-4 py-3 border-b border-gray-100 bg-white shadow-sm z-10"
+        className="flex items-center gap-3 px-4 py-3 border-b border-gray-100 bg-white shadow-sm z-10 flex-shrink-0"
         aria-label={`Chat with ${conversation.participantName}`}
       >
         {/* Back button (mobile) */}

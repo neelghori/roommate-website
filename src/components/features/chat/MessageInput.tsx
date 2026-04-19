@@ -102,7 +102,7 @@ export const MessageInput: React.FC<MessageInputProps> = ({
   const hasContent = content.trim().length > 0 || attachment !== null;
 
   return (
-    <div className="border-t border-gray-100 bg-white px-3 py-2 pb-safe">
+    <div className="border-t border-gray-100 bg-white px-3 py-2">
       {/* Attachment preview */}
       {attachment && (
         <div className="flex items-center gap-2 mb-2 px-1">
@@ -126,7 +126,7 @@ export const MessageInput: React.FC<MessageInputProps> = ({
         <p className="text-xs text-red-500 mb-1 px-1">{attachError}</p>
       )}
 
-      <form onSubmit={handleSubmit(onSubmit)} className="flex items-end gap-2">
+      <form onSubmit={handleSubmit(onSubmit)} className="flex items-center gap-2">
         {/* Attach button */}
         <button
           type="button"
@@ -156,7 +156,7 @@ export const MessageInput: React.FC<MessageInputProps> = ({
             disabled={disabled}
             rows={1}
             placeholder="Type a message…"
-            className="w-full resize-none rounded-2xl border border-gray-200 bg-gray-50 px-4 py-2.5 text-sm text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-teal-500/30 focus:border-teal-500 transition-colors max-h-32 overflow-y-auto disabled:opacity-40"
+            className="w-full resize-none rounded-md border border-gray-200 bg-gray-50 px-4 py-2.5 text-sm text-gray-800 placeholder-gray-400 focus:!outline-none focus:ring-0 focus:border-teal-500 transition-colors max-h-32 overflow-y-auto disabled:opacity-40"
             style={{ scrollbarWidth: 'thin' }}
           />
           {errors.content && (
@@ -170,16 +170,13 @@ export const MessageInput: React.FC<MessageInputProps> = ({
         <button
           type="submit"
           disabled={disabled || !hasContent}
-          className="flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center transition-all disabled:opacity-40 disabled:cursor-not-allowed"
-          style={{
-            backgroundColor: hasContent && !disabled ? '#1B8F8F' : '#E5E7EB',
-          }}
+          className={[
+            'flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center transition-all disabled:opacity-40 disabled:cursor-not-allowed shadow-sm',
+            hasContent && !disabled ? 'bg-primary text-white hover:scale-105 active:scale-95' : 'bg-gray-200 text-gray-400'
+          ].join(' ')}
           aria-label="Send message"
         >
-          <Send
-            className="w-4.5 h-4.5"
-            style={{ color: hasContent && !disabled ? '#ffffff' : '#9CA3AF' }}
-          />
+          <Send className="w-4.5 h-4.5" />
         </button>
       </form>
     </div>

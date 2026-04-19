@@ -31,7 +31,7 @@ export default function AdminUsersPage() {
   }, [search, roleFilter, statusFilter]);
 
   return (
-    <div className="p-4 md:p-6 max-w-5xl mx-auto">
+    <div className="p-4 md:p-6 max-w-6xl mx-auto">
       {/* Header */}
       <div className="mb-5">
         <h1 className="text-2xl font-bold text-gray-900">Users</h1>
@@ -48,7 +48,7 @@ export default function AdminUsersPage() {
             placeholder="Search by name, email, or phone…"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full pl-9 pr-4 py-2 text-sm bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-teal-500/30 focus:border-teal-500 transition-colors"
+            className="w-full pl-9 pr-4 py-2 text-sm bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:border-teal-500 transition-colors"
           />
         </div>
 

@@ -148,7 +148,7 @@ export default function AdminListingDetailPage() {
             onChange={(e) => setRejectNote(e.target.value)}
             placeholder="Explain why this listing is being rejected (shown to owner)…"
             rows={3}
-            className="w-full rounded-xl border border-red-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-300 resize-none"
+            className="w-full rounded-xl border border-red-200 bg-white px-3 py-2 text-sm focus:outline-none resize-none"
           />
           <div className="flex gap-2 mt-2">
             <button

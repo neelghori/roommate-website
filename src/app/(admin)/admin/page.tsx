@@ -77,7 +77,7 @@ export default function AdminDashboardPage() {
     .slice(0, 5);
 
   return (
-    <div className="p-4 md:p-6 max-w-5xl mx-auto">
+    <div className="p-4 md:p-6 max-w-6xl mx-auto">
       {/* Header */}
       <div className="mb-6">
         <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>

@@ -22,6 +22,7 @@ interface BannerSlide {
   subtext: string;
   buttonLabel: string;
   accentColor: string;
+  textColor: string;
 }
 
 // Multiple slides for carousel — extend as needed
@@ -31,21 +32,24 @@ const SLIDES: BannerSlide[] = [
     heading: 'Refer a friend & get ₹500 Cashback!',
     subtext: 'Share your referral code and earn on every sign-up.',
     buttonLabel: 'Invite Now',
-    accentColor: '#F57C00',
+    accentColor: 'bg-secondary',
+    textColor: 'text-secondary',
   },
   {
     tag: 'LIMITED TIME',
     heading: 'Post your listing for FREE this week!',
     subtext: 'No charges for new listings posted before Sunday.',
     buttonLabel: 'Post Listing',
-    accentColor: '#1B8F8F',
+    accentColor: 'bg-primary',
+    textColor: 'text-primary',
   },
   {
     tag: 'NEW FEATURE',
     heading: 'Verified Badge — build trust instantly',
     subtext: 'Complete Aadhar verification and get a verified badge.',
     buttonLabel: 'Get Verified',
-    accentColor: '#388E3C',
+    accentColor: 'bg-green-600',
+    textColor: 'text-green-600',
   },
 ];
 
@@ -75,8 +79,7 @@ export const ReferralBanner: React.FC<ReferralBannerProps> = ({ onInvite }) => {
 
   return (
     <div
-      className="relative w-full rounded-2xl overflow-hidden"
-      style={{ backgroundColor: slide.accentColor }}
+      className={['relative w-full rounded-2xl overflow-hidden', slide.accentColor].join(' ')}
       role="region"
       aria-label="Promotional banner"
     >
@@ -121,8 +124,7 @@ export const ReferralBanner: React.FC<ReferralBannerProps> = ({ onInvite }) => {
         {/* CTA button */}
         <button
           onClick={handleCTA}
-          className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold transition-opacity hover:opacity-90 active:opacity-80"
-          style={{ backgroundColor: 'white', color: slide.accentColor }}
+          className={['inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold transition-opacity hover:opacity-90 active:opacity-80 bg-white', (slide as any).textColor].join(' ')}
         >
           {slide.buttonLabel}
         </button>

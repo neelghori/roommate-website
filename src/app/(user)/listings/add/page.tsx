@@ -123,7 +123,7 @@ export default function AddListingPage() {
                       isDone
                         ? 'text-white'
                         : isActive
-                        ? 'text-white ring-4 ring-teal-100'
+                        ? 'text-white'
                         : 'bg-gray-100 text-gray-400',
                     ].join(' ')}
                     style={

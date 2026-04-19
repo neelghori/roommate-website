@@ -29,8 +29,8 @@ interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
 }
 
 const variantStyles: Record<ButtonVariant, string> = {
-  primary: 'text-white border-transparent hover:opacity-90 active:opacity-80',
-  accent: 'text-white border-transparent hover:opacity-90 active:opacity-80',
+  primary: 'bg-primary text-white border-transparent hover:opacity-90 active:opacity-80',
+  accent: 'bg-accent text-white border-transparent hover:opacity-90 active:opacity-80',
   secondary: 'bg-teal-50 text-teal-700 border-teal-200 hover:bg-teal-100',
   outline: 'bg-transparent text-gray-700 border-gray-300 hover:bg-gray-50',
   danger: 'bg-red-500 text-white border-transparent hover:bg-red-600',
@@ -58,23 +58,12 @@ export const Button: React.FC<ButtonProps> = ({
 }) => {
   const isDisabled = disabled || isLoading;
 
-  const inlineStyle: React.CSSProperties = {};
-  if (variant === 'primary') {
-    inlineStyle.backgroundColor = '#1B8F8F';
-    inlineStyle.borderColor = '#1B8F8F';
-  } else if (variant === 'accent') {
-    inlineStyle.backgroundColor = '#F57C00';
-    inlineStyle.borderColor = '#F57C00';
-  }
 
   return (
     <button
-      style={inlineStyle}
       className={[
         'inline-flex items-center justify-center gap-2 font-medium border transition-all duration-200',
-        'focus:outline-none focus:ring-2 focus:ring-offset-1',
-        variant === 'primary' ? 'focus:ring-teal-400' : '',
-        variant === 'accent' ? 'focus:ring-orange-400' : '',
+        'focus:outline-none',
         variantStyles[variant],
         sizeStyles[size],
         fullWidth ? 'w-full' : '',

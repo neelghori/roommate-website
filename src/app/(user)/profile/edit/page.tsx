@@ -124,7 +124,7 @@ export default function EditProfilePage() {
               <textarea
                 rows={3}
                 placeholder="Tell potential roommates about yourself…"
-                className="w-full rounded-xl border border-gray-200 bg-white text-sm text-gray-900 placeholder-gray-400 px-3 py-2.5 resize-none focus:outline-none focus:border-teal-400 focus:ring-2 focus:ring-teal-100 transition-all"
+                className="w-full rounded-xl border border-gray-200 bg-white text-sm text-gray-900 placeholder-gray-400 px-3 py-2.5 resize-none focus:outline-none focus:border-teal-400 transition-all"
                 {...register('bio')}
               />
               {errors.bio && <p className="text-xs text-red-500 mt-1">{errors.bio.message}</p>}
@@ -149,7 +149,7 @@ export default function EditProfilePage() {
                 min={500}
                 max={200000}
                 placeholder="e.g. 15000"
-                className="w-full rounded-xl border border-gray-200 bg-white text-sm text-gray-900 placeholder-gray-400 px-3 py-2.5 focus:outline-none focus:border-teal-400 focus:ring-2 focus:ring-teal-100 transition-all"
+                className="w-full rounded-xl border border-gray-200 bg-white text-sm text-gray-900 placeholder-gray-400 px-3 py-2.5 focus:outline-none focus:border-teal-400 transition-all"
                 {...register('budget', { valueAsNumber: true })}
               />
               {errors.budget && <p className="text-xs text-red-500 mt-1">{errors.budget.message}</p>}
@@ -159,7 +159,7 @@ export default function EditProfilePage() {
               <label className="block text-sm font-medium text-gray-700 mb-1.5">Move-in Date</label>
               <input
                 type="date"
-                className="w-full rounded-xl border border-gray-200 bg-white text-sm text-gray-900 px-3 py-2.5 focus:outline-none focus:border-teal-400 focus:ring-2 focus:ring-teal-100 transition-all"
+                className="w-full rounded-xl border border-gray-200 bg-white text-sm text-gray-900 px-3 py-2.5 focus:outline-none focus:border-teal-400 transition-all"
                 {...register('moveInDate')}
               />
               {errors.moveInDate && <p className="text-xs text-red-500 mt-1">{errors.moveInDate.message}</p>}

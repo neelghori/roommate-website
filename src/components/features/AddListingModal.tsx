@@ -229,22 +229,11 @@ export const AddListingModal: React.FC<AddListingModalProps> = ({
               placeholder="Describe the property, house rules, nearby landmarks..."
               className={[
                 'w-full rounded-xl border bg-white text-sm text-gray-900 placeholder-gray-400 px-3 py-2.5 transition-all resize-none',
-                'focus:outline-none',
+                'focus:outline-none focus:border-primary focus:ring-4 focus:ring-primary/10',
                 errors.description ? 'border-red-400' : 'border-gray-200',
               ].join(' ')}
-              onFocus={(e) => {
-                if (!errors.description) {
-                  e.currentTarget.style.borderColor = '#1B8F8F';
-                  e.currentTarget.style.boxShadow = '0 0 0 3px rgba(27,143,143,0.15)';
-                }
-              }}
               aria-invalid={!!errors.description}
-              {...register('description', {
-                onBlur: (e: React.FocusEvent<HTMLTextAreaElement>) => {
-                  e.currentTarget.style.borderColor = errors.description ? '#f87171' : '#e5e7eb';
-                  e.currentTarget.style.boxShadow = 'none';
-                },
-              })}
+              {...register('description')}
             />
             {errors.description && (
               <p className="text-xs text-red-500">{errors.description.message}</p>

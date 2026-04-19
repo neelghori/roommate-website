@@ -115,7 +115,7 @@ export default function MyListingsPage() {
 
   return (
     <UserLayout pageSuffix="My Listings" showSearch={false} showFab={false}>
-      <div className="max-w-2xl mx-auto px-4 py-5">
+      <div className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-10 xl:px-14 py-5">
 
         {/* ── Page title ─────────────────────────────────────────── */}
         <div className="flex items-center justify-between mb-4">
@@ -164,7 +164,7 @@ export default function MyListingsPage() {
             onAction={() => (window.location.href = '/listings/add')}
           />
         ) : (
-          <div className="space-y-4">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             {listings.map((listing) => {
               const cardBg = TYPE_COLORS[listing.type] ?? '#c8eeee';
               return (
@@ -274,10 +274,10 @@ export default function MyListingsPage() {
           </div>
         )}
 
-        {/* ── FAB for Add Listing ─────────────────────────────────── */}
+        {/* FAB — mobile only (desktop uses header button) */}
         <Link
           href="/listings/add"
-          className="fixed bottom-20 right-4 z-30 flex items-center gap-1.5 text-white font-semibold px-4 py-2.5 rounded-full shadow-lg active:opacity-90 transition-opacity"
+          className="lg:hidden fixed bottom-20 right-4 z-30 flex items-center gap-1.5 text-white font-semibold px-4 py-2.5 rounded-full shadow-lg active:opacity-90 transition-opacity"
           style={{ backgroundColor: '#F57C00' }}
           aria-label="Add new listing"
         >

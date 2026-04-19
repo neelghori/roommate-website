@@ -88,7 +88,7 @@ export default function AdminSettingsPage() {
               type="text"
               value={settings.siteName}
               onChange={(e) => update('siteName', e.target.value)}
-              className="w-full px-4 py-2 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500/30 focus:border-teal-500"
+              className="w-full px-4 py-2 rounded-xl border border-gray-200 text-sm focus:outline-none focus:border-teal-500"
             />
           </div>
 
@@ -98,7 +98,7 @@ export default function AdminSettingsPage() {
               type="email"
               value={settings.supportEmail}
               onChange={(e) => update('supportEmail', e.target.value)}
-              className="w-full px-4 py-2 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500/30 focus:border-teal-500"
+              className="w-full px-4 py-2 rounded-xl border border-gray-200 text-sm focus:outline-none focus:border-teal-500"
             />
           </div>
 
@@ -112,7 +112,7 @@ export default function AdminSettingsPage() {
               max={100}
               value={settings.maxListingsPerUser}
               onChange={(e) => update('maxListingsPerUser', parseInt(e.target.value) || 1)}
-              className="w-full px-4 py-2 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500/30 focus:border-teal-500"
+              className="w-full px-4 py-2 rounded-xl border border-gray-200 text-sm focus:outline-none focus:border-teal-500"
             />
           </div>
 
@@ -125,7 +125,7 @@ export default function AdminSettingsPage() {
               min={0}
               value={settings.referralBonus}
               onChange={(e) => update('referralBonus', parseInt(e.target.value) || 0)}
-              className="w-full px-4 py-2 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500/30 focus:border-teal-500"
+              className="w-full px-4 py-2 rounded-xl border border-gray-200 text-sm focus:outline-none focus:border-teal-500"
             />
           </div>
         </div>

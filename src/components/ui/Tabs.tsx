@@ -55,11 +55,10 @@ export const Tabs: React.FC<TabsProps> = ({
               'inline-flex items-center gap-1.5 font-medium rounded-full border transition-all duration-200',
               size === 'sm' ? 'px-3 py-1 text-xs' : 'px-4 py-1.5 text-sm',
               isActive
-                ? 'text-white border-transparent'
+                ? 'bg-primary text-white border-transparent'
                 : 'bg-gray-100 text-gray-600 border-transparent hover:bg-gray-200',
               tab.disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer',
             ].join(' ')}
-            style={isActive ? { backgroundColor: '#1B8F8F' } : undefined}
           >
             {tab.icon && <span className="flex-shrink-0">{tab.icon}</span>}
             {tab.label}
@@ -122,11 +121,10 @@ export const SegmentedTabs: React.FC<SegmentedTabsProps> = ({
               'inline-flex items-center gap-1.5 px-4 py-3 text-sm font-medium whitespace-nowrap',
               'border-b-2 transition-all duration-200 flex-shrink-0',
               isActive
-                ? 'border-b-2 text-teal-700 bg-teal-50/50'
+                ? 'border-b-primary text-primary bg-primary/5'
                 : 'border-transparent text-gray-500 hover:text-gray-700 hover:bg-gray-50',
               tab.disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer',
             ].join(' ')}
-            style={isActive ? { borderBottomColor: '#1B8F8F', color: '#1B8F8F' } : undefined}
           >
             {tab.icon && <span className="flex-shrink-0">{tab.icon}</span>}
             {tab.label}
@@ -134,9 +132,8 @@ export const SegmentedTabs: React.FC<SegmentedTabsProps> = ({
               <span
                 className={[
                   'text-xs rounded-full px-1.5 py-0.5 leading-none font-bold',
-                  isActive ? 'text-white' : 'bg-gray-200 text-gray-600',
+                  isActive ? 'text-white bg-primary' : 'bg-gray-200 text-gray-600',
                 ].join(' ')}
-                style={isActive ? { backgroundColor: '#1B8F8F' } : undefined}
               >
                 {tab.badge}
               </span>

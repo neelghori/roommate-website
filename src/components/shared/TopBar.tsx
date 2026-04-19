@@ -1,17 +1,22 @@
 /**
  * TopBar.tsx
- * Auth-aware top navigation bar.
+ * Full-width, desktop-first navigation bar.
  *
- * - NOT logged in → Login + Register buttons on the right
- * - Logged in     → Bell icon + Avatar with dropdown (Profile, My Listings, Logout)
+ * Mobile  : Logo + conditional search + auth icons
+ * Desktop : Logo + horizontal nav + search bar + "Add Listing" + avatar dropdown
  *
+ * Nav links always visible on desktop regardless of auth state.
  * Auth state: useAuthStore → { user, isAuthenticated, logout }
  */
 'use client';
 import React, { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
-import { Bell, User, Search, Plus, Home, LogOut, ChevronDown } from 'lucide-react';
+import Image from 'next/image';
+import { useRouter, usePathname } from 'next/navigation';
+import {
+  Bell, User, Search, Plus, Home, LogOut, ChevronDown,
+  Compass, Heart, MessageCircle, Users, Star, AlertCircle, CheckCircle
+} from 'lucide-react';
 import { useAuthStore } from '@/store/authStore';
 import { authService } from '@/services/modules/auth.service';
 import { sanitizeSearchQuery } from '@/lib/utils/sanitize';
@@ -23,6 +28,15 @@ interface TopBarProps {
   showAddListing?: boolean;
 }
 
+// Desktop horizontal nav items
+const DESKTOP_NAV = [
+  { label: 'Home', href: '/' },
+  { label: 'Explore', href: '/explore' },
+  { label: 'Roommates', href: '/roommates' },
+  { label: 'Chat', href: '/chat' },
+  { label: 'Saved', href: '/saved' },
+] as const;
+
 // ── Avatar Dropdown ────────────────────────────────────────────────────────────
 const AvatarDropdown: React.FC = () => {
   const router = useRouter();
@@ -31,67 +45,69 @@ const AvatarDropdown: React.FC = () => {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
-  // Close on outside click
   useEffect(() => {
-    const handler = (e: MouseEvent) => {
+    const close = (e: MouseEvent) => {
       if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
     };
-    document.addEventListener('mousedown', handler);
-    return () => document.removeEventListener('mousedown', handler);
+    document.addEventListener('mousedown', close);
+    return () => document.removeEventListener('mousedown', close);
   }, []);
 
-  // Close on Escape
   useEffect(() => {
-    const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') setOpen(false); };
-    document.addEventListener('keydown', handler);
-    return () => document.removeEventListener('keydown', handler);
+    const esc = (e: KeyboardEvent) => { if (e.key === 'Escape') setOpen(false); };
+    document.addEventListener('keydown', esc);
+    return () => document.removeEventListener('keydown', esc);
   }, []);
 
   const handleLogout = async () => {
     setOpen(false);
     await authService.logout();
-    logout();                        // clears store + sessionStorage
+    logout();
     toast.success('Logged out', 'See you soon!');
-    router.push('/login');           // redirect → header re-renders unauthenticated
+    router.push('/login');
   };
 
   const MENU = [
-    { icon: User,  label: 'Profile',     href: '/profile' },
-    { icon: Home,  label: 'My Listings', href: '/my-listings' },
+    { icon: User, label: 'Profile', href: '/profile' },
+    { icon: Home, label: 'My Listings', href: '/my-listings' },
   ];
+
+  const initials = user?.avatarInitial ?? user?.name?.slice(0, 2).toUpperCase() ?? 'GU';
 
   return (
     <div ref={ref} className="relative">
       {/* Avatar button */}
       <button
         onClick={() => setOpen((p) => !p)}
-        className="flex items-center gap-1 p-1 rounded-full hover:bg-gray-100 transition-colors"
+        className="flex items-center gap-1.5 p-1 rounded-full hover:bg-gray-100 transition-colors"
         aria-haspopup="true"
         aria-expanded={open}
         aria-label="Account menu"
       >
+        {/* Avatar circle */}
         <div
-          className="w-7 h-7 rounded-full flex items-center justify-center text-white text-xs font-bold"
-          style={{ backgroundColor: '#1B8F8F' }}
+          className="w-8 h-8 lg:w-9 lg:h-9 rounded-full flex items-center justify-center text-white text-xs font-bold shadow-sm bg-primary"
         >
-          {user?.avatarInitial ?? <User size={14} />}
+          {initials}
         </div>
-        <ChevronDown size={13} className={`text-gray-500 transition-transform ${open ? 'rotate-180' : ''}`} />
+        <span className="hidden lg:block text-sm font-medium text-gray-700 max-w-[100px] truncate">
+          {user?.name?.split(' ')[0] ?? 'Account'}
+        </span>
+        <ChevronDown size={14} className={`text-gray-400 transition-transform hidden lg:block ${open ? 'rotate-180' : ''}`} />
       </button>
 
       {/* Dropdown panel */}
       {open && (
         <div
-          className="absolute right-0 top-full mt-2 w-48 bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden z-50 animate-scale-in"
+          className="absolute right-0 top-full mt-2 w-52 bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden z-50 animate-scale-in"
           role="menu"
         >
-          {/* User info header */}
+          {/* User info */}
           <div className="px-4 py-3 border-b border-gray-50">
-            <p className="text-sm font-semibold text-gray-900 truncate">{user?.name}</p>
-            <p className="text-xs text-gray-400 truncate capitalize">{user?.role?.toLowerCase()}</p>
+            <p className="text-sm font-semibold text-gray-900 truncate">{user?.name ?? 'Guest User'}</p>
+            <p className="text-xs text-gray-400 truncate capitalize">{user?.role?.toLowerCase() ?? 'tenant'}</p>
           </div>
 
-          {/* Nav links */}
           {MENU.map(({ icon: Icon, label, href }) => (
             <Link
               key={href}
@@ -105,7 +121,6 @@ const AvatarDropdown: React.FC = () => {
             </Link>
           ))}
 
-          {/* Divider + Logout */}
           <div className="border-t border-gray-100">
             <button
               role="menuitem"
@@ -122,96 +137,239 @@ const AvatarDropdown: React.FC = () => {
   );
 };
 
+// ── Notification Popover ──────────────────────────────────────────────────────
+const NotificationPopover: React.FC = () => {
+  const router = useRouter();
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const close = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener('mousedown', close);
+    return () => document.removeEventListener('mousedown', close);
+  }, []);
+
+  useEffect(() => {
+    const esc = (e: KeyboardEvent) => { if (e.key === 'Escape') setOpen(false); };
+    document.addEventListener('keydown', esc);
+    return () => document.removeEventListener('keydown', esc);
+  }, []);
+
+  const NOTIFICATIONS = [
+    { id: '1', title: 'New message from Ravi Sharma', subtitle: 'Hey! Is the room in Satellite...', time: '2 min ago', read: false, category: 'message' },
+    { id: '2', title: 'Roommate match found!', subtitle: 'Priya M. matches 92% of your preferences.', time: '15 min ago', read: false, category: 'match' },
+    { id: '3', title: 'Your listing was approved', subtitle: '2BHK in Bodakdev has been published.', time: '1 hr ago', read: false, category: 'listing' },
+  ];
+
+  const categoryConfig: Record<string, { icon: React.ElementType; color: string; bg: string }> = {
+    message: { icon: MessageCircle, color: 'text-green-600', bg: 'bg-green-50' },
+    match: { icon: Heart, color: 'text-pink-500', bg: 'bg-pink-50' },
+    listing: { icon: Home, color: 'text-primary', bg: 'bg-primary/10' },
+    system: { icon: Bell, color: 'text-secondary', bg: 'bg-secondary/10' },
+  };
+
+  const handleToggle = () => {
+    if (window.innerWidth < 1024) {
+      router.push('/notifications');
+    } else {
+      setOpen(!open);
+    }
+  };
+
+  return (
+    <div ref={ref} className="relative">
+      <button
+        onClick={handleToggle}
+        className="relative p-1.5 rounded-full hover:bg-gray-100 transition-colors focus:outline-none"
+        aria-label="Notifications"
+        aria-haspopup="true"
+        aria-expanded={open}
+      >
+        <Bell size={20} className="text-gray-600" />
+        <span className="absolute top-1 right-1 w-2 h-2 rounded-full bg-red-500 border-2 border-white shadow-sm" />
+      </button>
+
+      {open && (
+        <div className="absolute right-0 top-full mt-2 w-80 bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden z-50 animate-scale-in">
+          <div className="px-4 py-3 border-b border-gray-50 flex items-center justify-between bg-white">
+            <h3 className="text-sm font-bold text-gray-900">Notifications</h3>
+            <button className="text-[11px] font-semibold text-primary hover:text-primary/80 transition-colors">
+              Mark all read
+            </button>
+          </div>
+
+          <div className="max-h-[360px] overflow-y-auto">
+            {NOTIFICATIONS.length > 0 ? (
+              NOTIFICATIONS.map((n) => {
+                const config = categoryConfig[n.category] || categoryConfig.system;
+                const Icon = config.icon;
+                return (
+                  <div
+                    key={n.id}
+                    className="flex items-start gap-3 px-4 py-3 hover:bg-gray-50 transition-colors border-b border-gray-50 last:border-0 cursor-pointer"
+                  >
+                    <div
+                      className={['flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center mt-0.5', config.bg].join(' ')}
+                    >
+                      <Icon size={14} className={config.color} />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs font-semibold text-gray-900 leading-tight mb-0.5">{n.title}</p>
+                      <p className="text-[11px] text-gray-500 truncate">{n.subtitle}</p>
+                      <p className="text-[10px] text-gray-400 mt-1">{n.time}</p>
+                    </div>
+                    {!n.read && (
+                      <div className="w-1.5 h-1.5 rounded-full bg-primary mt-1.5" />
+                    )}
+                  </div>
+                );
+              })
+            ) : (
+              <div className="py-10 text-center px-4">
+                <p className="text-sm text-gray-400">No new notifications</p>
+              </div>
+            )}
+          </div>
+
+          <Link
+            href="/notifications"
+            onClick={() => setOpen(false)}
+            className="block py-3 text-center text-xs font-bold text-primary hover:bg-gray-50 border-t border-gray-50 transition-colors uppercase tracking-wider"
+          >
+            See all notifications
+          </Link>
+        </div>
+      )}
+    </div>
+  );
+};
+
 // ── TopBar ─────────────────────────────────────────────────────────────────────
 export const TopBar: React.FC<TopBarProps> = ({
   pageSuffix,
   showSearch = true,
-  showAddListing = false,
 }) => {
   const router = useRouter();
+  const pathname = usePathname();
   const { isAuthenticated } = useAuthStore();
   const [searchValue, setSearchValue] = useState('');
 
+  const isNavActive = (href: string) =>
+    href === '/' ? pathname === '/' : pathname.startsWith(href);
+
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
-    const sanitized = sanitizeSearchQuery(searchValue);
-    if (sanitized) router.push(`/explore?q=${encodeURIComponent(sanitized)}`);
+    const q = sanitizeSearchQuery(searchValue);
+    if (q) router.push(`/explore?q=${encodeURIComponent(q)}`);
   };
 
   return (
     <header
       className="fixed top-0 left-0 right-0 z-50 bg-white border-b border-gray-100"
-      style={{ boxShadow: '0 1px 4px rgba(0,0,0,0.06)' }}
+      style={{ boxShadow: '0 1px 8px rgba(0,0,0,0.07)' }}
     >
-      <div className="flex items-center gap-2 px-3 h-14 max-w-2xl mx-auto">
+      <div className="flex items-center gap-3 px-4 sm:px-6 lg:px-10 xl:px-14 h-14 lg:h-16">
 
-        {/* Logo */}
-        <Link href="/" className="flex items-center flex-shrink-0">
-          <span className="text-xl font-black tracking-tight" style={{ color: '#1B8F8F' }}>
-            Roommat
-          </span>
+        {/* ── Logo ── */}
+        <Link href="/" className="flex items-center gap-2 flex-shrink-0 mr-2">
+          <Image
+            src="/logo.png"
+            alt="Roommat"
+            width={110}
+            height={36}
+            className="h-8 lg:h-9 w-auto object-contain"
+            priority
+          />
           {pageSuffix && (
-            <span className="text-xl font-light text-gray-500 ml-0.5">{pageSuffix}</span>
+            <span className="text-sm font-medium text-gray-400 border-l border-gray-200 pl-2 lg:hidden">
+              {pageSuffix}
+            </span>
           )}
         </Link>
 
-        {/* Search */}
-        {showSearch && !pageSuffix && (
-          <form onSubmit={handleSearch} className="flex-1">
-            <div className="relative">
-              <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400" />
-              <input
-                type="search"
-                value={searchValue}
-                onChange={(e) => setSearchValue(e.target.value)}
-                placeholder="Search location, area..."
-                className="w-full pl-8 pr-4 py-2 text-sm bg-gray-50 border border-gray-200 rounded-full focus:outline-none focus:border-teal-400 focus:bg-white transition-colors"
-                maxLength={200}
-                autoComplete="off"
-                aria-label="Search listings"
-              />
-            </div>
-          </form>
-        )}
+        {/* ── Desktop horizontal nav — ALWAYS visible ── */}
+        <nav className="hidden lg:flex items-center gap-0.5 flex-shrink-0" aria-label="Main navigation">
+          {DESKTOP_NAV.map(({ label, href }) => {
+            const active = isNavActive(href);
+            return (
+              <Link
+                key={href}
+                href={href}
+                aria-current={active ? 'page' : undefined}
+                className={[
+                  'px-3.5 py-2 rounded-lg text-sm font-medium transition-colors whitespace-nowrap',
+                  active
+                    ? 'font-semibold bg-teal-50 text-primary'
+                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50',
+                ].join(' ')}
+              >
+                {label}
+              </Link>
+            );
+          })}
+        </nav>
 
-        {pageSuffix && <div className="flex-1" />}
+        {/* ── Search ──
+            Mobile: visible only when showSearch=true
+            Desktop: always shown, expands to fill space  ── */}
+        <form
+          onSubmit={handleSearch}
+          className={[
+            'flex-1',
+            showSearch ? 'block' : 'hidden lg:block',
+          ].join(' ')}
+        >
+          <div className="relative max-w-md lg:max-w-none">
+            <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+            <input
+              type="search"
+              value={searchValue}
+              onChange={(e) => setSearchValue(e.target.value)}
+              placeholder="Search location, area…"
+              className="w-full pl-9 pr-4 py-2 lg:py-2.5 text-sm bg-gray-50 border border-gray-200 rounded-full focus:outline-none focus:border-primary focus:bg-white transition-colors"
+              maxLength={200}
+              autoComplete="off"
+              aria-label="Search listings"
+            />
+          </div>
+        </form>
 
-        {/* Right side — auth-aware */}
-        <div className="flex items-center gap-2 flex-shrink-0">
-          {showAddListing && (
-            <Link
-              href="/listings/add"
-              className="flex items-center gap-1 text-white text-xs font-semibold px-3 py-1.5 rounded-full"
-              style={{ backgroundColor: '#F57C00' }}
-            >
-              <Plus size={12} /> Add Listing
-            </Link>
-          )}
+        {/* Spacer when no search on mobile */}
+        {!showSearch && pageSuffix && <div className="flex-1 lg:hidden" />}
+
+        {/* ── Right actions ── */}
+        <div className="flex items-center gap-2 lg:gap-3 flex-shrink-0">
+          {/* "Add Listing" — desktop only in header */}
+          <Link
+            href="/listings/add"
+            className="hidden lg:flex items-center gap-1.5 text-white text-sm font-semibold px-4 py-2 rounded-full transition-opacity hover:opacity-90 whitespace-nowrap bg-secondary"
+          >
+            <Plus size={14} />
+            Add Listing
+          </Link>
 
           {isAuthenticated ? (
-            /* ── LOGGED IN: bell + avatar dropdown ── */
             <>
-              <Link href="/notifications" className="relative p-1.5 rounded-full hover:bg-gray-100" aria-label="Notifications">
-                <Bell size={20} className="text-gray-600" />
-                {/* BACKEND: show dot only when unread count > 0 */}
-                <span className="absolute top-1 right-1 w-2 h-2 rounded-full bg-red-500" />
-              </Link>
+              {/* Notifications bell */}
+              <NotificationPopover />
+
+              {/* Avatar */}
               <AvatarDropdown />
             </>
           ) : (
-            /* ── NOT LOGGED IN: Login + Register buttons ── */
+            /* Unauthenticated — Login + Register */
             <div className="flex items-center gap-1.5">
               <Link
                 href="/login"
-                className="px-3 py-1.5 text-xs font-semibold rounded-full border-2 transition-colors hover:bg-gray-50"
-                style={{ borderColor: '#1B8F8F', color: '#1B8F8F' }}
+                className="px-3 py-1.5 text-xs font-semibold rounded-full border-2 transition-colors hover:bg-gray-50 border-primary text-primary"
               >
                 Login
               </Link>
               <Link
                 href="/register"
-                className="px-3 py-1.5 text-xs font-semibold rounded-full text-white transition-opacity hover:opacity-90"
-                style={{ backgroundColor: '#1B8F8F' }}
+                className="px-3 py-1.5 text-xs font-semibold rounded-full text-white transition-opacity hover:opacity-90 bg-primary"
               >
                 Register
               </Link>

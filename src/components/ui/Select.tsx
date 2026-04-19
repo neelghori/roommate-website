@@ -65,25 +65,13 @@ export const Select = forwardRef<HTMLSelectElement, SelectProps>(
             disabled={disabled}
             className={[
               'w-full appearance-none rounded-xl border bg-white text-sm text-gray-900 transition-all duration-200',
-              'focus:outline-none',
+              'focus:outline-none focus:border-primary focus:ring-4 focus:ring-primary/10',
               'pl-3 pr-10 py-2.5',
               error ? 'border-red-400' : 'border-gray-200',
               disabled ? 'bg-gray-50 text-gray-400 cursor-not-allowed' : 'cursor-pointer',
               !value || value === '' ? 'text-gray-400' : 'text-gray-900',
               className,
             ].join(' ')}
-            onFocus={(e) => {
-              if (!error) {
-                e.currentTarget.style.borderColor = '#1B8F8F';
-                e.currentTarget.style.boxShadow = '0 0 0 3px rgba(27,143,143,0.15)';
-              }
-              props.onFocus?.(e);
-            }}
-            onBlur={(e) => {
-              e.currentTarget.style.borderColor = error ? '#f87171' : '#e5e7eb';
-              e.currentTarget.style.boxShadow = 'none';
-              props.onBlur?.(e);
-            }}
             aria-invalid={!!error}
             aria-describedby={
               error ? `${selectId}-error` : hint ? `${selectId}-hint` : undefined

@@ -71,7 +71,7 @@ export default function AdminCmsPage() {
             type="text"
             value={editTitle}
             onChange={(e) => setEditTitle(e.target.value)}
-            className="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500/30 focus:border-teal-500 bg-white"
+            className="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:border-teal-500 bg-white"
           />
         </div>
 
@@ -93,7 +93,7 @@ export default function AdminCmsPage() {
             value={editContent}
             onChange={(e) => setEditContent(e.target.value)}
             rows={16}
-            className="w-full px-4 py-3 rounded-xl border border-gray-200 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-teal-500/30 focus:border-teal-500 bg-white resize-y"
+            className="w-full px-4 py-3 rounded-xl border border-gray-200 text-sm font-mono focus:outline-none focus:border-teal-500 bg-white resize-y"
           />
         </div>
 

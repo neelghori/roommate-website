@@ -8,6 +8,7 @@ import { ListingFilter } from '@/types';
 interface FilterState {
   filters: ListingFilter;
   setFilter: (key: keyof ListingFilter, value: unknown) => void;
+  setFilters: (newFilters: Partial<ListingFilter>) => void;
   resetFilters: () => void;
   setSearch: (search: string) => void;
 }
@@ -22,6 +23,10 @@ export const useFilterStore = create<FilterState>((set) => ({
   setFilter: (key, value) =>
     set((state) => ({
       filters: { ...state.filters, [key]: value },
+    })),
+  setFilters: (newFilters) =>
+    set((state) => ({
+      filters: { ...state.filters, ...newFilters },
     })),
   resetFilters: () => set({ filters: DEFAULT_FILTERS }),
   setSearch: (search) =>

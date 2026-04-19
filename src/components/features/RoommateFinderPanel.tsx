@@ -46,15 +46,14 @@ export const RoommateFinderPanel: React.FC<RoommateFinderPanelProps> = ({
   const hasMore = filtered.length > maxVisible;
 
   return (
-    <div className="bg-white rounded-2xl shadow-sm p-4 space-y-3">
+    <div className="bg-primary/5 rounded-[2rem] p-5 space-y-4 border border-primary/10">
       {/* Heading */}
       <div className="flex items-center justify-between">
         <h2 className="text-base font-bold text-gray-900">Find Roommate</h2>
         {hasMore && (
           <button
             onClick={onViewMore}
-            className="text-xs font-medium hover:underline flex items-center gap-0.5"
-            style={{ color: '#1B8F8F' }}
+            className="text-xs font-medium hover:underline flex items-center gap-0.5 text-primary"
           >
             View all
           </button>
@@ -69,15 +68,10 @@ export const RoommateFinderPanel: React.FC<RoommateFinderPanelProps> = ({
             onClick={() => setActiveTab(tab)}
             className={[
               'flex-shrink-0 px-3 py-1.5 rounded-full text-xs font-semibold border transition-colors',
-              activeTab === tab
-                ? 'text-white border-transparent'
-                : 'bg-gray-50 text-gray-600 border-gray-200 hover:border-teal-400',
-            ].join(' ')}
-            style={
-              activeTab === tab
-                ? { backgroundColor: '#1B8F8F', borderColor: '#1B8F8F' }
-                : undefined
-            }
+               activeTab === tab
+                 ? 'bg-primary text-white border-transparent shadow-md shadow-primary/20'
+                 : 'bg-white text-gray-600 border-gray-200 hover:border-primary hover:text-primary',
+             ].join(' ')}
             aria-pressed={activeTab === tab}
           >
             {tab}
@@ -102,8 +96,7 @@ export const RoommateFinderPanel: React.FC<RoommateFinderPanelProps> = ({
       {hasMore && (
         <button
           onClick={onViewMore}
-          className="w-full flex items-center justify-center gap-1.5 text-sm font-medium py-2 rounded-xl hover:bg-gray-50 transition-colors"
-          style={{ color: '#1B8F8F' }}
+          className="w-full flex items-center justify-center gap-1.5 text-sm font-bold py-3 rounded-2xl bg-white hover:bg-gray-50 transition-all text-primary border border-primary/10 shadow-sm active:scale-[0.98]"
         >
           View more roommates
           <ArrowRight size={15} />

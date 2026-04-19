@@ -75,8 +75,7 @@ export const RequestCard: React.FC<RequestCardProps> = ({
       <div className="flex items-start gap-3">
         {/* Avatar */}
         <div
-          className="w-10 h-10 rounded-full flex items-center justify-center text-white text-sm font-bold flex-shrink-0"
-          style={{ backgroundColor: '#1B8F8F' }}
+          className="w-10 h-10 rounded-full flex items-center justify-center text-white text-sm font-bold flex-shrink-0 bg-primary"
           aria-label={`${otherName}'s avatar`}
         >
           {initials}

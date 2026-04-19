@@ -118,15 +118,14 @@ export const ImageUploader: React.FC<ImageUploaderProps> = ({
           className={[
             'w-full border-2 border-dashed rounded-2xl flex flex-col items-center justify-center gap-2 py-8 cursor-pointer transition-all duration-200',
             isDragging
-              ? 'border-teal-400 bg-teal-50'
-              : 'border-gray-200 bg-gray-50 hover:border-teal-400 hover:bg-teal-50',
+              ? 'border-primary bg-primary/5'
+              : 'border-gray-200 bg-gray-50 hover:border-primary hover:bg-primary/5',
           ].join(' ')}
         >
           <div
-            className="w-12 h-12 rounded-full flex items-center justify-center"
-            style={{ backgroundColor: '#EDF5F5' }}
+            className="w-12 h-12 rounded-full flex items-center justify-center bg-primary/10"
           >
-            <Camera size={22} style={{ color: '#1B8F8F' }} />
+            <Camera size={22} className="text-primary" />
           </div>
           <div className="text-center">
             <p className="text-sm font-semibold text-gray-700">
@@ -142,10 +141,7 @@ export const ImageUploader: React.FC<ImageUploaderProps> = ({
             {Array.from({ length: MAX_IMAGES }).map((_, i) => (
               <div
                 key={i}
-                className="w-1.5 h-1.5 rounded-full transition-colors"
-                style={{
-                  backgroundColor: i < previews.length ? '#1B8F8F' : '#d1d5db',
-                }}
+                className={['w-1.5 h-1.5 rounded-full transition-colors', i < previews.length ? 'bg-primary' : 'bg-gray-300'].join(' ')}
               />
             ))}
             <span className="text-xs text-gray-400 ml-1">
@@ -197,7 +193,7 @@ export const ImageUploader: React.FC<ImageUploaderProps> = ({
           {!isFull && (
             <button
               onClick={() => fileInputRef.current?.click()}
-              className="aspect-square rounded-xl border-2 border-dashed border-gray-200 flex flex-col items-center justify-center gap-1 hover:border-teal-400 transition-colors bg-gray-50"
+              className="aspect-square rounded-xl border-2 border-dashed border-gray-200 flex flex-col items-center justify-center gap-1 hover:border-primary transition-colors bg-gray-50"
               aria-label="Add more photos"
             >
               <ImagePlus size={20} className="text-gray-400" />

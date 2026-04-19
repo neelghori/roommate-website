@@ -7,7 +7,6 @@
 'use client';
 import React, { useState } from 'react';
 import { UserLayout } from '@/components/shared/UserLayout';
-import { PageContainer } from '@/components/shared/PageContainer';
 import { useToast } from '@/components/ui/Toast';
 import {
   Home,
@@ -114,12 +113,12 @@ const categoryConfig: Record<
   NotificationCategory,
   { icon: React.ElementType; bg: string; color: string }
 > = {
-  listing: { icon: Home, bg: '#E0F4F4', color: '#1B8F8F' },
-  message: { icon: MessageCircle, bg: '#E8F5E9', color: '#388E3C' },
-  match: { icon: Heart, bg: '#FCE4EC', color: '#E91E63' },
-  system: { icon: Bell, bg: '#FFF8E1', color: '#F9A825' },
-  review: { icon: Star, bg: '#F3E5F5', color: '#8E24AA' },
-  alert: { icon: AlertCircle, bg: '#FFF3E0', color: '#F57C00' },
+  listing: { icon: Home, bg: 'bg-primary/10', color: 'text-primary' },
+  message: { icon: MessageCircle, bg: 'bg-green-50', color: 'text-green-600' },
+  match: { icon: Heart, bg: 'bg-pink-50', color: 'text-pink-500' },
+  system: { icon: Bell, bg: 'bg-yellow-50', color: 'text-yellow-600' },
+  review: { icon: Star, bg: 'bg-purple-50', color: 'text-purple-600' },
+  alert: { icon: AlertCircle, bg: 'bg-orange-50', color: 'text-orange-600' },
 };
 
 // ─── Single notification row ──────────────────────────────────────────────────
@@ -136,15 +135,14 @@ const NotificationItem: React.FC<NotificationItemProps> = ({ notification }) => 
     <div
       className={[
         'flex items-start gap-3 px-4 py-3.5 border-b border-gray-100 last:border-0 transition-colors',
-        !notification.read ? 'bg-teal-50/60' : 'bg-white',
+        !notification.read ? 'bg-primary/5' : 'bg-white',
       ].join(' ')}
     >
       {/* Category icon circle */}
       <div
-        className="flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center mt-0.5"
-        style={{ backgroundColor: config.bg }}
+        className={['flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center mt-0.5', config.bg].join(' ')}
       >
-        <Icon size={18} style={{ color: config.color }} />
+        <Icon size={18} className={config.color} />
       </div>
 
       {/* Content */}
@@ -161,8 +159,7 @@ const NotificationItem: React.FC<NotificationItemProps> = ({ notification }) => 
           {/* Unread dot */}
           {!notification.read && (
             <span
-              className="flex-shrink-0 w-2 h-2 rounded-full mt-1.5"
-              style={{ backgroundColor: '#1B8F8F' }}
+              className="flex-shrink-0 w-2 h-2 rounded-full mt-1.5 bg-primary"
               aria-label="Unread"
             />
           )}
@@ -188,8 +185,8 @@ export default function NotificationsPage() {
   };
 
   return (
-    <UserLayout pageSuffix=" Notifications" showSearch={false} showFab={false}>
-      <PageContainer maxWidth="lg" className="px-0 py-0">
+    <UserLayout pageSuffix="Notifications" showSearch={false} showFab={false}>
+      <div className="max-w-2xl mx-auto px-0 py-0">
         {/* Header row */}
         <div className="flex items-center justify-between px-4 pt-4 pb-3">
           <div>
@@ -206,8 +203,7 @@ export default function NotificationsPage() {
           {unreadCount > 0 && (
             <button
               onClick={handleMarkAllRead}
-              className="flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-full border transition-colors hover:bg-teal-50"
-              style={{ color: '#1B8F8F', borderColor: '#1B8F8F' }}
+              className="flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-full border border-primary text-primary transition-colors hover:bg-primary/5"
             >
               <CheckCircle size={13} />
               Mark all read
@@ -220,10 +216,9 @@ export default function NotificationsPage() {
           {notifications.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-16 text-center px-6">
               <div
-                className="w-16 h-16 rounded-full flex items-center justify-center mb-4"
-                style={{ backgroundColor: '#E0F4F4' }}
+                className="w-16 h-16 rounded-full flex items-center justify-center mb-4 bg-primary/10"
               >
-                <Bell size={28} style={{ color: '#1B8F8F' }} />
+                <Bell size={28} className="text-primary" />
               </div>
               <h3 className="text-base font-semibold text-gray-800 mb-1">No notifications yet</h3>
               <p className="text-sm text-gray-500">
@@ -241,7 +236,7 @@ export default function NotificationsPage() {
         <p className="text-center text-xs text-gray-400 py-6">
           Notifications older than 30 days are automatically removed.
         </p>
-      </PageContainer>
+      </div>
     </UserLayout>
   );
 }

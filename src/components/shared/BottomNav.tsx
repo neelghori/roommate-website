@@ -28,7 +28,7 @@ export const BottomNav: React.FC = () => {
 
   return (
     <nav
-      className="fixed bottom-0 left-0 right-0 z-40 bg-white border-t border-gray-200"
+      className="lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-white border-t border-gray-200"
       style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}
       aria-label="Main navigation"
     >
@@ -45,11 +45,10 @@ export const BottomNav: React.FC = () => {
               <Icon
                 size={22}
                 strokeWidth={active ? 2.5 : 1.8}
-                style={{ color: active ? '#1B8F8F' : '#9CA3AF' }}
+                className={active ? 'text-primary' : 'text-gray-400'}
               />
               <span
-                className="text-[10px] font-medium"
-                style={{ color: active ? '#1B8F8F' : '#9CA3AF' }}
+                className={['text-[10px] font-medium', active ? 'text-primary' : 'text-gray-400'].join(' ')}
               >
                 {label}
               </span>
