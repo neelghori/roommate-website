@@ -17,6 +17,10 @@ import { Badge } from '@/components/ui/Badge';
 import { useToast } from '@/hooks/useToast';
 import { formatRupees } from '@/lib/utils/format';
 import { escapeHtml } from '@/lib/utils/sanitize';
+import {
+  listingHasVerification,
+  listingVerificationLabel,
+} from '@/services/modules/listing.service';
 
 const AMENITY_ICONS: Record<string, React.ReactNode> = {
   WiFi:          <Wifi size={11} />,
@@ -159,10 +163,10 @@ export const ListingCard: React.FC<ListingCardProps> = ({ listing, onViewDetail 
             </span>
             <span className="text-xs text-gray-400">/mo</span>
           </div>
-          {listing.isVerified && (
-            <div className="flex items-center gap-1 text-xs text-green-600 font-medium">
-              <CheckCircle size={12} />
-              Verified
+          {listingHasVerification(listing) && (
+            <div className="flex max-w-[48%] items-center gap-1 text-xs font-medium text-green-600">
+              <CheckCircle size={12} className="shrink-0" />
+              <span className="truncate">{listingVerificationLabel(listing)}</span>
             </div>
           )}
         </div>

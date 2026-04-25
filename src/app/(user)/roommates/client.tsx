@@ -1,11 +1,12 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { Search, SlidersHorizontal, MapPin, IndianRupee, Heart, MessageCircle, X } from 'lucide-react';
 import { UserLayout } from '@/components/shared/UserLayout';
-import { ROOMMATE_PROFILES } from '@/mock/data/users';
 import { RoommateProfile } from '@/types';
+import { useAuthStore } from '@/store/authStore';
+import { tenantRoommateProfileService } from '@/services/modules/tenantRoommateProfile.service';
 
 const LIFESTYLE_FILTER_OPTIONS = [
   'Non-Smoker', 'Vegetarian', 'Non-Veg', 'Early Bird', 'Night Owl',
@@ -17,6 +18,30 @@ export default function RoommatesPageClient() {
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [showFilters, setShowFilters]   = useState(false); // mobile only
   const [savedIds, setSavedIds]         = useState<Set<string>>(new Set());
+  const [profiles, setProfiles]         = useState<RoommateProfile[]>([]);
+  const [listState, setListState]       = useState<'loading' | 'ok' | 'error'>('loading');
+
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+  const isTenant = useAuthStore((s) => s.user?.role === 'TENANT');
+
+  const loadProfiles = useCallback(async () => {
+    setListState('loading');
+    try {
+      const items = await tenantRoommateProfileService.list({
+        search: search.trim() || undefined,
+        tags: selectedTags.length ? selectedTags : undefined,
+      });
+      setProfiles(items);
+      setListState('ok');
+    } catch {
+      setProfiles([]);
+      setListState('error');
+    }
+  }, [search, selectedTags]);
+
+  useEffect(() => {
+    void loadProfiles();
+  }, [loadProfiles]);
 
   const toggleTag = (tag: string) => {
     setSelectedTags((prev) =>
@@ -32,21 +57,7 @@ export default function RoommatesPageClient() {
     });
   };
 
-  const filtered = useMemo(() => {
-    return ROOMMATE_PROFILES.filter((p) => {
-      const matchesSearch =
-        !search ||
-        p.name.toLowerCase().includes(search.toLowerCase()) ||
-        (p.location ?? '').toLowerCase().includes(search.toLowerCase()) ||
-        (p.occupation ?? '').toLowerCase().includes(search.toLowerCase());
-
-      const matchesTags =
-        selectedTags.length === 0 ||
-        selectedTags.every((tag) => p.tags.includes(tag));
-
-      return matchesSearch && matchesTags;
-    });
-  }, [search, selectedTags]);
+  const filtered = profiles;
 
   // ── Shared filter panel content ────────────────────────────────────────────
   const FilterContent = () => (
@@ -95,7 +106,9 @@ export default function RoommatesPageClient() {
 
       {/* Result count */}
       <p className="text-xs text-gray-400">
-        {filtered.length} roommate{filtered.length !== 1 ? 's' : ''} found
+        {listState === 'loading'
+          ? 'Loading…'
+          : `${filtered.length} roommate${filtered.length !== 1 ? 's' : ''} found`}
       </p>
     </div>
   );
@@ -105,9 +118,19 @@ export default function RoommatesPageClient() {
       <div className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-10 xl:px-14">
 
         {/* ── Page header ── */}
-        <div className="flex items-center justify-between pt-4 pb-3">
+        <div className="flex items-center justify-between pt-4 pb-3 gap-3">
           <h1 className="text-xl font-bold text-gray-900">Find Roommates</h1>
 
+          <div className="flex items-center gap-2 shrink-0">
+            {isAuthenticated && isTenant && (
+              <Link
+                href="/roommates/profile"
+                className="hidden sm:inline-flex items-center px-3 py-1.5 rounded-full text-xs font-semibold text-white"
+                style={{ backgroundColor: '#1B8F8F' }}
+              >
+                Your profile
+              </Link>
+            )}
           {/* Mobile filter toggle */}
           <button
             onClick={() => setShowFilters((v) => !v)}
@@ -128,6 +151,7 @@ export default function RoommatesPageClient() {
               </span>
             )}
           </button>
+          </div>
         </div>
 
         {/* ── Mobile: search bar always visible ── */}
@@ -176,7 +200,9 @@ export default function RoommatesPageClient() {
 
         {/* Mobile result count */}
         <p className="lg:hidden text-xs text-gray-500 mb-3">
-          {filtered.length} roommate{filtered.length !== 1 ? 's' : ''} found
+          {listState === 'loading'
+            ? 'Loading…'
+            : `${filtered.length} roommate${filtered.length !== 1 ? 's' : ''} found`}
         </p>
 
         {/* ── Desktop: sidebar + cards layout ── */}
@@ -206,11 +232,38 @@ export default function RoommatesPageClient() {
 
           {/* Cards area */}
           <div className="flex-1 min-w-0">
-            {filtered.length === 0 ? (
+            {listState === 'loading' ? (
+              <div className="flex flex-col items-center justify-center py-16 px-6 text-center text-sm text-gray-500">
+                Loading profiles…
+              </div>
+            ) : listState === 'error' ? (
+              <div className="flex flex-col items-center justify-center py-16 px-6 text-center">
+                <div className="text-5xl mb-4">⚠️</div>
+                <h3 className="text-lg font-semibold text-gray-800 mb-2">Could not load profiles</h3>
+                <p className="text-sm text-gray-500 mb-4">Check your connection and that the API is running.</p>
+                <button
+                  type="button"
+                  onClick={() => void loadProfiles()}
+                  className="px-4 py-2 rounded-xl text-sm font-semibold text-white"
+                  style={{ backgroundColor: '#1B8F8F' }}
+                >
+                  Retry
+                </button>
+              </div>
+            ) : filtered.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-16 px-6 text-center">
                 <div className="text-5xl mb-4">🔍</div>
                 <h3 className="text-lg font-semibold text-gray-800 mb-2">No roommates found</h3>
-                <p className="text-sm text-gray-500">Try adjusting your search or filters</p>
+                <p className="text-sm text-gray-500 mb-4">Try adjusting your search or filters</p>
+                {isTenant && (
+                  <Link
+                    href="/roommates/profile"
+                    className="inline-flex items-center px-4 py-2.5 rounded-xl text-sm font-semibold text-white"
+                    style={{ backgroundColor: '#1B8F8F' }}
+                  >
+                    Add your profile
+                  </Link>
+                )}
               </div>
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-2 gap-4">

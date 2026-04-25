@@ -6,32 +6,55 @@
  * Metadata is exported from page.tsx (server component).
  */
 
-import React, { useState } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { Search } from 'lucide-react';
 import { UserLayout } from '@/components/shared/UserLayout';
 import { ListingCard } from '@/components/features/ListingCard';
 import { ListingDetailModal } from '@/components/features/ListingDetailModal';
 import { CategoryGrid } from '@/components/features/CategoryGrid';
-import { MOCK_LISTINGS } from '@/mock/data';
 import { POPULAR_AREAS } from '@/lib/staticData';
 import { Listing } from '@/types';
+import { listingService } from '@/services/modules/listing.service';
+import { useToast } from '@/hooks/useToast';
 
 export default function ExplorePageClient() {
   const [selectedListing, setSelectedListing] = useState<Listing | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedArea, setSelectedArea] = useState<string | null>(null);
+  const [listings, setListings] = useState<Listing[]>([]);
+  const toast = useToast();
 
-  const filteredListings = MOCK_LISTINGS.filter((l) => {
-    const matchesSearch =
-      !searchQuery ||
-      l.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      l.location.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      l.type.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesArea =
-      !selectedArea ||
-      l.location.toLowerCase().includes(selectedArea.toLowerCase());
-    return matchesSearch && matchesArea;
-  });
+  useEffect(() => {
+    let c = false;
+    listingService
+      .getListings()
+      .then((rows) => {
+        if (!c) setListings(rows);
+      })
+      .catch((e) => {
+        if (!c) {
+          toast.error('Could not load listings', e instanceof Error ? e.message : '');
+          setListings([]);
+        }
+      });
+    return () => {
+      c = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const filteredListings = useMemo(() => {
+    return listings.filter((l) => {
+      const matchesSearch =
+        !searchQuery ||
+        l.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        l.location.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        l.type.toLowerCase().includes(searchQuery.toLowerCase());
+      const matchesArea =
+        !selectedArea || l.location.toLowerCase().includes(selectedArea.toLowerCase());
+      return matchesSearch && matchesArea;
+    });
+  }, [listings, searchQuery, selectedArea]);
 
   const handleSearch = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();

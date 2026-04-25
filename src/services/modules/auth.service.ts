@@ -2,22 +2,70 @@
  * auth.service.ts
  * Authentication service module.
  *
- * MOCK MODE: Returns mock data with artificial delay.
- * BACKEND INTEGRATION: Replace mock functions with apiClient calls.
+ * Register/login/me: real apiClient calls. Forgot/reset password still mocked with delay.
+ * User DTO: maps Mongo-style `_id`, `fullName`, `mobile`, lowercase `role`, etc.
+ * Login: POST /api/v1/auth/login
  *
  * Expected endpoints:
- *   POST /auth/login          → { user, token }
- *   POST /auth/register       → { user, token }
+ *   POST /api/v1/auth/register → { user, token } (shape may nest under `data`)
+ *   POST /api/v1/auth/login    → { user, token }
  *   POST /auth/forgot-password → { message }
  *   POST /auth/reset-password  → { message }
  *   POST /auth/logout          → { message }
  *   GET  /auth/me              → { user }
+ *   POST /api/v1/auth/change-password → { message } (current + new password)
  */
 
+import { isAxiosError } from 'axios';
+import type { GenderPreference } from '@/types';
 import { User } from '@/types';
+import { apiClient } from '@/services/api';
+import { clearAccessToken, setAccessToken } from '@/lib/authToken';
+import { extractAccessTokenFromUnknown } from '@/lib/extractAccessToken';
 
 // Mock delay to simulate network latency
 const delay = (ms = 800) => new Promise((resolve) => setTimeout(resolve, ms));
+
+/** Backend register DTO — enums are lowercase strings (see API validation). */
+export type RegisterApiRole = 'tenant' | 'owner';
+export type RegisterApiProfessionalType =
+  | 'student'
+  | 'work_professional'
+  | 'freelancer'
+  | 'business'
+  | 'other';
+export type RegisterApiGender = 'male' | 'female' | 'other';
+
+/** Profile fields required by the register API but not collected on the sign-up form. */
+const REGISTER_API_DEFAULTS: {
+  professionalType: RegisterApiProfessionalType;
+  lifestyle: Record<string, unknown>;
+  age: number;
+  gender: RegisterApiGender;
+} = {
+  professionalType: 'other',
+  lifestyle: {},
+  age: 22,
+  gender: 'other',
+};
+
+function mapAppRoleToApi(role: RegisterPayload['role']): RegisterApiRole {
+  return role === 'TENANT' ? 'tenant' : 'owner';
+}
+
+function mapApiRoleToUserRole(v: unknown): User['role'] | undefined {
+  if (v === 'tenant' || v === 'TENANT') return 'TENANT';
+  if (v === 'owner' || v === 'OWNER') return 'OWNER';
+  if (v === 'admin' || v === 'ADMIN') return 'ADMIN';
+  return undefined;
+}
+
+function mapGenderFromApi(v: unknown): GenderPreference | undefined {
+  if (v === 'Any' || v === 'any') return 'Any';
+  if (v === 'Male' || v === 'male') return 'Male';
+  if (v === 'Female' || v === 'female') return 'Female';
+  return undefined;
+}
 
 export type LoginPayload = {
   email: string;
@@ -30,6 +78,13 @@ export type RegisterPayload = {
   phone: string;
   password: string;
   role: 'TENANT' | 'OWNER';
+  /** Optional — used when callers supply full profile data; otherwise defaults below are sent. */
+  professionalType?: RegisterApiProfessionalType;
+  /** API expects a JSON object; arrays are wrapped as `{ tags: [...] }`. */
+  lifestyle?: Record<string, unknown> | string[];
+  age?: number;
+  gender?: RegisterApiGender;
+  profileImageUrl?: string;
 };
 
 export type ForgotPasswordPayload = {
@@ -41,50 +96,250 @@ export type ResetPasswordPayload = {
   password: string;
 };
 
-const MOCK_USER: User = {
-  id: 'u1',
-  name: 'Guest User',
-  email: 'guest@roommat.in',
-  phone: '+91 9876543210',
-  avatarInitial: 'GU',
-  role: 'TENANT',
-  isPhoneVerified: true,
-  isAadharVerified: false,
-  isCompanyVerified: true,
-  listingCount: 0,
-  shortlistedCount: 0,
-  connectCount: 0,
-  bio: 'Looking for a clean and peaceful place to stay.',
-  location: 'Ahmedabad',
-  budget: 15000,
-  lifestyle: ['WORKING', 'VEGETARIAN', 'NON_SMOKER'],
-  createdAt: '2024-01-15T10:00:00Z',
+export type ChangePasswordPayload = {
+  currentPassword: string;
+  newPassword: string;
 };
+
+function initialsFromName(name: string): string {
+  const parts = name.trim().split(/\s+/).filter(Boolean);
+  if (parts.length >= 2) {
+    return `${parts[0]![0] ?? ''}${parts[1]![0] ?? ''}`.toUpperCase();
+  }
+  return name.slice(0, 2).toUpperCase() || '??';
+}
+
+function pickToken(obj: Record<string, unknown>): string | undefined {
+  const direct = obj.token ?? obj.accessToken ?? obj.access_token;
+  if (typeof direct === 'string' && direct.length > 0) return direct;
+  const nested = obj.data;
+  if (nested && typeof nested === 'object' && !Array.isArray(nested)) {
+    const d = nested as Record<string, unknown>;
+    const t = d.token ?? d.accessToken ?? d.access_token;
+    if (typeof t === 'string' && t.length > 0) return t;
+  }
+  return undefined;
+}
+
+function mergeToken(...candidates: (string | undefined | null)[]): string | undefined {
+  for (const c of candidates) {
+    if (typeof c === 'string' && c.length > 0) return c;
+  }
+  return undefined;
+}
+
+/**
+ * Accepts common API wrappers: `{ data: { user, token } }`, `{ user, token }`, or user fields at root.
+ * Also used for GET /auth/me (user only). Token is resolved with deep search as fallback.
+ */
+export function parseAuthResponse(data: unknown): {
+  raw: Record<string, unknown>;
+  token?: string;
+} {
+  if (data == null || typeof data !== 'object') {
+    throw new Error('Invalid server response');
+  }
+  const root = data as Record<string, unknown>;
+  const inner = root.data;
+  const fallbackToken = mergeToken(
+    pickToken(root),
+    extractAccessTokenFromUnknown(root) ?? undefined,
+  );
+
+  if (inner && typeof inner === 'object') {
+    const block = inner as Record<string, unknown>;
+    const userObj = (block.user ?? block.profile ?? block) as Record<string, unknown>;
+    const token = mergeToken(
+      pickToken(block),
+      pickToken(root),
+      extractAccessTokenFromUnknown(block) ?? undefined,
+      fallbackToken,
+    );
+    return { raw: userObj, token };
+  }
+  const userObj = (root.user ?? root.profile ?? root) as Record<string, unknown>;
+  const token = mergeToken(pickToken(root), extractAccessTokenFromUnknown(root) ?? undefined);
+  return { raw: userObj, token };
+}
+
+export function mapApiUserToUser(
+  raw: Record<string, unknown>,
+  fallbacks?: {
+    email?: string;
+    name?: string;
+    phone?: string;
+    role?: User['role'];
+  },
+): User {
+  const name = String(raw.fullName ?? raw.name ?? fallbacks?.name ?? 'User');
+  const email = String(raw.email ?? fallbacks?.email ?? '');
+  const phone = String(raw.mobile ?? raw.phone ?? fallbacks?.phone ?? '');
+  const id = String(raw.id ?? raw._id ?? raw.userId ?? `user-${email}`);
+
+  let role: User['role'] = fallbacks?.role ?? 'TENANT';
+  const mapped = mapApiRoleToUserRole(raw.role);
+  if (mapped) role = mapped;
+
+  const lifestyleRaw = raw.lifestyle;
+  let lifestyle: User['lifestyle'] = [];
+  if (Array.isArray(lifestyleRaw)) {
+    const tags = lifestyleRaw.filter((x): x is User['lifestyle'][number] => typeof x === 'string');
+    if (tags.length) lifestyle = tags;
+  } else if (lifestyleRaw && typeof lifestyleRaw === 'object' && !Array.isArray(lifestyleRaw)) {
+    const tags = (lifestyleRaw as { tags?: unknown }).tags;
+    if (Array.isArray(tags)) {
+      const strs = tags.filter((x): x is User['lifestyle'][number] => typeof x === 'string');
+      if (strs.length) lifestyle = strs;
+    }
+  }
+
+  const avatarUrl =
+    typeof raw.avatarUrl === 'string'
+      ? raw.avatarUrl
+      : typeof raw.profileImageUrl === 'string'
+        ? raw.profileImageUrl
+        : undefined;
+
+  const bio = typeof raw.bio === 'string' ? raw.bio : undefined;
+  const location = typeof raw.location === 'string' ? raw.location : undefined;
+
+  let budget: number | undefined;
+  if (typeof raw.monthlyBudget === 'number' && !Number.isNaN(raw.monthlyBudget)) {
+    budget = raw.monthlyBudget;
+  } else if (typeof raw.budget === 'number' && !Number.isNaN(raw.budget)) {
+    budget = raw.budget;
+  }
+
+  let moveInDate: string | undefined;
+  if (typeof raw.moveInDate === 'string') moveInDate = raw.moveInDate;
+  else if (typeof raw.move_in_date === 'string') moveInDate = raw.move_in_date;
+
+  /** Roommate search preference (Any/Male/Female) — not the same as account `gender` (male/female/other). */
+  const genderPreference = mapGenderFromApi(
+    raw.roommateGenderPreference ?? raw.genderPreference ?? raw.gender_preference,
+  );
+
+  const num = (v: unknown): number | undefined =>
+    typeof v === 'number' && !Number.isNaN(v) ? v : undefined;
+
+  return {
+    id,
+    name,
+    email,
+    phone,
+    avatarInitial: initialsFromName(name),
+    role,
+    lifestyle,
+    avatarUrl,
+    bio,
+    location,
+    budget,
+    moveInDate,
+    genderPreference,
+    isPhoneVerified: typeof raw.isPhoneVerified === 'boolean' ? raw.isPhoneVerified : false,
+    isAadharVerified: typeof raw.isAadharVerified === 'boolean' ? raw.isAadharVerified : false,
+    isCompanyVerified: typeof raw.isCompanyVerified === 'boolean' ? raw.isCompanyVerified : false,
+    listingCount: num(raw.listingCount) ?? 0,
+    shortlistedCount: num(raw.shortlistedCount) ?? 0,
+    connectCount: num(raw.connectCount) ?? 0,
+    createdAt:
+      typeof raw.createdAt === 'string'
+        ? raw.createdAt
+        : typeof raw.updatedAt === 'string'
+          ? raw.updatedAt
+          : new Date().toISOString(),
+  };
+}
+
+function mapRegisterUser(raw: Record<string, unknown>, payload: RegisterPayload): User {
+  return mapApiUserToUser(raw, {
+    email: payload.email,
+    name: payload.name,
+    phone: payload.phone,
+    role: payload.role,
+  });
+}
+
+export function authApiErrorMessage(err: unknown, fallback: string): string {
+  if (!isAxiosError(err)) {
+    return err instanceof Error ? err.message : fallback;
+  }
+  const data = err.response?.data as
+    | { message?: unknown; error?: string | string[] }
+    | undefined;
+  const msg = data?.message ?? data?.error;
+  if (typeof msg === 'string') return msg;
+  if (Array.isArray(msg)) return msg.map(String).join(' ');
+  return err.message || fallback;
+}
+
+function buildRegisterLifestyleObject(
+  payload: RegisterPayload,
+): Record<string, unknown> {
+  if (payload.lifestyle === undefined) {
+    return { ...REGISTER_API_DEFAULTS.lifestyle };
+  }
+  if (Array.isArray(payload.lifestyle)) {
+    return { tags: payload.lifestyle };
+  }
+  return { ...payload.lifestyle };
+}
 
 export const authService = {
   /**
    * Login user with email & password.
-   * BACKEND: POST /auth/login
+   * BACKEND: POST /api/v1/auth/login
    */
   login: async (payload: LoginPayload): Promise<{ user: User; token: string }> => {
-    await delay();
-    // MOCK: Accept any credentials for demo
-    if (!payload.email || !payload.password) {
-      throw new Error('Invalid credentials');
+    if (!payload.email?.trim() || !payload.password) {
+      throw new Error('Email and password are required');
     }
-    return { user: MOCK_USER, token: 'mock-jwt-token' };
+    try {
+      const { data } = await apiClient.post<unknown>('/api/v1/auth/login', {
+        email: payload.email.trim(),
+        password: payload.password,
+      });
+      const { raw, token } = parseAuthResponse(data);
+      const user = mapApiUserToUser(raw, { email: payload.email.trim() });
+      const accessToken = token ?? '';
+      if (accessToken) setAccessToken(accessToken);
+      else setAccessToken(null);
+      return { user, token: accessToken };
+    } catch (err) {
+      throw new Error(authApiErrorMessage(err, 'Login failed'));
+    }
   },
 
   /**
    * Register a new user.
-   * BACKEND: POST /auth/register
+   * BACKEND: POST /api/v1/auth/register
    */
   register: async (payload: RegisterPayload): Promise<{ user: User; token: string }> => {
-    await delay();
-    return {
-      user: { ...MOCK_USER, name: payload.name, email: payload.email, phone: payload.phone },
-      token: 'mock-jwt-token',
+    const body: Record<string, unknown> = {
+      fullName: payload.name,
+      mobile: payload.phone,
+      email: payload.email.trim(),
+      role: mapAppRoleToApi(payload.role),
+      password: payload.password,
+      professionalType: payload.professionalType ?? REGISTER_API_DEFAULTS.professionalType,
+      lifestyle: buildRegisterLifestyleObject(payload),
+      age: payload.age ?? REGISTER_API_DEFAULTS.age,
+      gender: payload.gender ?? REGISTER_API_DEFAULTS.gender,
     };
+    if (payload.profileImageUrl) {
+      body.profileImageUrl = payload.profileImageUrl;
+    }
+
+    try {
+      const { data } = await apiClient.post<unknown>('/api/v1/auth/register', body);
+      const { raw, token } = parseAuthResponse(data);
+      const user = mapRegisterUser(raw, payload);
+      const accessToken = token ?? '';
+      if (accessToken) setAccessToken(accessToken);
+      return { user, token: accessToken };
+    } catch (err) {
+      throw new Error(authApiErrorMessage(err, 'Registration failed'));
+    }
   },
 
   /**
@@ -107,20 +362,53 @@ export const authService = {
   },
 
   /**
-   * Logout user (clears httpOnly cookie on backend).
-   * BACKEND: POST /auth/logout
+   * Logout user — clears client token; optional server invalidation.
+   * BACKEND: POST /api/v1/auth/logout
    */
   logout: async (): Promise<void> => {
-    await delay(300);
-    // BACKEND: apiClient.post('/auth/logout')
+    try {
+      await apiClient.post('/api/v1/auth/logout', {}).catch(() => {
+        /* ignore 401 if session already gone */
+      });
+    } finally {
+      clearAccessToken();
+    }
   },
 
   /**
-   * Get current authenticated user.
-   * BACKEND: GET /auth/me
+   * Current user profile (session / bearer).
+   * BACKEND: GET /api/v1/auth/me
    */
   getMe: async (): Promise<User> => {
-    await delay(300);
-    return MOCK_USER;
+    try {
+      const { data } = await apiClient.get<unknown>('/api/v1/auth/me');
+      const { raw } = parseAuthResponse(data);
+      return mapApiUserToUser(raw, {});
+    } catch (err) {
+      throw new Error(authApiErrorMessage(err, 'Could not load profile'));
+    }
+  },
+
+  /**
+   * Change password for the signed-in user.
+   * BACKEND: POST /api/v1/auth/change-password
+   */
+  changePassword: async (payload: ChangePasswordPayload): Promise<{ message: string }> => {
+    try {
+      const { data } = await apiClient.post<{ status?: string; message?: string }>(
+        '/api/v1/auth/change-password',
+        {
+          currentPassword: payload.currentPassword,
+          newPassword: payload.newPassword,
+        },
+      );
+      const message =
+        typeof data?.message === 'string' && data.message.length > 0
+          ? data.message
+          : 'Your password has been updated successfully.';
+      return { message };
+    } catch (err) {
+      throw new Error(authApiErrorMessage(err, 'Could not change password'));
+    }
   },
 };

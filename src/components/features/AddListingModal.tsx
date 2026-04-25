@@ -12,6 +12,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import { useAmenityMaster } from '@/hooks/useAmenityMaster';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { listingSchema, ListingFormData } from '@/lib/validations/listing.schema';
@@ -21,8 +22,8 @@ import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
 import { Checkbox } from '@/components/ui/Checkbox';
 import { ImageUploader } from '@/components/features/ImageUploader';
+import { PropertyAddressFields } from '@/components/features/PropertyAddressFields';
 import { useToast } from '@/hooks/useToast';
-import { Amenity } from '@/types';
 
 const LISTING_TYPE_OPTIONS = [
   { label: 'PG', value: 'PG' },
@@ -37,10 +38,6 @@ const GENDER_OPTIONS = [
   { label: 'Any', value: 'Any' },
   { label: 'Male Only', value: 'Male' },
   { label: 'Female Only', value: 'Female' },
-];
-
-const AMENITY_LIST: Amenity[] = [
-  'WiFi', 'AC', 'Food', 'Laundry', 'Parking', 'Gym', 'Kitchen', 'Security', 'Power Backup', 'CCTV',
 ];
 
 interface AddListingModalProps {
@@ -58,12 +55,12 @@ export const AddListingModal: React.FC<AddListingModalProps> = ({
   const [uploadedImages, setUploadedImages] = useState<File[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const toast = useToast();
+  const { items: masterAmenities, loading: amenitiesLoading, error: amenitiesLoadError } = useAmenityMaster();
 
   const {
     register,
     handleSubmit,
     control,
-    watch,
     reset,
     formState: { errors },
   } = useForm<ListingFormData>({
@@ -72,10 +69,14 @@ export const AddListingModal: React.FC<AddListingModalProps> = ({
       spotsLeft: 1,
       genderPreference: 'Any',
       amenities: [],
+      addressLine1: '',
+      addressLine2: '',
+      city: '',
+      state: '',
+      country: 'India',
+      postalCode: '',
     },
   });
-
-  const watchedAmenities = watch('amenities') ?? [];
 
   const handleClose = () => {
     reset();
@@ -166,21 +167,7 @@ export const AddListingModal: React.FC<AddListingModalProps> = ({
             />
           </div>
 
-          {/* Location + City — 2-col */}
-          <div className="grid grid-cols-2 gap-3">
-            <Input
-              label="Location / Area *"
-              placeholder="e.g. Satellite, Ahmedabad"
-              error={errors.location?.message}
-              {...register('location')}
-            />
-            <Input
-              label="City *"
-              placeholder="e.g. Ahmedabad"
-              error={errors.city?.message}
-              {...register('city')}
-            />
-          </div>
+          <PropertyAddressFields register={register} errors={errors} />
 
           {/* Amenities */}
           <div>
@@ -190,32 +177,41 @@ export const AddListingModal: React.FC<AddListingModalProps> = ({
             {errors.amenities && (
               <p className="text-xs text-red-500 mb-1.5">{errors.amenities.message as string}</p>
             )}
-            <Controller
-              name="amenities"
-              control={control}
-              render={({ field }) => (
-                <div className="grid grid-cols-2 gap-x-6 gap-y-2">
-                  {AMENITY_LIST.map((amenity) => {
-                    const isChecked = (field.value as Amenity[] ?? []).includes(amenity);
-                    return (
-                      <Checkbox
-                        key={amenity}
-                        label={amenity}
-                        checked={isChecked}
-                        onChange={() => {
-                          const current = (field.value as Amenity[]) ?? [];
-                          field.onChange(
-                            isChecked
-                              ? current.filter((a) => a !== amenity)
-                              : [...current, amenity]
-                          );
-                        }}
-                      />
-                    );
-                  })}
-                </div>
-              )}
-            />
+            {amenitiesLoading ? (
+              <p className="text-sm text-gray-500 py-2">Loading amenities…</p>
+            ) : amenitiesLoadError ? (
+              <p className="text-xs text-red-600">{amenitiesLoadError}</p>
+            ) : masterAmenities.length === 0 ? (
+              <p className="text-xs text-amber-800 bg-amber-50 border border-amber-100 rounded-lg px-3 py-2">
+                No amenities available from the server.
+              </p>
+            ) : (
+              <Controller
+                name="amenities"
+                control={control}
+                render={({ field }) => (
+                  <div className="grid grid-cols-2 gap-x-6 gap-y-2">
+                    {masterAmenities.map((a) => {
+                      const name = a.name.trim();
+                      const norm = (s: string) => s.trim().toLowerCase();
+                      const current = (field.value as string[]) ?? [];
+                      const isChecked = current.some((x) => norm(x) === norm(name));
+                      return (
+                        <Checkbox
+                          key={a._id}
+                          label={name}
+                          checked={isChecked}
+                          onChange={() => {
+                            const without = current.filter((x) => norm(x) !== norm(name));
+                            field.onChange(isChecked ? without : [...without, name]);
+                          }}
+                        />
+                      );
+                    })}
+                  </div>
+                )}
+              />
+            )}
           </div>
 
           {/* Description */}

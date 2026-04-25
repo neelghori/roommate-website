@@ -45,7 +45,7 @@ export const useAuth = () => {
   const logout = async () => {
     await authService.logout();
     logoutStore();
-    router.push('/login');
+    router.push('/');
   };
 
   return { user, isAuthenticated, isAdmin, login, register, logout };

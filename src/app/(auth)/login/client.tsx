@@ -7,7 +7,7 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Eye, EyeOff, Home } from 'lucide-react';
@@ -18,8 +18,20 @@ import { useToast } from '@/hooks/useToast';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 
+function safeNextPath(raw: string | null): string {
+  if (!raw) return '/';
+  try {
+    const path = decodeURIComponent(raw);
+    if (path.startsWith('/') && !path.startsWith('//')) return path;
+  } catch {
+    /* ignore */
+  }
+  return '/';
+}
+
 export default function LoginPageClient() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { success, error: toastError } = useToast();
   const setUser = useAuthStore((s) => s.setUser);
   const [showPassword, setShowPassword] = useState(false);
@@ -37,7 +49,7 @@ export default function LoginPageClient() {
       const res = await authService.login(data);
       setUser(res.user);
       success('Welcome back!', `Logged in as ${res.user.name}`);
-      router.push('/');
+      router.push(safeNextPath(searchParams.get('next')));
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Something went wrong. Please try again.';
       toastError('Login failed', message);

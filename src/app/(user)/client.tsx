@@ -18,8 +18,12 @@ import { RoommateFinderPanel } from '@/components/features/RoommateFinderPanel';
 import { ReferralBanner } from '@/components/features/ReferralBanner';
 import { AddListingModal } from '@/components/features/AddListingModal';
 import { SegmentedTabs } from '@/components/ui/Tabs';
-import { MOCK_LISTINGS } from '@/mock/data';
 import { Listing } from '@/types';
+import {
+  listingHasVerification,
+  listingService,
+} from '@/services/modules/listing.service';
+import { useToast } from '@/hooks/useToast';
 
 const CATEGORY_TABS = [
   { label: 'All', value: 'All' },
@@ -29,20 +33,39 @@ const CATEGORY_TABS = [
   { label: 'Nearby', value: 'Nearby' },
 ];
 
-const PAGE_SIZE = 6;
-
 export default function HomePageClient() {
   const [selectedListing, setSelectedListing] = useState<Listing | null>(null);
   const [activeTab, setActiveTab] = useState<string>('All');
   const [showAddListing, setShowAddListing] = useState(false);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const observerRef = React.useRef<HTMLDivElement>(null);
+  const toast = useToast();
 
   const { filters } = useFilterStore();
-  const { visibleCount, loadMore, resetPagination, hasMore } = useListingStore();
+  const { visibleCount, loadMore, resetPagination, hasMore, listings, setListings } = useListingStore();
+
+  React.useEffect(() => {
+    let cancelled = false;
+    listingService
+      .getListings()
+      .then((rows) => {
+        if (!cancelled) setListings(rows);
+      })
+      .catch((e) => {
+        if (!cancelled) {
+          const msg = e instanceof Error ? e.message : 'Unknown error';
+          toast.error('Could not load listings', msg);
+          setListings([]);
+        }
+      });
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- load once on mount
+  }, [setListings]);
 
   const filteredListings = useMemo(() => {
-    return MOCK_LISTINGS.filter((l) => {
+    return listings.filter((l) => {
       // 1. Tab / Category Filter
       if (activeTab !== 'All' && activeTab !== 'Nearby') {
         if (l.type !== activeTab) return false;
@@ -53,7 +76,7 @@ export default function HomePageClient() {
       if (filters.maxPrice !== undefined && l.price > filters.maxPrice) return false;
 
       // 3. Verified Filter
-      if (filters.isVerified && !l.isVerified) return false;
+      if (filters.isVerified && !listingHasVerification(l)) return false;
 
       // 4. Gender Filter
       if (filters.genderPreference && filters.genderPreference !== 'Any') {
@@ -62,9 +85,7 @@ export default function HomePageClient() {
 
       // 5. Amenities Filter
       if (filters.amenities && filters.amenities.length > 0) {
-        const hasAllAmenities = (filters.amenities as string[]).every((a) =>
-          l.amenities.includes(a as any)
-        );
+        const hasAllAmenities = (filters.amenities as string[]).every((a) => l.amenities.includes(a));
         if (!hasAllAmenities) return false;
       }
 
@@ -73,7 +94,7 @@ export default function HomePageClient() {
 
       return true;
     });
-  }, [activeTab, filters]);
+  }, [activeTab, filters, listings]);
 
   const handleTabChange = (value: string) => {
     setActiveTab(value);
@@ -89,6 +110,19 @@ export default function HomePageClient() {
       }, 600);
     }
   }, [hasMore, loadMore]);
+
+  React.useEffect(() => {
+    const scrollToBrowse = () => {
+      if (typeof window === 'undefined' || window.location.hash !== '#browse') return;
+      const el = document.getElementById('browse');
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    };
+    scrollToBrowse();
+    window.addEventListener('hashchange', scrollToBrowse);
+    return () => window.removeEventListener('hashchange', scrollToBrowse);
+  }, []);
 
   React.useEffect(() => {
     const observer = new IntersectionObserver(
@@ -111,7 +145,10 @@ export default function HomePageClient() {
 
   return (
     <UserLayout showSearch showFab>
-      <div className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-10 xl:px-14 py-4 space-y-4">
+      <div
+        id="browse"
+        className="scroll-mt-24 max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-10 xl:px-14 py-4 space-y-4"
+      >
 
         {/* ── "Rooms Near You" Banner ─────────────────────────────── */}
         <div
@@ -127,7 +164,9 @@ export default function HomePageClient() {
             {/* Green toggle pill */}
             <div className="inline-flex items-center gap-2 bg-white/20 rounded-full px-3 py-1.5">
               <span className="w-2 h-2 rounded-full bg-green-400 flex-shrink-0 animate-pulse" />
-              <span className="text-white text-xs font-semibold">12 rooms available nearby</span>
+              <span className="text-white text-xs font-semibold">
+                {listings.length} published listing{listings.length !== 1 ? 's' : ''} on Roommat
+              </span>
             </div>
           </div>
 

@@ -1,63 +1,45 @@
 /**
  * authStore.ts
- * Authentication state management using Zustand.
- * Persisted in sessionStorage (NOT localStorage) for security.
+ * Auth state — in-memory only. Session is defined by JWT in sessionStorage + GET /auth/me.
+ * (Persisted partial user was removed to avoid “logged in” UI without a valid token.)
  */
 import { create } from 'zustand';
-import { persist, createJSONStorage } from 'zustand/middleware';
 import { User } from '@/types';
+import { clearAccessToken } from '@/lib/authToken';
 
 interface AuthState {
   user: User | null;
   isAuthenticated: boolean;
   isLoading: boolean;
   isAdmin: boolean;
+  /** True after we’ve decided session from token (or lack of it) — used for route guards */
+  sessionReady: boolean;
   setUser: (user: User | null) => void;
-  setLoading: (loading: boolean) => void;
+  setLoading: (isLoading: boolean) => void;
+  setSessionReady: (sessionReady: boolean) => void;
   logout: () => void;
 }
 
-export const useAuthStore = create<AuthState>()(
-  persist(
-    (set) => ({
+export const useAuthStore = create<AuthState>((set) => ({
+  user: null,
+  isAuthenticated: false,
+  isLoading: false,
+  isAdmin: false,
+  sessionReady: false,
+  setUser: (user) =>
+    set({
+      user,
+      isAuthenticated: !!user,
+      isAdmin: user?.role === 'ADMIN',
+    }),
+  setLoading: (isLoading) => set({ isLoading }),
+  setSessionReady: (sessionReady) => set({ sessionReady }),
+  logout: () => {
+    clearAccessToken();
+    set({
       user: null,
       isAuthenticated: false,
-      isLoading: false,
       isAdmin: false,
-      setUser: (user) =>
-        set({
-          user,
-          isAuthenticated: !!user,
-          isAdmin: user?.role === 'ADMIN',
-        }),
-      setLoading: (isLoading) => set({ isLoading }),
-      logout: () =>
-        set({
-          user: null,
-          isAuthenticated: false,
-          isAdmin: false,
-        }),
-    }),
-    {
-      name: 'roommat-auth', // sessionStorage key
-      storage: createJSONStorage(() =>
-        typeof window !== 'undefined'
-          ? sessionStorage
-          : { getItem: () => null, setItem: () => {}, removeItem: () => {} },
-      ),
-      // SECURITY: Only persist non-sensitive fields
-      partialize: (state) => ({
-        user: state.user
-          ? {
-              id: state.user.id,
-              name: state.user.name,
-              role: state.user.role,
-              avatarInitial: state.user.avatarInitial,
-            }
-          : null,
-        isAuthenticated: state.isAuthenticated,
-        isAdmin: state.isAdmin,
-      }),
-    },
-  ),
-);
+    });
+  },
+}));

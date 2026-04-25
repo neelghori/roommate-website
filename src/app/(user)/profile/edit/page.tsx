@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -10,6 +10,8 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { useAuthStore } from '@/store/authStore';
 import { useToast } from '@/hooks/useToast';
+import { userService } from '@/services/modules/user.service';
+import type { User } from '@/types';
 import { CURRENT_USER } from '@/mock/data/users';
 import { Camera, ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
@@ -28,6 +30,25 @@ const LIFESTYLE_OPTIONS = [
 
 const GENDER_OPTIONS = ['Any', 'Male', 'Female'] as const;
 
+function moveInDateForInput(moveInDate: string | undefined): string {
+  if (!moveInDate) return '';
+  const s = moveInDate.trim();
+  if (s.length >= 10 && /^\d{4}-\d{2}-\d{2}/.test(s)) return s.slice(0, 10);
+  return s;
+}
+
+function userToFormValues(u: User): ProfileFormData {
+  return {
+    name: u.name,
+    bio: u.bio ?? '',
+    location: u.location ?? '',
+    budget: u.budget,
+    moveInDate: moveInDateForInput(u.moveInDate),
+    lifestyle: (u.lifestyle as ProfileFormData['lifestyle']) ?? [],
+    genderPreference: (u.genderPreference as ProfileFormData['genderPreference']) ?? 'Any',
+  };
+}
+
 export default function EditProfilePage() {
   const router = useRouter();
   const toast = useToast();
@@ -35,49 +56,72 @@ export default function EditProfilePage() {
   const profile = user ?? CURRENT_USER;
 
   const [isSaving, setIsSaving] = useState(false);
+  const [isLoadingProfile, setIsLoadingProfile] = useState(true);
 
   const {
     register,
     handleSubmit,
     control,
+    reset,
     formState: { errors, isDirty },
   } = useForm<ProfileFormData>({
     resolver: zodResolver(profileSchema),
-    defaultValues: {
-      name: profile.name,
-      bio: profile.bio ?? '',
-      location: profile.location ?? '',
-      budget: profile.budget,
-      lifestyle: (profile.lifestyle as ProfileFormData['lifestyle']) ?? [],
-      genderPreference: (profile.genderPreference as ProfileFormData['genderPreference']) ?? 'Any',
-    },
+    defaultValues: userToFormValues(profile),
   });
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const u = await userService.getProfile();
+        if (cancelled) return;
+        setUser(u);
+        reset(userToFormValues(u));
+      } catch (e) {
+        if (!cancelled) {
+          const msg = e instanceof Error ? e.message : 'Failed to load profile';
+          toast.error('Could not load profile', msg);
+        }
+      } finally {
+        if (!cancelled) setIsLoadingProfile(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- toast is stable; including it re-runs every render
+  }, [reset, setUser]);
 
   const onSubmit = async (data: ProfileFormData) => {
     setIsSaving(true);
-    // BACKEND: await userService.updateProfile(data)
-    await new Promise((r) => setTimeout(r, 800));
-
-    // Merge updated fields into store
-    if (user) {
-      setUser({
-        ...user,
+    try {
+      const updated = await userService.updateProfile({
         name: data.name,
-        bio: data.bio ?? user.bio,
-        location: data.location ?? user.location,
-        budget: data.budget ?? user.budget,
-        lifestyle: (data.lifestyle ?? user.lifestyle) as typeof user.lifestyle,
+        bio: data.bio,
+        location: data.location,
+        budget: data.budget,
+        moveInDate: data.moveInDate || undefined,
+        genderPreference: data.genderPreference,
+        lifestyle: data.lifestyle,
       });
+      setUser(updated);
+      reset(userToFormValues(updated));
+      toast.success('Profile updated!', 'Your changes have been saved.');
+      router.push('/profile');
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : 'Something went wrong';
+      toast.error('Could not save profile', msg);
+    } finally {
+      setIsSaving(false);
     }
-
-    setIsSaving(false);
-    toast.success('Profile updated!', 'Your changes have been saved.');
-    router.push('/profile');
   };
 
   return (
     <UserLayout pageSuffix="Edit Profile" showSearch={false} showFab={false}>
       <div className="max-w-lg mx-auto px-4 py-4 space-y-5">
+        {isLoadingProfile && (
+          <p className="text-sm text-gray-500 text-center py-8">Loading profile…</p>
+        )}
 
         {/* Back */}
         <Link href="/profile" className="inline-flex items-center gap-1.5 text-sm font-medium text-gray-600 hover:text-gray-900">
@@ -106,7 +150,11 @@ export default function EditProfilePage() {
         </div>
 
         {/* Form */}
-        <form onSubmit={handleSubmit(onSubmit)} noValidate className="space-y-4">
+        <form
+          onSubmit={handleSubmit(onSubmit)}
+          noValidate
+          className={`space-y-4 ${isLoadingProfile ? 'opacity-50 pointer-events-none' : ''}`}
+        >
 
           {/* Basic info card */}
           <div className="bg-white rounded-2xl shadow-sm p-4 space-y-4">
@@ -238,7 +286,7 @@ export default function EditProfilePage() {
             size="lg"
             fullWidth
             isLoading={isSaving}
-            disabled={!isDirty && !isSaving}
+            disabled={(!isDirty && !isSaving) || isLoadingProfile}
           >
             Save Changes
           </Button>

@@ -1,6 +1,5 @@
 import { create } from 'zustand';
 import { Listing } from '@/types';
-import { MOCK_LISTINGS } from '@/mock/data';
 
 interface ListingState {
   listings: Listing[];
@@ -15,12 +14,17 @@ interface ListingState {
 }
 
 export const useListingStore = create<ListingState>((set) => ({
-  listings: MOCK_LISTINGS,
+  listings: [],
   visibleCount: 12,
   isLoading: false,
-  hasMore: true,
+  hasMore: false,
 
-  setListings: (listings) => set({ listings, hasMore: listings.length > 12, visibleCount: 12 }),
+  setListings: (listings) =>
+    set({
+      listings,
+      hasMore: listings.length > 12,
+      visibleCount: 12,
+    }),
   
   loadMore: () => {
     set((state) => {

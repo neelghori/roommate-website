@@ -25,8 +25,8 @@ import {
   Zap,
   Eye,
   BadgeCheck,
-  X,
   Users,
+  X,
 } from 'lucide-react';
 import { Listing } from '@/types';
 import { Modal } from '@/components/ui/Modal';
@@ -34,6 +34,11 @@ import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
 import { useToast } from '@/hooks/useToast';
 import { formatRupees } from '@/lib/utils/format';
+import { ListingResidentsViewModal } from '@/components/features/ListingResidentsViewModal';
+import {
+  listingHasVerification,
+  listingVerificationLabel,
+} from '@/services/modules/listing.service';
 
 const AMENITY_ICONS: Record<string, React.ReactNode> = {
   WiFi:           <Wifi size={14} />,
@@ -72,17 +77,23 @@ export const ListingDetailModal: React.FC<ListingDetailModalProps> = ({
   const [currentImage, setCurrentImage] = useState(0);
   const [isApplying, setIsApplying] = useState(false);
   const [isBooking, setIsBooking] = useState(false);
+  const [showResidentsViewModal, setShowResidentsViewModal] = useState(false);
   const toast = useToast();
 
   React.useEffect(() => {
     setCurrentImage(0);
   }, [listing?.id]);
 
+  React.useEffect(() => {
+    if (!isOpen) setShowResidentsViewModal(false);
+  }, [isOpen]);
+
   if (!listing) return null;
 
   const images    = listing.images.length > 0 ? listing.images : [];
   const hasImages = images.length > 0;
   const typeBgCls = TYPE_BG_CLASS[listing.type] ?? 'bg-[#c8eeee]';
+  const residentRows = listing.residentSnapshots ?? [];
 
   const prevImage = () =>
     setCurrentImage((p) => (p === 0 ? images.length - 1 : p - 1));
@@ -109,6 +120,7 @@ export const ListingDetailModal: React.FC<ListingDetailModalProps> = ({
     .split(' ').map((n) => n[0]).join('').toUpperCase().slice(0, 2);
 
   return (
+    <>
     <Modal
       isOpen={isOpen}
       onClose={onClose}
@@ -217,9 +229,10 @@ export const ListingDetailModal: React.FC<ListingDetailModalProps> = ({
             >
               {listing.type}
             </span>
-            {listing.isVerified && (
-              <span className="flex items-center gap-1 text-xs font-semibold text-white px-2.5 py-1 rounded-full bg-green-500">
-                <BadgeCheck size={11} /> Verified
+            {listingHasVerification(listing) && (
+              <span className="flex max-w-[200px] items-center gap-1 rounded-full bg-green-500 px-2.5 py-1 text-xs font-semibold text-white">
+                <BadgeCheck size={11} className="shrink-0" />
+                <span className="truncate">{listingVerificationLabel(listing)}</span>
               </span>
             )}
             <span className="ml-auto text-xs text-gray-500">
@@ -257,9 +270,10 @@ export const ListingDetailModal: React.FC<ListingDetailModalProps> = ({
             <div className="lg:hidden">
               <div className="flex items-start justify-between gap-2">
                 <h2 className="text-lg font-bold text-gray-900 leading-tight">{listing.title}</h2>
-                {listing.isVerified && (
-                  <div className="flex items-center gap-1 text-xs font-semibold text-white px-2 py-1 rounded-full flex-shrink-0 bg-primary">
-                    <BadgeCheck size={12} /> Aadhar Verified
+                {listingHasVerification(listing) && (
+                  <div className="flex max-w-[min(200px,45%)] flex-shrink-0 items-center gap-1 rounded-full bg-primary px-2 py-1 text-xs font-semibold text-white">
+                    <BadgeCheck size={12} className="shrink-0" />
+                    <span className="truncate">{listingVerificationLabel(listing)}</span>
                   </div>
                 )}
               </div>
@@ -315,6 +329,33 @@ export const ListingDetailModal: React.FC<ListingDetailModalProps> = ({
               <p className="text-sm text-gray-600 leading-relaxed">{listing.description}</p>
             </div>
 
+            {residentRows.length > 0 && (
+              <div className="rounded-xl border border-gray-100 bg-gray-50/80 p-3">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <div className="flex items-start gap-2 min-w-0">
+                    <Users size={16} className="text-primary shrink-0 mt-0.5" aria-hidden />
+                    <div className="min-w-0">
+                      <h3 className="text-sm font-semibold text-gray-800">Who lives here</h3>
+                      <p className="text-xs text-gray-500 mt-0.5">
+                        {residentRows.length === 1 ? '1 resident' : `${residentRows.length} residents`} — tap
+                        View for full details.
+                      </p>
+                    </div>
+                  </div>
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    size="sm"
+                    className="shrink-0"
+                    onClick={() => setShowResidentsViewModal(true)}
+                  >
+                    <Eye size={14} className="inline mr-1.5 -mt-0.5 align-middle" aria-hidden />
+                    View
+                  </Button>
+                </div>
+              </div>
+            )}
+
             {/* Owner info */}
             <div className="flex items-center gap-3 bg-gray-50 rounded-xl p-3 border border-gray-100">
               <div
@@ -326,8 +367,14 @@ export const ListingDetailModal: React.FC<ListingDetailModalProps> = ({
                 <p className="text-sm font-semibold text-gray-800">{listing.ownerName}</p>
                 <p className="text-xs text-gray-500">Property Owner</p>
               </div>
-              {listing.isVerified && (
-                <CheckCircle size={18} className="text-green-500 flex-shrink-0" />
+              {listingHasVerification(listing) && (
+                <span
+                  className="shrink-0 text-green-500"
+                  title={listingVerificationLabel(listing)}
+                >
+                  <CheckCircle size={18} className="shrink-0" aria-hidden />
+                  <span className="sr-only">{listingVerificationLabel(listing)}</span>
+                </span>
               )}
             </div>
 
@@ -356,5 +403,11 @@ export const ListingDetailModal: React.FC<ListingDetailModalProps> = ({
         </div>
       </div>
     </Modal>
+    <ListingResidentsViewModal
+      isOpen={showResidentsViewModal}
+      onClose={() => setShowResidentsViewModal(false)}
+      residents={residentRows}
+    />
+    </>
   );
 };

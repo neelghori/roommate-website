@@ -7,18 +7,12 @@ import { z } from 'zod';
 
 const LISTING_TYPES = ['PG', 'Rent', 'Roommate', 'Studio', 'Bachelor', 'Family'] as const;
 const GENDER_PREFERENCES = ['Male', 'Female', 'Any'] as const;
-const AMENITIES = [
-  'WiFi', 'AC', 'Kitchen', 'Food', 'Laundry',
-  'Parking', 'Gym', 'Security', 'Power Backup', 'CCTV',
-] as const;
-
 export const listingSchema = z.object({
   title: z
     .string()
-    .min(10, 'Title must be at least 10 characters')
+    .min(3, 'Title must be at least 3 characters')
     .max(100, 'Title must be 100 characters or less'),
 
-  // Zod v4: use .message instead of errorMap
   type: z.enum(LISTING_TYPES, { message: 'Select a valid listing type' }),
 
   price: z
@@ -27,15 +21,30 @@ export const listingSchema = z.object({
     .min(500, 'Minimum price is ₹500')
     .max(200000, 'Maximum price is ₹2,00,000'),
 
-  location: z
+  addressLine1: z
     .string()
-    .min(3, 'Location is required')
-    .max(150, 'Location too long'),
+    .min(3, 'Address line 1 is required')
+    .max(200, 'Address line 1 is too long'),
 
-  city: z
-    .string()
-    .min(2, 'City is required')
-    .max(60, 'City name too long'),
+  addressLine2: z.string().max(200, 'Address line 2 is too long').optional(),
+
+  city: z.string().min(2, 'City is required').max(100, 'City name too long'),
+
+  state: z.string().min(2, 'State is required').max(100, 'State name too long'),
+
+  country: z.string().min(2, 'Country is required').max(100, 'Country name too long'),
+
+  postalCode: z.string().max(20, 'Postal code too long').optional(),
+
+  latitude: z
+    .union([z.number().finite(), z.nan(), z.undefined()])
+    .transform((v) => (typeof v === 'number' && Number.isFinite(v) ? v : undefined)),
+  longitude: z
+    .union([z.number().finite(), z.nan(), z.undefined()])
+    .transform((v) => (typeof v === 'number' && Number.isFinite(v) ? v : undefined)),
+
+  placeId: z.string().max(256).optional(),
+  formattedAddress: z.string().max(500).optional(),
 
   spotsLeft: z
     .number({ error: 'Spots must be a number' })
@@ -46,9 +55,9 @@ export const listingSchema = z.object({
   genderPreference: z.enum(GENDER_PREFERENCES, { message: 'Select a valid gender preference' }),
 
   amenities: z
-    .array(z.enum(AMENITIES, { message: 'Invalid amenity' }))
+    .array(z.string().trim().min(1, 'Invalid amenity').max(100))
     .min(1, 'Select at least one amenity')
-    .max(10, 'Cannot exceed 10 amenities'),
+    .max(40, 'Too many amenities selected'),
 
   description: z
     .string()
@@ -57,12 +66,50 @@ export const listingSchema = z.object({
 
   phone: z
     .string()
-    .regex(/^[6-9]\d{9}$/, 'Enter a valid 10-digit Indian mobile number')
     .optional()
-    .or(z.literal('')),
+    .refine((v) => v === undefined || v === '' || /^[6-9]\d{9}$/.test(v), {
+      message: 'Enter a valid 10-digit Indian mobile number',
+    }),
 });
 
 export const listingEditSchema = listingSchema.partial();
 
+/** Step-wise validation for multi-step wizard (full-schema `trigger` is unreliable for arrays). */
+export const listingWizardStep1Schema = listingSchema.pick({
+  title: true,
+  type: true,
+  price: true,
+  spotsLeft: true,
+  addressLine1: true,
+  addressLine2: true,
+  city: true,
+  state: true,
+  country: true,
+  postalCode: true,
+  genderPreference: true,
+});
+
+export const listingWizardStep2Schema = listingSchema.pick({
+  amenities: true,
+  description: true,
+});
+
 export type ListingFormData = z.infer<typeof listingSchema>;
 export type ListingEditFormData = z.infer<typeof listingEditSchema>;
+
+export { EMPTY_LISTING_RESIDENT } from '@/lib/validations/listingResident.schema';
+export type { ListingResidentFormData } from '@/lib/validations/listingResident.schema';
+
+export function validateListingWizardStep(
+  step: 0 | 1,
+  values: Partial<ListingFormData>,
+): { ok: true } | { ok: false; issues: { path: string; message: string }[] } {
+  const schema = step === 0 ? listingWizardStep1Schema : listingWizardStep2Schema;
+  const result = schema.safeParse(values);
+  if (result.success) return { ok: true };
+  const issues = result.error.issues.map((i) => ({
+    path: i.path[0] != null ? String(i.path[0]) : 'root',
+    message: i.message,
+  }));
+  return { ok: false, issues };
+}

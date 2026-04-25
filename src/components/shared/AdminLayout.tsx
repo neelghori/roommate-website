@@ -22,6 +22,8 @@ import {
   ChevronRight,
 } from 'lucide-react';
 import { useAuthStore } from '@/store/authStore';
+import { authService } from '@/services/modules/auth.service';
+import { adminAuthService } from '@/services/modules/adminAuth.service';
 
 // ─── Nav items ────────────────────────────────────────────────────────────────
 
@@ -50,7 +52,9 @@ const SidebarContent: React.FC<SidebarProps> = ({ onClose }) => {
     return pathname.startsWith(href);
   };
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    adminAuthService.logout();
+    await authService.logout();
     logout();
     router.push('/login');
   };
@@ -85,6 +89,15 @@ const SidebarContent: React.FC<SidebarProps> = ({ onClose }) => {
 
       {/* Nav items */}
       <nav className="flex-1 overflow-y-auto py-4 px-3" aria-label="Admin navigation">
+        <div className="px-3 pb-3">
+          <Link
+            href="/admin-sign-in"
+            onClick={onClose}
+            className="text-xs font-medium text-teal-600 hover:underline"
+          >
+            Staff sign in
+          </Link>
+        </div>
         <ul className="space-y-0.5">
           {NAV_ITEMS.map(({ label, href, icon: Icon, exact }) => {
             const active = isActive(href, exact);

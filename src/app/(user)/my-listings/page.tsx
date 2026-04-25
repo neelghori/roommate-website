@@ -5,7 +5,7 @@
  * Shows the current user's listings with edit/delete actions.
  */
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import {
   Pencil,
@@ -31,19 +31,18 @@ import { Button } from '@/components/ui/Button';
 
 import { Modal } from '@/components/ui/Modal';
 import { EmptyState } from '@/components/shared/EmptyState';
-import { MOCK_LISTINGS } from '@/mock/data';
 import { useToast } from '@/hooks/useToast';
 import { formatRupees } from '@/lib/utils/format';
 import { Listing } from '@/types';
+import { listingService } from '@/services/modules/listing.service';
 
-// Use first 3 mock listings as "my listings" with hardcoded statuses
 type MyListing = Listing & { myStatus: 'Active' | 'Pending' | 'Rejected' };
 
-const INITIAL_MY_LISTINGS: MyListing[] = [
-  { ...MOCK_LISTINGS[0], myStatus: 'Active' },
-  { ...MOCK_LISTINGS[1], myStatus: 'Active' },
-  { ...MOCK_LISTINGS[2], myStatus: 'Pending' },
-];
+function approvalToMyStatus(l: Listing): 'Active' | 'Pending' | 'Rejected' {
+  if (l.approvalStatus === 'APPROVED') return 'Active';
+  if (l.approvalStatus === 'REJECTED') return 'Rejected';
+  return 'Pending';
+}
 
 const TYPE_COLORS: Record<string, string> = {
   PG: '#c8eeee',
@@ -94,9 +93,32 @@ function StatusBadge({ status }: { status: 'Active' | 'Pending' | 'Rejected' }) 
 
 export default function MyListingsPage() {
   const toast = useToast();
-  const [listings, setListings] = useState<MyListing[]>(INITIAL_MY_LISTINGS);
+  const [listings, setListings] = useState<MyListing[]>([]);
+  const [loading, setLoading] = useState(true);
   const [deleteTarget, setDeleteTarget] = useState<MyListing | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+
+  useEffect(() => {
+    let c = false;
+    listingService
+      .getMyListings()
+      .then((rows) => {
+        if (!c) setListings(rows.map((l) => ({ ...l, myStatus: approvalToMyStatus(l) })));
+      })
+      .catch((e) => {
+        if (!c) {
+          toast.error('Could not load listings', e instanceof Error ? e.message : '');
+          setListings([]);
+        }
+      })
+      .finally(() => {
+        if (!c) setLoading(false);
+      });
+    return () => {
+      c = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const activeCount = listings.filter((l) => l.myStatus === 'Active').length;
   const pendingCount = listings.filter((l) => l.myStatus === 'Pending').length;
@@ -105,12 +127,16 @@ export default function MyListingsPage() {
   const handleDeleteConfirm = async () => {
     if (!deleteTarget) return;
     setIsDeleting(true);
-    // BACKEND: DELETE /listings/{id}
-    await new Promise((r) => setTimeout(r, 800));
-    setListings((prev) => prev.filter((l) => l.id !== deleteTarget.id));
-    setIsDeleting(false);
-    setDeleteTarget(null);
-    toast.success('Listing deleted', `"${deleteTarget.title}" has been removed.`);
+    try {
+      await listingService.deleteListing(deleteTarget.id);
+      setListings((prev) => prev.filter((l) => l.id !== deleteTarget.id));
+      toast.success('Listing deleted', `"${deleteTarget.title}" has been removed.`);
+      setDeleteTarget(null);
+    } catch (e) {
+      toast.error('Delete failed', e instanceof Error ? e.message : '');
+    } finally {
+      setIsDeleting(false);
+    }
   };
 
   return (
@@ -156,7 +182,9 @@ export default function MyListingsPage() {
         </div>
 
         {/* ── Listing cards ───────────────────────────────────────── */}
-        {listings.length === 0 ? (
+        {loading ? (
+          <p className="text-sm text-gray-500 py-8 text-center">Loading your listings…</p>
+        ) : listings.length === 0 ? (
           <EmptyState
             title="No listings yet"
             description="You haven't posted any listings. Add your first listing to get started!"
@@ -214,6 +242,16 @@ export default function MyListingsPage() {
                         <StatusBadge status={listing.myStatus} />
                       </div>
 
+                      {listing.myStatus === 'Rejected' && listing.rejectionReason && (
+                        <div
+                          className="mb-2 rounded-lg border border-red-100 bg-red-50/90 px-2.5 py-2 text-[11px] text-red-900 leading-snug"
+                          role="status"
+                        >
+                          <span className="font-semibold">Moderator note: </span>
+                          {listing.rejectionReason}
+                        </div>
+                      )}
+
                       {/* Location */}
                       <div className="flex items-center gap-1 text-xs text-gray-500 mb-1.5">
                         <MapPin size={11} className="flex-shrink-0" />
@@ -245,8 +283,18 @@ export default function MyListingsPage() {
                       </div>
 
                       {/* Actions */}
-                      <div className="flex gap-2">
-                        <Link href={`/listings/${listing.id}/edit`} className="flex-1">
+                      <div className="flex flex-wrap gap-2">
+                        <Link href={`/listings/${listing.id}`} className="min-w-0 flex-1">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            fullWidth
+                            leftIcon={<Eye size={13} />}
+                          >
+                            View
+                          </Button>
+                        </Link>
+                        <Link href={`/listings/${listing.id}/edit`} className="min-w-0 flex-1">
                           <Button
                             variant="secondary"
                             size="sm"

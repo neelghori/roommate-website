@@ -1,37 +1,460 @@
 /**
- * listing.service.ts
- * Listing service module.
- *
- * MOCK MODE: Returns mock data with artificial delay.
- * BACKEND INTEGRATION: Replace mock functions with apiClient calls.
- *
- * Expected endpoints:
- *   GET    /listings               → Listing[]
- *   GET    /listings/:id           → Listing
- *   POST   /listings               → Listing
- *   PUT    /listings/:id           → Listing
- *   DELETE /listings/:id           → { message }
- *   GET    /listings/my            → Listing[]
- *   POST   /listings/:id/save      → { message }
- *   DELETE /listings/:id/save      → { message }
- *   GET    /listings/saved         → Listing[]
- *   POST   /listings/:id/apply     → { message }
- *   POST   /listings/:id/visit     → { message }
+ * listing.service.ts — Property API (/api/v1/properties).
+ * New listings are pending until staff approves (isPublished + moderationStatus).
  */
 
-import { Listing, ListingFilter } from '@/types';
-import { MOCK_LISTINGS } from '@/mock/data/listings';
-import { SAVED_LISTING_IDS } from '@/mock/data/users';
+import { isAxiosError } from 'axios';
+import type {
+  GenderPreference,
+  Listing,
+  ListingFilter,
+  ListingResidentSnapshot,
+  ListingType,
+  ListingVerificationBadge,
+} from '@/types';
+import { apiClient } from '@/services/api';
+import { authApiErrorMessage } from '@/services/modules/auth.service';
+import { amenityService } from '@/services/modules/amenity.service';
+import type { ListingFormData } from '@/lib/validations/listing.schema';
+import {
+  EMPTY_LISTING_RESIDENT,
+  type ListingResidentFormData,
+  listingResidentFormSchema,
+} from '@/lib/validations/listingResident.schema';
 
-// Mock delay to simulate network latency
-const delay = (ms = 800) => new Promise((resolve) => setTimeout(resolve, ms));
+function apiErr(err: unknown, fallback: string): string {
+  return authApiErrorMessage(err, fallback);
+}
+
+const UI_TO_API_LISTING_TYPE: Partial<Record<ListingType | string, string>> = {
+  PG: 'pg',
+  Rent: 'room',
+  Roommate: 'roommate_seeker',
+  Studio: 'flat',
+  Bachelor: 'room',
+  Family: 'flat',
+};
+
+const API_TO_UI_LISTING_TYPE: Record<string, ListingType> = {
+  pg: 'PG',
+  flat: 'Rent',
+  room: 'Rent',
+  roommate_seeker: 'Roommate',
+};
+
+function mapGenderToApi(pref: GenderPreference | string): string {
+  if (pref === 'Male') return 'male';
+  if (pref === 'Female') return 'female';
+  return 'any';
+}
+
+function mapGenderFromApi(v: string | undefined): GenderPreference {
+  if (v === 'male') return 'Male';
+  if (v === 'female') return 'Female';
+  return 'Any';
+}
+
+const RESIDENT_PRO_TYPES = new Set([
+  'student',
+  'work_professional',
+  'freelancer',
+  'business',
+  'other',
+]);
+const RESIDENT_GENDERS = new Set(['male', 'female', 'other']);
+const RESIDENT_DIETS = new Set(['vegetarian', 'non_vegetarian', 'eggetarian', 'vegan']);
+const RESIDENT_SMOKING = new Set(['non_smoker', 'smoker']);
+
+export function mapListerSnapshotFromApi(raw: unknown): ListingResidentSnapshot | undefined {
+  if (!raw || typeof raw !== 'object') return undefined;
+  const o = raw as Record<string, unknown>;
+  const str = (k: string) => (typeof o[k] === 'string' ? (o[k] as string).trim() : undefined);
+  const num = (k: string) =>
+    typeof o[k] === 'number' && !Number.isNaN(o[k] as number) ? (o[k] as number) : undefined;
+  let lifestyle: ListingResidentSnapshot['lifestyle'];
+  if (o.lifestyle && typeof o.lifestyle === 'object') {
+    const L = o.lifestyle as Record<string, unknown>;
+    const diet = typeof L.diet === 'string' && RESIDENT_DIETS.has(L.diet) ? L.diet : undefined;
+    const smoking =
+      typeof L.smoking === 'string' && RESIDENT_SMOKING.has(L.smoking) ? L.smoking : undefined;
+    if (diet || smoking) {
+      lifestyle = {
+        ...(diet ? { diet: diet as NonNullable<ListingResidentSnapshot['lifestyle']>['diet'] } : {}),
+        ...(smoking
+          ? { smoking: smoking as NonNullable<ListingResidentSnapshot['lifestyle']>['smoking'] }
+          : {}),
+      };
+    }
+  }
+  const moveIn =
+    o.moveInDate instanceof Date
+      ? o.moveInDate.toISOString()
+      : typeof o.moveInDate === 'string'
+        ? o.moveInDate
+        : undefined;
+  const moveOut =
+    o.moveOutDate instanceof Date
+      ? o.moveOutDate.toISOString()
+      : typeof o.moveOutDate === 'string'
+        ? o.moveOutDate
+        : undefined;
+  const snap: ListingResidentSnapshot = {};
+  if (o._id != null) snap.id = typeof o._id === 'string' ? o._id : String(o._id);
+  if (str('fullName')) snap.fullName = str('fullName');
+  const age = num('age');
+  if (age != null) snap.age = age;
+  if (str('profileImageUrl')) snap.profileImageUrl = str('profileImageUrl');
+  if (str('phone')) snap.phone = str('phone');
+  const g = str('gender');
+  if (g && RESIDENT_GENDERS.has(g)) snap.gender = g as ListingResidentSnapshot['gender'];
+  const pt = str('professionalType');
+  if (pt && RESIDENT_PRO_TYPES.has(pt)) snap.professionalType = pt as ListingResidentSnapshot['professionalType'];
+  if (str('collegeOrCompanyName')) snap.collegeOrCompanyName = str('collegeOrCompanyName');
+  if (str('propertyOrPgName')) snap.propertyOrPgName = str('propertyOrPgName');
+  const mr = num('monthlyRent');
+  if (mr != null) snap.monthlyRent = mr;
+  const sd = num('securityDeposit');
+  if (sd != null) snap.securityDeposit = sd;
+  if (moveIn) snap.moveInDate = moveIn;
+  if (moveOut) snap.moveOutDate = moveOut;
+  if (str('description')) snap.description = str('description');
+  if (lifestyle) snap.lifestyle = lifestyle;
+  return Object.keys(snap).length > 0 ? snap : undefined;
+}
+
+/** Max residents per listing (matches API Joi). */
+export const MAX_LISTING_RESIDENTS = 20;
+
+function mapResidentsFromProperty(p: Record<string, unknown>): ListingResidentSnapshot[] {
+  const arr = p.listerSnapshots;
+  if (Array.isArray(arr) && arr.length > 0) {
+    const out: ListingResidentSnapshot[] = [];
+    for (const item of arr) {
+      if (item && typeof item === 'object') {
+        const s = mapListerSnapshotFromApi(item as Record<string, unknown>);
+        if (s) out.push(s);
+      }
+    }
+    return out;
+  }
+  const single = mapListerSnapshotFromApi(p.listerSnapshot);
+  return single ? [single] : [];
+}
+
+function trimStr(s: string | undefined): string {
+  return (s ?? '').trim();
+}
+
+function toIsoDate(value: string | undefined): string | undefined {
+  const t = trimStr(value);
+  if (!t) return undefined;
+  const d = new Date(t);
+  if (Number.isNaN(d.getTime())) return undefined;
+  return d.toISOString();
+}
+
+function hasResidentFormPayload(r: ListingResidentFormData): boolean {
+  if (!r) return false;
+  if (trimStr(r.fullName)) return true;
+  if (r.age != null && Number.isFinite(r.age)) return true;
+  if (trimStr(r.phone)) return true;
+  if (trimStr(r.gender)) return true;
+  if (trimStr(r.professionalType)) return true;
+  if (trimStr(r.collegeOrCompanyName)) return true;
+  if (r.monthlyRent != null && Number.isFinite(r.monthlyRent)) return true;
+  if (r.securityDeposit != null && Number.isFinite(r.securityDeposit)) return true;
+  if (trimStr(r.moveInDate)) return true;
+  if (trimStr(r.moveOutDate)) return true;
+  if (trimStr(r.description)) return true;
+  if (trimStr(r.diet)) return true;
+  if (trimStr(r.smoking)) return true;
+  return false;
+}
+
+function shouldPersistResidentSnapshot(
+  r: ListingResidentFormData,
+  ctx: { profileImageUrl?: string | null },
+): boolean {
+  if (hasResidentFormPayload(r)) return true;
+  if (ctx.profileImageUrl !== undefined && ctx.profileImageUrl !== null && trimStr(ctx.profileImageUrl)) {
+    return true;
+  }
+  return false;
+}
+
+/** Map API / listing snapshot into wizard form defaults. */
+export function listingResidentToFormData(
+  snap: ListingResidentSnapshot | undefined,
+): ListingResidentFormData {
+  const base = { ...EMPTY_LISTING_RESIDENT };
+  if (!snap) return base;
+  return {
+    ...base,
+    fullName: snap.fullName ?? '',
+    age: snap.age,
+    phone: snap.phone ?? '',
+    gender: snap.gender ?? '',
+    professionalType: snap.professionalType ?? '',
+    collegeOrCompanyName: snap.collegeOrCompanyName ?? '',
+    monthlyRent: snap.monthlyRent,
+    securityDeposit: snap.securityDeposit,
+    moveInDate: snap.moveInDate ? snap.moveInDate.slice(0, 10) : '',
+    moveOutDate: snap.moveOutDate ? snap.moveOutDate.slice(0, 10) : '',
+    description: snap.description ?? '',
+    diet: snap.lifestyle?.diet ?? '',
+    smoking: snap.lifestyle?.smoking ?? '',
+  };
+}
+
+export type UpdateListingResidentSnapshotOptions = {
+  /** Listing title from the property — stored as `propertyOrPgName` on the snapshot. */
+  listingTitle: string;
+  /** Persisted profile image URL, or `null` to clear. Omit / `undefined` to leave unchanged. */
+  profileImageUrl?: string | null;
+};
+
+function buildListerSnapshotPayload(
+  resident: ListingResidentFormData,
+  ctx: UpdateListingResidentSnapshotOptions,
+): Record<string, unknown> {
+  const out: Record<string, unknown> = {};
+  if (trimStr(resident.fullName)) out.fullName = trimStr(resident.fullName);
+  if (resident.age != null && Number.isFinite(resident.age)) out.age = resident.age;
+  const ph = trimStr(resident.phone).replace(/\D/g, '');
+  if (ph.length >= 10) out.phone = ph.slice(-10);
+  if (trimStr(resident.gender)) out.gender = trimStr(resident.gender);
+  if (trimStr(resident.professionalType)) out.professionalType = trimStr(resident.professionalType);
+  if (trimStr(resident.collegeOrCompanyName)) out.collegeOrCompanyName = trimStr(resident.collegeOrCompanyName);
+  if (resident.monthlyRent != null && Number.isFinite(resident.monthlyRent)) out.monthlyRent = resident.monthlyRent;
+  if (resident.securityDeposit != null && Number.isFinite(resident.securityDeposit)) {
+    out.securityDeposit = resident.securityDeposit;
+  }
+  const mi = toIsoDate(resident.moveInDate);
+  if (mi) out.moveInDate = mi;
+  const mo = toIsoDate(resident.moveOutDate);
+  if (mo) out.moveOutDate = mo;
+  if (trimStr(resident.description)) out.description = trimStr(resident.description);
+  const diet = trimStr(resident.diet);
+  const smoking = trimStr(resident.smoking);
+  if (diet || smoking) {
+    const life: Record<string, string> = {};
+    if (diet) life.diet = diet;
+    if (smoking) life.smoking = smoking;
+    out.lifestyle = life;
+  }
+
+  if (ctx.profileImageUrl === null) {
+    out.profileImageUrl = null;
+  } else if (ctx.profileImageUrl !== undefined && trimStr(ctx.profileImageUrl)) {
+    out.profileImageUrl = trimStr(ctx.profileImageUrl);
+  }
+
+  const keysAfterProfile = Object.keys(out);
+  if (
+    keysAfterProfile.length === 1 &&
+    keysAfterProfile[0] === 'profileImageUrl' &&
+    out.profileImageUrl === null
+  ) {
+    return {};
+  }
+
+  const title = trimStr(ctx.listingTitle).slice(0, 200);
+  if (Object.keys(out).length > 0 && title) {
+    out.propertyOrPgName = title;
+  }
+
+  if (Object.keys(out).length > 0) {
+    out.roomPhotoUrls = [];
+  }
+
+  return out;
+}
+
+/** Build one API subdocument from the resident form (used by the listing resident modal). */
+export function buildResidentApiPayloadFromForm(
+  resident: ListingResidentFormData,
+  options: UpdateListingResidentSnapshotOptions,
+): Record<string, unknown> {
+  if (!shouldPersistResidentSnapshot(resident, options)) return {};
+  return buildListerSnapshotPayload(resident, options);
+}
+
+function amenityNameMatch(apiName: string, ui: string): boolean {
+  return apiName.trim().toLowerCase() === ui.trim().toLowerCase();
+}
+
+export async function resolveAmenityIdsFromLabels(labels: string[]): Promise<string[]> {
+  const items = await amenityService.list();
+  const ids: string[] = [];
+  for (const label of labels) {
+    const hit = items.find((a) => amenityNameMatch(a.name, label));
+    if (hit?._id) ids.push(hit._id);
+  }
+  return ids;
+}
+
+const API_VERIFICATION_BADGES = new Set<ListingVerificationBadge>([
+  'none',
+  'id_verified',
+  'property_verified',
+  'premium',
+]);
+
+function mapVerificationBadge(raw: unknown): ListingVerificationBadge {
+  if (typeof raw === 'string' && API_VERIFICATION_BADGES.has(raw as ListingVerificationBadge)) {
+    return raw as ListingVerificationBadge;
+  }
+  return 'none';
+}
+
+/** Show verification pill / owner badge when the API marks the listing verified or assigns a badge. */
+export function listingHasVerification(
+  l: Pick<Listing, 'isVerified' | 'verificationBadge'>,
+): boolean {
+  if (l.isVerified) return true;
+  return Boolean(l.verificationBadge && l.verificationBadge !== 'none');
+}
+
+/** Label for the verification pill (detail page, cards, modal). */
+export function listingVerificationLabel(
+  l: Pick<Listing, 'isVerified' | 'verificationBadge'>,
+): string {
+  const b = l.verificationBadge;
+  if (b === 'id_verified') return 'ID verified';
+  if (b === 'property_verified') return 'Property verified';
+  if (b === 'premium') return 'Premium';
+  return 'Verified';
+}
+
+function approvalFromProperty(p: Record<string, unknown>): Listing['approvalStatus'] {
+  const mod = p.moderationStatus as string | undefined;
+  const pub = Boolean(p.isPublished);
+  if (mod === 'rejected') return 'REJECTED';
+  if (mod === 'under_review') return 'UNDER_REVIEW';
+  if (mod === 'approved' && pub) return 'APPROVED';
+  if (mod === 'pending' || (!pub && mod !== 'rejected')) return 'PENDING';
+  return 'UNDER_REVIEW';
+}
+
+function mapAmenityDocs(raw: unknown): string[] {
+  if (!Array.isArray(raw)) return [];
+  const out: string[] = [];
+  for (const a of raw) {
+    if (a && typeof a === 'object' && 'name' in a && typeof (a as { name: string }).name === 'string') {
+      const n = (a as { name: string }).name.trim();
+      if (n) out.push(n);
+    }
+  }
+  return out;
+}
+
+export function mapApiPropertyToListing(p: Record<string, unknown>): Listing {
+  const id = String(p._id ?? p.id ?? '');
+  const addr = (p.address ?? {}) as Record<string, string | undefined>;
+  const rent = (p.rentRange ?? {}) as { min?: number; max?: number };
+  const price = typeof rent.min === 'number' && !Number.isNaN(rent.min) ? rent.min : 0;
+  const city = addr.city ?? '';
+  const location = addr.line1 ?? '';
+  const addressLine2 = addr.line2?.trim() || undefined;
+  const state = addr.state?.trim() || undefined;
+  const country = addr.country?.trim() || undefined;
+  const postalCode = addr.postalCode?.trim() || undefined;
+  const urls: string[] = [];
+  if (typeof p.coverImageUrl === 'string' && p.coverImageUrl) urls.push(p.coverImageUrl);
+  if (Array.isArray(p.imageUrls)) {
+    for (const u of p.imageUrls) {
+      if (typeof u === 'string' && u) urls.push(u);
+    }
+  }
+  const images = urls.length ? urls : ['/images/listings/placeholder.jpg'];
+  const owner = (p.owner ?? {}) as Record<string, unknown>;
+  const ownerName = typeof owner.fullName === 'string' ? owner.fullName : 'Owner';
+  const ownerId = owner._id != null ? String(owner._id) : '';
+  const spots =
+    typeof p.availableSpots === 'number' && !Number.isNaN(p.availableSpots) ? p.availableSpots : 1;
+  const lt = typeof p.listingType === 'string' ? p.listingType : 'room';
+  const type = API_TO_UI_LISTING_TYPE[lt] ?? 'Rent';
+  const createdAt =
+    typeof p.createdAt === 'string' ? p.createdAt : new Date().toISOString();
+  const geo = p.location as
+    | { coordinates?: unknown; placeId?: string; formattedAddress?: string }
+    | undefined;
+  const mapPlaceholder =
+    !geo || !Array.isArray(geo.coordinates) || geo.coordinates.length < 2;
+  const coords = geo?.coordinates as [number, number] | undefined;
+  const longitude = coords && typeof coords[0] === 'number' ? coords[0] : undefined;
+  const latitude = coords && typeof coords[1] === 'number' ? coords[1] : undefined;
+  const placeId = typeof geo?.placeId === 'string' ? geo.placeId : undefined;
+  const formattedAddress =
+    typeof geo?.formattedAddress === 'string' ? geo.formattedAddress : undefined;
+  const rejectionReason =
+    typeof p.rejectionReason === 'string' && p.rejectionReason.trim()
+      ? p.rejectionReason.trim()
+      : undefined;
+  const verificationBadge = mapVerificationBadge(p.verificationBadge);
+  const residentSnapshots = mapResidentsFromProperty(p);
+
+  return {
+    id,
+    title: String(p.title ?? ''),
+    location,
+    city,
+    addressLine2,
+    state,
+    country,
+    postalCode,
+    latitude,
+    longitude,
+    placeId,
+    formattedAddress,
+    price,
+    isVerified: Boolean(p.isVerified),
+    verificationBadge,
+    spotsLeft: spots,
+    amenities: mapAmenityDocs(p.amenityIds),
+    badge: approvalFromProperty(p) === 'APPROVED' ? 'New' : null,
+    type,
+    images,
+    description: typeof p.description === 'string' ? p.description : '',
+    residentSnapshots,
+    residentSnapshot: residentSnapshots[0],
+    mapPlaceholder,
+    genderPreference: mapGenderFromApi(typeof p.genderPreference === 'string' ? p.genderPreference : undefined),
+    ownerId,
+    ownerName,
+    ownerPhone: typeof p.contactPhone === 'string' ? p.contactPhone : undefined,
+    approvalStatus: approvalFromProperty(p),
+    rejectionReason,
+    isSaved: false,
+    createdAt,
+  };
+}
+
+function unwrapItems(data: unknown): Record<string, unknown>[] {
+  if (data == null || typeof data !== 'object') return [];
+  const root = data as Record<string, unknown>;
+  const inner = root.data;
+  if (inner && typeof inner === 'object' && Array.isArray((inner as { items?: unknown }).items)) {
+    return (inner as { items: Record<string, unknown>[] }).items;
+  }
+  if (Array.isArray(root.items)) return root.items as Record<string, unknown>[];
+  return [];
+}
 
 export type CreateListingPayload = {
   title: string;
   type: string;
   price: number;
-  location: string;
+  addressLine1: string;
+  addressLine2?: string;
   city: string;
+  state: string;
+  country: string;
+  postalCode?: string;
+  latitude?: number;
+  longitude?: number;
+  placeId?: string;
+  formattedAddress?: string;
   spotsLeft: number;
   genderPreference: string;
   amenities: string[];
@@ -41,185 +464,364 @@ export type CreateListingPayload = {
 
 export type UpdateListingPayload = Partial<CreateListingPayload>;
 
+export function buildPropertyCreateBody(
+  data: ListingFormData,
+  amenityIds: string[],
+  imageUrls: string[],
+): Record<string, unknown> {
+  const listingType = UI_TO_API_LISTING_TYPE[data.type] ?? 'room';
+  const line2 = (data.addressLine2 ?? '').trim();
+  const postal = (data.postalCode ?? '').trim();
+  const body: Record<string, unknown> = {
+    title: data.title,
+    rentRange: { min: data.price, max: data.price },
+    listingType,
+    genderPreference: mapGenderToApi(data.genderPreference),
+    address: {
+      line1: data.addressLine1,
+      ...(line2 ? { line2 } : {}),
+      city: data.city,
+      state: data.state,
+      country: data.country || 'India',
+      ...(postal ? { postalCode: postal } : {}),
+    },
+    description: data.description,
+    availableSpots: data.spotsLeft,
+    amenityIds,
+  };
+  const lat = data.latitude;
+  const lng = data.longitude;
+  if (
+    typeof lat === 'number' &&
+    typeof lng === 'number' &&
+    Number.isFinite(lat) &&
+    Number.isFinite(lng)
+  ) {
+    const loc: Record<string, unknown> = {
+      type: 'Point',
+      coordinates: [lng, lat],
+    };
+    const pid = (data.placeId ?? '').trim();
+    const fmt = (data.formattedAddress ?? '').trim();
+    if (pid) loc.placeId = pid;
+    if (fmt) loc.formattedAddress = fmt;
+    body.location = loc;
+  }
+  const phone = data.phone?.replace(/\D/g, '') ?? '';
+  if (phone.length >= 10) body.contactPhone = phone.slice(-10);
+  if (imageUrls.length > 0) {
+    body.imageUrls = imageUrls;
+    body.coverImageUrl = imageUrls[0];
+  }
+  return body;
+}
+
 export const listingService = {
-  /**
-   * Fetch all listings, optionally filtered.
-   * BACKEND: GET /listings?city=...&type=...&minPrice=...
-   */
   getListings: async (filter?: ListingFilter): Promise<Listing[]> => {
-    await delay();
-    let results = [...MOCK_LISTINGS];
-
-    if (filter?.city && filter.city !== 'All') {
-      results = results.filter((l) => l.city === filter.city);
+    try {
+      const params = new URLSearchParams();
+      params.set('page', '1');
+      params.set('limit', '100');
+      if (filter?.city && filter.city !== 'All') params.set('city', filter.city);
+      if (filter?.minPrice != null) params.set('minRent', String(filter.minPrice));
+      if (filter?.type && filter.type !== 'All') {
+        const apiType = UI_TO_API_LISTING_TYPE[filter.type as ListingType];
+        if (apiType) params.set('listingType', apiType);
+      }
+      const { data } = await apiClient.get<unknown>(`/api/v1/properties?${params.toString()}`);
+      let items = unwrapItems(data);
+      let listings = items.map(mapApiPropertyToListing);
+      if (filter?.maxPrice != null) {
+        listings = listings.filter((l) => l.price <= filter.maxPrice!);
+      }
+      if (filter?.genderPreference && filter.genderPreference !== 'Any') {
+        listings = listings.filter(
+          (l) => l.genderPreference === filter.genderPreference || l.genderPreference === 'Any',
+        );
+      }
+      if (filter?.isVerified) {
+        listings = listings.filter((l) => listingHasVerification(l));
+      }
+      if (filter?.amenities?.length) {
+        listings = listings.filter((l) =>
+          filter.amenities!.every((a) => l.amenities.includes(a)),
+        );
+      }
+      if (filter?.search) {
+        const q = filter.search.toLowerCase();
+        listings = listings.filter(
+          (l) =>
+            l.title.toLowerCase().includes(q) ||
+            l.location.toLowerCase().includes(q) ||
+            l.description.toLowerCase().includes(q),
+        );
+      }
+      return listings;
+    } catch (err) {
+      throw new Error(apiErr(err, 'Could not load listings'));
     }
-    if (filter?.type && filter.type !== 'All') {
-      results = results.filter((l) => l.type === filter.type);
-    }
-    if (filter?.minPrice !== undefined) {
-      results = results.filter((l) => l.price >= filter.minPrice!);
-    }
-    if (filter?.maxPrice !== undefined) {
-      results = results.filter((l) => l.price <= filter.maxPrice!);
-    }
-    if (filter?.genderPreference && filter.genderPreference !== 'Any') {
-      results = results.filter(
-        (l) => l.genderPreference === filter.genderPreference || l.genderPreference === 'Any',
-      );
-    }
-    if (filter?.isVerified) {
-      results = results.filter((l) => l.isVerified);
-    }
-    if (filter?.amenities && filter.amenities.length > 0) {
-      results = results.filter((l) =>
-        filter.amenities!.every((a) => l.amenities.includes(a as Listing['amenities'][number])),
-      );
-    }
-    if (filter?.search) {
-      const q = filter.search.toLowerCase();
-      results = results.filter(
-        (l) =>
-          l.title.toLowerCase().includes(q) ||
-          l.location.toLowerCase().includes(q) ||
-          l.description.toLowerCase().includes(q),
-      );
-    }
-
-    return results;
   },
 
   /**
-   * Fetch a single listing by ID.
-   * BACKEND: GET /listings/:id
+   * Mock resident profile image upload until a multipart listing endpoint exists.
+   * BACKEND: POST multipart for property / lister images.
    */
-  getListingById: async (id: string): Promise<Listing> => {
-    await delay(500);
-    const listing = MOCK_LISTINGS.find((l) => l.id === id);
-    if (!listing) {
-      throw new Error(`Listing not found: ${id}`);
-    }
-    return { ...listing, isSaved: SAVED_LISTING_IDS.includes(id) };
-  },
-
-  /**
-   * Create a new listing.
-   * BACKEND: POST /listings
-   */
-  createListing: async (payload: CreateListingPayload): Promise<Listing> => {
-    await delay();
-    const newListing: Listing = {
-      id: `l${Date.now()}`,
-      title: payload.title,
-      location: payload.location,
-      city: payload.city,
-      price: payload.price,
-      isVerified: false,
-      spotsLeft: payload.spotsLeft,
-      amenities: payload.amenities as Listing['amenities'],
-      badge: 'New',
-      type: payload.type as Listing['type'],
-      images: ['/images/listings/placeholder.jpg'],
-      description: payload.description,
-      mapPlaceholder: true,
-      genderPreference: payload.genderPreference as Listing['genderPreference'],
-      ownerId: 'u1',
-      ownerName: 'Guest User',
-      ownerPhone: payload.phone,
-      approvalStatus: 'PENDING',
-      isSaved: false,
-      createdAt: new Date().toISOString(),
-    };
-    return newListing;
-  },
-
-  /**
-   * Update an existing listing.
-   * BACKEND: PUT /listings/:id
-   */
-  updateListing: async (id: string, payload: UpdateListingPayload): Promise<Listing> => {
-    await delay();
-    const existing = MOCK_LISTINGS.find((l) => l.id === id);
-    if (!existing) {
-      throw new Error(`Listing not found: ${id}`);
-    }
+  uploadListingResidentImage: async (file: File): Promise<{ url: string }> => {
+    await new Promise((r) => setTimeout(r, 500));
+    void file;
     return {
-      ...existing,
-      ...payload,
-      amenities: (payload.amenities as Listing['amenities']) ?? existing.amenities,
-      type: (payload.type as Listing['type']) ?? existing.type,
-      genderPreference:
-        (payload.genderPreference as Listing['genderPreference']) ?? existing.genderPreference,
+      url: `https://picsum.photos/seed/listing-resident-${Date.now()}/400/400.jpg`,
     };
   },
 
-  /**
-   * Delete a listing.
-   * BACKEND: DELETE /listings/:id
-   */
-  deleteListing: async (id: string): Promise<{ message: string }> => {
-    await delay(500);
-    const exists = MOCK_LISTINGS.some((l) => l.id === id);
-    if (!exists) {
-      throw new Error(`Listing not found: ${id}`);
+  /** POST one resident row — server appends to `listerSnapshots` (does not resend existing rows). */
+  addListingResident: async (propertyId: string, body: Record<string, unknown>): Promise<Listing> => {
+    try {
+      const { data: res } = await apiClient.post<unknown>(
+        `/api/v1/properties/${propertyId}/lister-residents`,
+        body,
+      );
+      const root = res as Record<string, unknown>;
+      const inner = root.data as Record<string, unknown> | undefined;
+      const prop = (inner?.property ?? inner) as Record<string, unknown> | undefined;
+      if (!prop) throw new Error('Invalid response');
+      return mapApiPropertyToListing(prop);
+    } catch (err) {
+      throw new Error(apiErr(err, 'Could not add resident'));
     }
-    return { message: 'Listing deleted successfully' };
+  },
+
+  /** PATCH one resident by Mongo subdocument id. */
+  patchListingResident: async (
+    propertyId: string,
+    residentId: string,
+    body: Record<string, unknown>,
+  ): Promise<Listing> => {
+    try {
+      const { data: res } = await apiClient.patch<unknown>(
+        `/api/v1/properties/${propertyId}/lister-residents/${residentId}`,
+        body,
+      );
+      const root = res as Record<string, unknown>;
+      const inner = root.data as Record<string, unknown> | undefined;
+      const prop = (inner?.property ?? inner) as Record<string, unknown> | undefined;
+      if (!prop) throw new Error('Invalid response');
+      return mapApiPropertyToListing(prop);
+    } catch (err) {
+      throw new Error(apiErr(err, 'Could not update resident'));
+    }
+  },
+
+  /** DELETE one resident by Mongo subdocument id. */
+  removeListingResident: async (propertyId: string, residentId: string): Promise<Listing> => {
+    try {
+      const { data: res } = await apiClient.delete<unknown>(
+        `/api/v1/properties/${propertyId}/lister-residents/${residentId}`,
+      );
+      const root = res as Record<string, unknown>;
+      const inner = root.data as Record<string, unknown> | undefined;
+      const prop = (inner?.property ?? inner) as Record<string, unknown> | undefined;
+      if (!prop) throw new Error('Invalid response');
+      return mapApiPropertyToListing(prop);
+    } catch (err) {
+      throw new Error(apiErr(err, 'Could not remove resident'));
+    }
+  },
+
+  getListingById: async (id: string): Promise<Listing> => {
+    try {
+      const { data } = await apiClient.get<unknown>(`/api/v1/properties/${id}`);
+      const root = data as Record<string, unknown>;
+      const inner = root.data as Record<string, unknown> | undefined;
+      const prop = (inner?.property ?? inner) as Record<string, unknown> | undefined;
+      if (!prop || (!prop._id && !prop.id)) throw new Error('Invalid response');
+      return mapApiPropertyToListing(prop);
+    } catch (err) {
+      throw new Error(apiErr(err, 'Listing not found'));
+    }
   },
 
   /**
-   * Fetch listings owned by the current user.
-   * BACKEND: GET /listings/my
+   * PATCH /properties/:id — same field shape as create; omits image fields if none uploaded.
    */
+  updateListingFromForm: async (
+    id: string,
+    data: ListingFormData,
+    imageUrls: string[] = [],
+  ): Promise<Listing> => {
+    const amenityIds = await resolveAmenityIdsFromLabels(data.amenities as string[]);
+    const body = buildPropertyCreateBody(data, amenityIds, imageUrls);
+    try {
+      const { data: res } = await apiClient.patch<unknown>(`/api/v1/properties/${id}`, body);
+      const root = res as Record<string, unknown>;
+      const inner = root.data as Record<string, unknown> | undefined;
+      const prop = (inner?.property ?? inner) as Record<string, unknown> | undefined;
+      if (!prop) throw new Error('Invalid response');
+      return mapApiPropertyToListing(prop);
+    } catch (err) {
+      throw new Error(apiErr(err, 'Could not update listing'));
+    }
+  },
+
+  createListingFromForm: async (
+    data: ListingFormData,
+    imageUrls: string[] = [],
+  ): Promise<Listing> => {
+    const amenityIds = await resolveAmenityIdsFromLabels(data.amenities as string[]);
+    const body = buildPropertyCreateBody(data, amenityIds, imageUrls);
+    try {
+      const { data: res } = await apiClient.post<unknown>('/api/v1/properties', body);
+      const root = res as Record<string, unknown>;
+      const inner = root.data as Record<string, unknown> | undefined;
+      const prop = (inner?.property ?? inner) as Record<string, unknown> | undefined;
+      if (!prop) throw new Error('Invalid server response');
+      return mapApiPropertyToListing(prop);
+    } catch (err) {
+      throw new Error(apiErr(err, 'Could not create listing'));
+    }
+  },
+
+  createListing: async (payload: CreateListingPayload): Promise<Listing> => {
+    const form = {
+      title: payload.title,
+      type: payload.type as ListingFormData['type'],
+      price: payload.price,
+      addressLine1: payload.addressLine1,
+      addressLine2: payload.addressLine2 ?? '',
+      city: payload.city,
+      state: payload.state,
+      country: payload.country ?? 'India',
+      postalCode: payload.postalCode ?? '',
+      latitude: payload.latitude,
+      longitude: payload.longitude,
+      placeId: payload.placeId ?? '',
+      formattedAddress: payload.formattedAddress ?? '',
+      spotsLeft: payload.spotsLeft,
+      genderPreference: payload.genderPreference as ListingFormData['genderPreference'],
+      amenities: payload.amenities as ListingFormData['amenities'],
+      description: payload.description,
+      phone: payload.phone ?? '',
+    } as ListingFormData;
+    return listingService.createListingFromForm(form, []);
+  },
+
+  updateListing: async (id: string, payload: UpdateListingPayload): Promise<Listing> => {
+    try {
+      const body: Record<string, unknown> = {};
+      if (payload.title != null) body.title = payload.title;
+      if (payload.price != null) body.rentRange = { min: payload.price, max: payload.price };
+      if (payload.description != null) body.description = payload.description;
+      if (
+        payload.addressLine1 != null ||
+        payload.city != null ||
+        payload.state != null ||
+        payload.country != null
+      ) {
+        body.address = {
+          ...(payload.addressLine1 != null ? { line1: payload.addressLine1 } : {}),
+          ...(payload.addressLine2 != null ? { line2: payload.addressLine2 } : {}),
+          ...(payload.city != null ? { city: payload.city } : {}),
+          ...(payload.state != null ? { state: payload.state } : {}),
+          ...(payload.country != null ? { country: payload.country } : {}),
+          ...(payload.postalCode != null ? { postalCode: payload.postalCode } : {}),
+        };
+      }
+      if (
+        payload.latitude != null &&
+        payload.longitude != null &&
+        Number.isFinite(payload.latitude) &&
+        Number.isFinite(payload.longitude)
+      ) {
+        const loc: Record<string, unknown> = {
+          type: 'Point',
+          coordinates: [payload.longitude, payload.latitude],
+        };
+        if (payload.placeId) loc.placeId = payload.placeId;
+        if (payload.formattedAddress) loc.formattedAddress = payload.formattedAddress;
+        body.location = loc;
+      }
+      if (payload.spotsLeft != null) body.availableSpots = payload.spotsLeft;
+      if (payload.genderPreference != null) body.genderPreference = mapGenderToApi(payload.genderPreference);
+      if (payload.type != null) {
+        const lt = UI_TO_API_LISTING_TYPE[payload.type];
+        if (lt) body.listingType = lt;
+      }
+      if (payload.amenities != null) {
+        body.amenityIds = await resolveAmenityIdsFromLabels(payload.amenities);
+      }
+      if (payload.phone) body.contactPhone = payload.phone.replace(/\D/g, '').slice(-10);
+      const { data } = await apiClient.patch<unknown>(`/api/v1/properties/${id}`, body);
+      const root = data as Record<string, unknown>;
+      const inner = root.data as Record<string, unknown> | undefined;
+      const prop = (inner?.property ?? inner) as Record<string, unknown> | undefined;
+      if (!prop) throw new Error('Invalid response');
+      return mapApiPropertyToListing(prop);
+    } catch (err) {
+      throw new Error(apiErr(err, 'Could not update listing'));
+    }
+  },
+
+  deleteListing: async (id: string): Promise<{ message: string }> => {
+    try {
+      await apiClient.delete(`/api/v1/properties/${id}`);
+      return { message: 'Listing deleted' };
+    } catch (err) {
+      throw new Error(apiErr(err, 'Could not delete listing'));
+    }
+  },
+
   getMyListings: async (): Promise<Listing[]> => {
-    await delay();
-    return MOCK_LISTINGS.filter((l) => l.ownerId === 'u1');
+    try {
+      const { data } = await apiClient.get<unknown>('/api/v1/properties/mine/listings');
+      const items = unwrapItems(data);
+      return items.map(mapApiPropertyToListing);
+    } catch (err) {
+      throw new Error(apiErr(err, 'Could not load your listings'));
+    }
   },
 
-  /**
-   * Save a listing to user's shortlist.
-   * BACKEND: POST /listings/:id/save
-   */
   saveListing: async (id: string): Promise<{ message: string }> => {
-    await delay(400);
-    return { message: `Listing ${id} saved successfully` };
+    try {
+      await apiClient.post(`/api/v1/properties/${id}/save`);
+      return { message: 'Saved' };
+    } catch (err) {
+      throw new Error(apiErr(err, 'Could not save listing'));
+    }
   },
 
-  /**
-   * Remove a listing from user's shortlist.
-   * BACKEND: DELETE /listings/:id/save
-   */
   unsaveListing: async (id: string): Promise<{ message: string }> => {
-    await delay(400);
-    return { message: `Listing ${id} removed from saved` };
+    try {
+      await apiClient.delete(`/api/v1/properties/${id}/save`);
+      return { message: 'Removed' };
+    } catch (err) {
+      throw new Error(apiErr(err, 'Could not remove save'));
+    }
   },
 
-  /**
-   * Fetch all saved listings for the current user.
-   * BACKEND: GET /listings/saved
-   */
   getSavedListings: async (): Promise<Listing[]> => {
-    await delay();
-    return MOCK_LISTINGS.filter((l) => SAVED_LISTING_IDS.includes(l.id)).map((l) => ({
-      ...l,
-      isSaved: true,
-    }));
+    try {
+      const { data } = await apiClient.get<unknown>('/api/v1/properties/saved/mine');
+      const root = data as Record<string, unknown>;
+      const inner = root.data as { items?: { property?: Record<string, unknown> }[] } | undefined;
+      const rows = inner?.items ?? [];
+      return rows
+        .map((r) => r.property)
+        .filter((p): p is Record<string, unknown> => p != null && typeof p === 'object')
+        .map((p) => ({ ...mapApiPropertyToListing(p), isSaved: true }));
+    } catch (err) {
+      throw new Error(apiErr(err, 'Could not load saved listings'));
+    }
   },
 
-  /**
-   * Apply to a listing (express interest as a tenant).
-   * BACKEND: POST /listings/:id/apply
-   */
   applyToListing: async (id: string, message?: string): Promise<{ message: string }> => {
-    await delay();
-    void message; // used in real implementation
-    return { message: `Application to listing ${id} submitted successfully` };
+    void id;
+    void message;
+    return { message: 'Not available yet' };
   },
 
-  /**
-   * Book a property visit.
-   * BACKEND: POST /listings/:id/visit
-   */
   bookVisit: async (id: string, date: string): Promise<{ message: string }> => {
-    await delay();
-    return { message: `Visit booked for listing ${id} on ${date}` };
+    void id;
+    void date;
+    return { message: 'Not available yet' };
   },
 };

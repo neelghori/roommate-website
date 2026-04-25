@@ -3,9 +3,9 @@
  * Route protection middleware.
  *
  * Security model:
- * - Public routes: /login, /register, /forgot-password, /reset-password
- * - Admin routes: /admin/* — requires ADMIN role
- * - All other routes: require authentication
+ * - Auth pages: /login, /register, /forgot-password, /reset-password (always allowed)
+ * - Admin routes: /admin/* — client-side AdminLayout (backend JWT when integrated)
+ * - Main app: browsing is public; account-only areas are gated in UserAuthGate (client)
  *
  * BACKEND INTEGRATION: Uncomment the JWT validation block below.
  * The mock implementation allows all requests through (auth enforced client-side).

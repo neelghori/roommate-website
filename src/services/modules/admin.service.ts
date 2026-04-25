@@ -45,9 +45,47 @@ import {
   CMS_PAGES,
   ADMIN_SETTINGS,
 } from '@/mock/data/admin';
+import { isAxiosError } from 'axios';
+import { adminApiClient } from '@/services/adminApi';
 
 // Mock delay to simulate network latency
 const delay = (ms = 700) => new Promise((resolve) => setTimeout(resolve, ms));
+
+function adminErrMessage(err: unknown, fallback: string): string {
+  if (!isAxiosError(err)) return err instanceof Error ? err.message : fallback;
+  const msg = (err.response?.data as { message?: string })?.message;
+  return typeof msg === 'string' ? msg : fallback;
+}
+
+function mapAdminListingRow(row: Record<string, unknown>): AdminListing {
+  const created = row.createdAt;
+  const createdAt =
+    typeof created === 'string'
+      ? created
+      : created && typeof created === 'object' && 'toISOString' in created
+        ? (created as Date).toISOString()
+        : new Date().toISOString();
+  return {
+    id: String(row.id ?? ''),
+    title: String(row.title ?? ''),
+    ownerName: String(row.ownerName ?? ''),
+    ownerEmail: String(row.ownerEmail ?? ''),
+    type: String(row.type ?? row.listingType ?? ''),
+    city: String(row.city ?? ''),
+    price: typeof row.price === 'number' && !Number.isNaN(row.price) ? row.price : Number(row.price) || 0,
+    status: (row.status as AdminListing['status']) ?? 'PENDING',
+    createdAt,
+    flagCount: typeof row.flagCount === 'number' ? row.flagCount : 0,
+  };
+}
+
+async function fetchAdminListingRow(id: string): Promise<AdminListing> {
+  const { data } = await adminApiClient.get<unknown>(`/api/v1/admin/properties/${id}`);
+  const root = data as { data?: { summary?: Record<string, unknown> } };
+  const summary = root.data?.summary;
+  if (!summary) throw new Error('Listing not found');
+  return mapAdminListingRow(summary);
+}
 
 export type UpdateUserPayload = {
   name?: string;
@@ -139,52 +177,62 @@ export const adminService = {
   // ─── Listings ───────────────────────────────────────────────────────────────
 
   /**
-   * Get all listings (admin view).
-   * BACKEND: GET /admin/listings
+   * Property moderation queue / directory.
+   * BACKEND: GET /api/v1/admin/properties?status=pending|under_review|approved|rejected
    */
-  getListings: async (): Promise<AdminListing[]> => {
-    await delay();
-    return ADMIN_LISTINGS;
+  getListings: async (statusFilter?: string): Promise<AdminListing[]> => {
+    try {
+      const q =
+        statusFilter && statusFilter !== 'ALL'
+          ? `?status=${encodeURIComponent(statusFilter.toLowerCase())}`
+          : '';
+      const { data } = await adminApiClient.get<unknown>(`/api/v1/admin/properties${q}`);
+      const root = data as { data?: { items?: Record<string, unknown>[] } };
+      const items = root.data?.items ?? [];
+      return items.map(mapAdminListingRow);
+    } catch (err) {
+      throw new Error(adminErrMessage(err, 'Could not load listings'));
+    }
   },
 
-  /**
-   * Get a single listing by ID (admin view).
-   * BACKEND: GET /admin/listings/:id
-   */
   getListingById: async (id: string): Promise<AdminListing> => {
-    await delay(400);
-    const listing = ADMIN_LISTINGS.find((l) => l.id === id);
-    if (!listing) throw new Error(`Listing not found: ${id}`);
-    return listing;
+    try {
+      return await fetchAdminListingRow(id);
+    } catch (err) {
+      throw new Error(adminErrMessage(err, 'Listing not found'));
+    }
   },
 
-  /**
-   * Approve a pending listing.
-   * BACKEND: PUT /admin/listings/:id/approve
-   */
   approveListing: async (id: string): Promise<AdminListing> => {
-    await delay();
-    const listing = ADMIN_LISTINGS.find((l) => l.id === id);
-    if (!listing) throw new Error(`Listing not found: ${id}`);
-    return { ...listing, status: 'APPROVED' };
+    try {
+      await adminApiClient.patch(`/api/v1/admin/properties/${id}/moderate`, { action: 'approve' });
+      return await fetchAdminListingRow(id);
+    } catch (err) {
+      throw new Error(adminErrMessage(err, 'Could not approve listing'));
+    }
   },
 
-  /**
-   * Reject a listing.
-   * BACKEND: PUT /admin/listings/:id/reject
-   */
   rejectListing: async (id: string, reason?: string): Promise<AdminListing> => {
-    await delay();
-    void reason; // used in real implementation
-    const listing = ADMIN_LISTINGS.find((l) => l.id === id);
-    if (!listing) throw new Error(`Listing not found: ${id}`);
-    return { ...listing, status: 'REJECTED' };
+    try {
+      await adminApiClient.patch(`/api/v1/admin/properties/${id}/moderate`, {
+        action: 'reject',
+        reason: reason?.trim() ?? '',
+      });
+      return await fetchAdminListingRow(id);
+    } catch (err) {
+      throw new Error(adminErrMessage(err, 'Could not reject listing'));
+    }
   },
 
-  /**
-   * Delete a listing.
-   * BACKEND: DELETE /admin/listings/:id
-   */
+  markListingUnderReview: async (id: string): Promise<AdminListing> => {
+    try {
+      await adminApiClient.patch(`/api/v1/admin/properties/${id}/moderate`, { action: 'under_review' });
+      return await fetchAdminListingRow(id);
+    } catch (err) {
+      throw new Error(adminErrMessage(err, 'Could not update listing'));
+    }
+  },
+
   deleteListing: async (id: string): Promise<{ message: string }> => {
     await delay();
     const exists = ADMIN_LISTINGS.some((l) => l.id === id);

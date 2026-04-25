@@ -55,6 +55,7 @@ function ActiveChip({ label, onRemove }: { label: string; onRemove: () => void }
     >
       {label}
       <button
+        type="button"
         onClick={onRemove}
         aria-label={`Remove ${label} filter`}
         className="hover:opacity-70 transition-opacity ml-0.5"
@@ -80,6 +81,7 @@ function TriggerBtn({
   const active = count > 0;
   return (
     <button
+      type="button"
       onClick={onClick}
       aria-expanded={isOpen}
       className={[
@@ -126,11 +128,11 @@ export const FilterPanel: React.FC = () => {
     setOpenDropdown((prev) => (prev === name ? null : name));
 
   /* ── helpers ── */
-  const activeAmenities = (filters.amenities ?? []) as Amenity[];
+  const activeAmenities = filters.amenities ?? [];
 
   const toggleAmenity = useCallback(
-    (amenity: Amenity) => {
-      const curr = (filters.amenities ?? []) as Amenity[];
+    (amenity: string) => {
+      const curr = filters.amenities ?? [];
       setFilter(
         'amenities',
         curr.includes(amenity) ? curr.filter((a) => a !== amenity) : [...curr, amenity],
@@ -200,6 +202,7 @@ export const FilterPanel: React.FC = () => {
 
         {/* Verified toggle (no dropdown) */}
         <button
+          type="button"
           onClick={toggleVerified}
           aria-pressed={!!filters.isVerified}
           className={[
@@ -239,6 +242,7 @@ export const FilterPanel: React.FC = () => {
 
             {/* Reset all */}
             <button
+              type="button"
               onClick={resetFilters}
               className="flex-shrink-0 flex items-center gap-1 px-2.5 py-1.5 rounded-full text-xs font-semibold bg-red-50 text-red-500 border border-red-200 hover:bg-red-100 transition-colors ml-1"
             >
@@ -262,6 +266,7 @@ export const FilterPanel: React.FC = () => {
                   const active = filters.minPrice === p.min && filters.maxPrice === p.max;
                   return (
                     <button
+                      type="button"
                       key={p.label}
                       onClick={() => { applyBudget(p.min, p.max); setOpenDropdown(null); }}
                       className={[
@@ -287,6 +292,7 @@ export const FilterPanel: React.FC = () => {
                 <p className="text-xs font-bold text-gray-500 uppercase tracking-wide">Amenities</p>
                 {activeAmenities.length > 0 && (
                   <button
+                    type="button"
                     onClick={() => setFilter('amenities', [])}
                     className="text-xs text-red-400 hover:text-red-600"
                   >
@@ -299,6 +305,7 @@ export const FilterPanel: React.FC = () => {
                   const active = activeAmenities.includes(key);
                   return (
                     <button
+                      type="button"
                       key={key}
                       onClick={() => toggleAmenity(key)}
                       className={[
@@ -316,6 +323,7 @@ export const FilterPanel: React.FC = () => {
               </div>
               {activeAmenities.length > 0 && (
                 <button
+                  type="button"
                   onClick={() => setOpenDropdown(null)}
                   className="mt-3 w-full py-2 rounded-xl text-sm font-semibold text-white transition-opacity hover:opacity-90 bg-primary"
                 >
@@ -335,6 +343,7 @@ export const FilterPanel: React.FC = () => {
                   const emoji = g === 'Male' ? '👨' : g === 'Female' ? '👩' : '🤝';
                   return (
                     <button
+                      type="button"
                       key={g}
                       onClick={() => { toggleGender(g); setOpenDropdown(null); }}
                       className={[

@@ -54,6 +54,7 @@ export const Button: React.FC<ButtonProps> = ({
   children,
   className = '',
   disabled,
+  type = 'button',
   ...props
 }) => {
   const isDisabled = disabled || isLoading;
@@ -61,6 +62,7 @@ export const Button: React.FC<ButtonProps> = ({
 
   return (
     <button
+      type={type}
       className={[
         'inline-flex items-center justify-center gap-2 font-medium border transition-all duration-200',
         'focus:outline-none',

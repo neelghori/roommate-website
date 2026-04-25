@@ -1,11 +1,11 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import Link from 'next/link';
 import { Search, Flag, ChevronRight } from 'lucide-react';
-import { ADMIN_LISTINGS } from '@/mock/data/admin';
 import { AdminListing, ListingApprovalStatus } from '@/types';
 import { formatDate } from '@/lib/utils/format';
+import { adminService } from '@/services/modules/admin.service';
 
 type StatusFilter = 'ALL' | ListingApprovalStatus;
 
@@ -24,9 +24,31 @@ const STATUS_CONFIG: Record<
 export default function AdminListingsPage() {
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('ALL');
+  const [listings, setListings] = useState<AdminListing[]>([]);
+  const [loadError, setLoadError] = useState('');
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let c = false;
+    setLoading(true);
+    adminService
+      .getListings()
+      .then((rows) => {
+        if (!c) setListings(rows);
+      })
+      .catch((e) => {
+        if (!c) setLoadError(e instanceof Error ? e.message : 'Failed to load');
+      })
+      .finally(() => {
+        if (!c) setLoading(false);
+      });
+    return () => {
+      c = true;
+    };
+  }, []);
 
   const filtered = useMemo(() => {
-    return ADMIN_LISTINGS.filter((l) => {
+    return listings.filter((l) => {
       const matchesSearch =
         !search ||
         l.title.toLowerCase().includes(search.toLowerCase()) ||
@@ -35,25 +57,35 @@ export default function AdminListingsPage() {
       const matchesStatus = statusFilter === 'ALL' || l.status === statusFilter;
       return matchesSearch && matchesStatus;
     });
-  }, [search, statusFilter]);
+  }, [search, statusFilter, listings]);
 
   const counts = useMemo(
     () => ({
-      ALL: ADMIN_LISTINGS.length,
-      PENDING: ADMIN_LISTINGS.filter((l) => l.status === 'PENDING').length,
-      UNDER_REVIEW: ADMIN_LISTINGS.filter((l) => l.status === 'UNDER_REVIEW').length,
-      APPROVED: ADMIN_LISTINGS.filter((l) => l.status === 'APPROVED').length,
-      REJECTED: ADMIN_LISTINGS.filter((l) => l.status === 'REJECTED').length,
+      ALL: listings.length,
+      PENDING: listings.filter((l) => l.status === 'PENDING').length,
+      UNDER_REVIEW: listings.filter((l) => l.status === 'UNDER_REVIEW').length,
+      APPROVED: listings.filter((l) => l.status === 'APPROVED').length,
+      REJECTED: listings.filter((l) => l.status === 'REJECTED').length,
     }),
-    []
+    [listings],
   );
 
   return (
     <div className="p-4 md:p-6 max-w-6xl mx-auto">
       <div className="mb-5">
         <h1 className="text-2xl font-bold text-gray-900">Listings</h1>
-        <p className="text-sm text-gray-500 mt-0.5">{ADMIN_LISTINGS.length} total listings</p>
+        <p className="text-sm text-gray-500 mt-0.5">{listings.length} total in directory</p>
       </div>
+
+      {loadError && (
+        <div className="mb-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+          <p className="font-medium">Could not load listings from API</p>
+          <p className="text-xs mt-1 opacity-90">{loadError}</p>
+          <Link href="/admin-sign-in" className="text-xs font-semibold text-teal-700 underline mt-2 inline-block">
+            Staff sign in
+          </Link>
+        </div>
+      )}
 
       {/* Filters */}
       <div className="bg-white rounded-2xl p-4 border border-gray-100 shadow-sm mb-4">
@@ -72,6 +104,7 @@ export default function AdminListingsPage() {
           {STATUS_OPTIONS.map((s) => (
             <button
               key={s}
+              type="button"
               onClick={() => setStatusFilter(s)}
               className={`flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium border transition-colors ${
                 statusFilter === s
@@ -88,10 +121,12 @@ export default function AdminListingsPage() {
         </div>
       </div>
 
-      <p className="text-xs text-gray-500 mb-2">{filtered.length} listing{filtered.length !== 1 ? 's' : ''}</p>
+      <p className="text-xs text-gray-500 mb-2">
+        {loading ? 'Loading…' : `${filtered.length} listing${filtered.length !== 1 ? 's' : ''}`}
+      </p>
 
       <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-        {filtered.length === 0 ? (
+        {!loading && filtered.length === 0 ? (
           <p className="text-sm text-gray-400 text-center py-12">No listings match the filters</p>
         ) : (
           <div className="divide-y divide-gray-50">

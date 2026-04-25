@@ -13,16 +13,13 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { Eye, EyeOff, Home, User, Building2 } from 'lucide-react';
 import { registerSchema, type RegisterFormData } from '@/lib/validations/auth.schema';
 import { authService } from '@/services/modules/auth.service';
-import { useAuthStore } from '@/store/authStore';
 import { useToast } from '@/hooks/useToast';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
-import { Checkbox } from '@/components/ui/Checkbox';
 
 export default function RegisterPageClient() {
   const router = useRouter();
   const { success, error: toastError } = useToast();
-  const setUser = useAuthStore((s) => s.setUser);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
 
@@ -32,30 +29,45 @@ export default function RegisterPageClient() {
     control,
     watch,
     setValue,
+    reset,
     formState: { errors, isSubmitting },
   } = useForm<RegisterFormData>({
     resolver: zodResolver(registerSchema),
     defaultValues: {
       role: 'TENANT',
       agreeToTerms: false,
+      name: '',
+      email: '',
+      phone: '',
+      password: '',
+      confirmPassword: '',
     },
   });
 
   const selectedRole = watch('role');
-  const agreeToTerms = watch('agreeToTerms');
 
   const onSubmit = async (data: RegisterFormData) => {
     try {
-      const res = await authService.register({
+      await authService.register({
         name: data.name,
         email: data.email,
         phone: data.phone,
         password: data.password,
         role: data.role,
       });
-      setUser(res.user);
-      success('Account created!', 'Let\'s set up your profile.');
-      router.push('/onboarding');
+      success('Account created!', 'Sign in with your email and password.');
+      reset({
+        role: 'TENANT',
+        agreeToTerms: false,
+        name: '',
+        email: '',
+        phone: '',
+        password: '',
+        confirmPassword: '',
+      });
+      setShowPassword(false);
+      setShowConfirm(false);
+      router.push('/login');
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Registration failed. Please try again.';
       toastError('Registration failed', message);
@@ -63,9 +75,9 @@ export default function RegisterPageClient() {
   };
 
   return (
-    <div className="w-full max-w-sm">
+    <div className="w-full max-w-sm mx-auto">
       {/* Card */}
-      <div className="bg-white rounded-2xl shadow-lg p-8 flex flex-col gap-5">
+      <div className="bg-white rounded-2xl shadow-lg p-6 sm:p-8 flex flex-col gap-5 w-full overflow-visible">
 
         {/* Logo */}
         <div className="flex flex-col items-center gap-1">
@@ -133,7 +145,11 @@ export default function RegisterPageClient() {
         </div>
 
         {/* Form */}
-        <form onSubmit={handleSubmit(onSubmit)} noValidate className="flex flex-col gap-3.5">
+        <form
+          onSubmit={handleSubmit(onSubmit)}
+          noValidate
+          className="flex flex-col gap-3.5 relative z-0"
+        >
           {/* Full Name */}
           <Input
             label="Full Name"
@@ -189,42 +205,54 @@ export default function RegisterPageClient() {
             {...register('confirmPassword')}
           />
 
-          {/* Terms Checkbox */}
-          <div className="mt-1">
-            <Checkbox
-              checked={agreeToTerms}
-              onChange={(e) =>
-                setValue('agreeToTerms', e.target.checked, { shouldValidate: true })
-              }
-              error={errors.agreeToTerms?.message}
-              label=""
-            />
-            {/* Custom label with link (placed alongside checkbox via flex) */}
-            <div className="flex items-start gap-2.5 -mt-6 pl-8">
-              <p className="text-sm text-gray-600">
+          {/* Terms — native checkbox (reliable tap targets on mobile vs sr-only + custom box) */}
+          <div className="mt-1 flex flex-col gap-1.5">
+            <div className="flex items-start gap-3">
+              <input
+                type="checkbox"
+                id="register-agree-terms"
+                {...register('agreeToTerms')}
+                className={[
+                  'mt-0.5 h-5 w-5 shrink-0 cursor-pointer rounded border-2 border-gray-300',
+                  'text-[#1B8F8F] focus:ring-2 focus:ring-[#1B8F8F]/40 focus:ring-offset-0',
+                  'accent-[#1B8F8F]',
+                ].join(' ')}
+              />
+              <label
+                htmlFor="register-agree-terms"
+                className="text-sm text-gray-600 leading-snug min-w-0 cursor-pointer select-none"
+              >
                 I agree to the{' '}
-                <Link href="/terms" className="font-semibold hover:underline" style={{ color: '#1B8F8F' }}>
+                <Link
+                  href="/terms"
+                  className="font-semibold hover:underline text-[#1B8F8F] relative z-10"
+                  onPointerDown={(e) => e.stopPropagation()}
+                >
                   Terms
                 </Link>{' '}
                 &amp;{' '}
-                <Link href="/privacy" className="font-semibold hover:underline" style={{ color: '#1B8F8F' }}>
+                <Link
+                  href="/privacy"
+                  className="font-semibold hover:underline text-[#1B8F8F] relative z-10"
+                  onPointerDown={(e) => e.stopPropagation()}
+                >
                   Privacy Policy
                 </Link>
-              </p>
+              </label>
             </div>
             {errors.agreeToTerms && (
-              <p className="text-xs text-red-500 mt-1 ml-7">{errors.agreeToTerms.message}</p>
+              <p className="text-xs text-red-500">{errors.agreeToTerms.message}</p>
             )}
           </div>
 
-          {/* Submit */}
+          {/* Submit — explicit colors so the CTA never blends into the card */}
           <Button
             type="submit"
             variant="primary"
             size="lg"
             fullWidth
             isLoading={isSubmitting}
-            className="mt-1"
+            className="mt-3 relative z-10 bg-[#1B8F8F] hover:bg-[#178080] border-[#1B8F8F] text-white shadow-sm"
           >
             {isSubmitting ? 'Creating account…' : 'Create Account'}
           </Button>

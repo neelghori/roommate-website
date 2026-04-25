@@ -5,7 +5,7 @@
  */
 'use client';
 
-import React, { forwardRef } from 'react';
+import React, { forwardRef, useId } from 'react';
 import { Check } from 'lucide-react';
 
 interface CheckboxProps extends Omit<React.InputHTMLAttributes<HTMLInputElement>, 'type'> {
@@ -31,7 +31,12 @@ export const Checkbox = forwardRef<HTMLInputElement, CheckboxProps>(
     },
     ref
   ) => {
-    const checkboxId = id ?? (label ? `checkbox-${label.toLowerCase().replace(/\s+/g, '-')}` : undefined);
+    const autoId = useId().replace(/:/g, '');
+    const checkboxId =
+      id ??
+      (typeof label === 'string' && label.trim()
+        ? `checkbox-${label.toLowerCase().replace(/\s+/g, '-')}`
+        : `checkbox-${autoId}`);
 
     return (
       <div className={['flex flex-col gap-1', containerClassName].join(' ')}>

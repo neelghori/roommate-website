@@ -2,10 +2,12 @@
  * user.service.ts
  * User & roommate service module.
  *
- * MOCK MODE: Returns mock data with artificial delay.
- * BACKEND INTEGRATION: Replace mock functions with apiClient calls.
+ * Profile: GET/PATCH `/api/v1/auth/me` via apiClient + auth mappers (see auth.service.ts).
+ * Other routes remain mock until wired.
  *
  * Expected endpoints:
+ *   GET    /api/v1/auth/me                  → User
+ *   PATCH  /api/v1/auth/me                 → User
  *   GET    /users/me                        → User
  *   PUT    /users/me                        → User
  *   GET    /roommates                       → RoommateProfile[]
@@ -29,8 +31,16 @@ import {
   Match,
   Notification,
 } from '@/types';
-import { CURRENT_USER, ROOMMATE_PROFILES, MATCHES, ROOMMATE_REQUESTS_SENT, ROOMMATE_REQUESTS_RECEIVED } from '@/mock/data/users';
+import { CURRENT_USER, MATCHES, ROOMMATE_REQUESTS_SENT, ROOMMATE_REQUESTS_RECEIVED } from '@/mock/data/users';
+import { tenantRoommateProfileService } from '@/services/modules/tenantRoommateProfile.service';
 import { MOCK_NOTIFICATIONS } from '@/mock/data/notifications';
+import { apiClient } from '@/services/api';
+import {
+  authService,
+  authApiErrorMessage,
+  mapApiUserToUser,
+  parseAuthResponse,
+} from '@/services/modules/auth.service';
 
 // Mock delay to simulate network latency
 const delay = (ms = 800) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -54,29 +64,59 @@ export type RoommateFilters = {
   role?: string;
 };
 
+/** Map app profile form → API body (camelCase; enums lowercase where required). */
+function buildProfileUpdateBody(payload: UpdateProfilePayload): Record<string, unknown> {
+  const body: Record<string, unknown> = {};
+  if (payload.name !== undefined) body.fullName = payload.name;
+  if (payload.bio !== undefined) body.bio = payload.bio;
+  if (payload.location !== undefined) body.location = payload.location;
+  if (payload.budget !== undefined) body.monthlyBudget = payload.budget;
+  if (payload.moveInDate !== undefined && payload.moveInDate !== '') {
+    body.moveInDate = payload.moveInDate;
+  }
+  if (payload.genderPreference !== undefined) {
+    body.roommateGenderPreference =
+      payload.genderPreference === 'Male'
+        ? 'male'
+        : payload.genderPreference === 'Female'
+          ? 'female'
+          : 'any';
+  }
+  if (payload.lifestyle !== undefined) {
+    body.lifestyle = { tags: payload.lifestyle };
+  }
+  if (payload.phone !== undefined) body.mobile = payload.phone;
+  return body;
+}
+
 export const userService = {
   /**
    * Get current user profile.
-   * BACKEND: GET /users/me
+   * BACKEND: GET /api/v1/auth/me
    */
   getProfile: async (): Promise<User> => {
-    await delay(400);
-    return CURRENT_USER;
+    return authService.getMe();
   },
 
   /**
    * Update current user profile.
-   * BACKEND: PUT /users/me
+   * BACKEND: PATCH /api/v1/auth/me
    */
   updateProfile: async (payload: UpdateProfilePayload): Promise<User> => {
-    await delay();
-    return {
-      ...CURRENT_USER,
-      ...payload,
-      lifestyle: (payload.lifestyle as User['lifestyle']) ?? CURRENT_USER.lifestyle,
-      genderPreference:
-        (payload.genderPreference as User['genderPreference']) ?? CURRENT_USER.genderPreference,
-    };
+    try {
+      const res = await apiClient.patch<unknown>(
+        '/api/v1/auth/me',
+        buildProfileUpdateBody(payload),
+      );
+      const { data, status } = res;
+      if (status === 204 || data == null || data === '') {
+        return authService.getMe();
+      }
+      const { raw } = parseAuthResponse(data);
+      return mapApiUserToUser(raw, {});
+    } catch (err) {
+      throw new Error(authApiErrorMessage(err, 'Could not update profile'));
+    }
   },
 
   /**
@@ -84,23 +124,18 @@ export const userService = {
    * BACKEND: GET /roommates?location=...&minBudget=...
    */
   getRoommateProfiles: async (filters?: RoommateFilters): Promise<RoommateProfile[]> => {
-    await delay();
-    let results = [...ROOMMATE_PROFILES];
+    const searchParts = [filters?.location, filters?.role].filter(Boolean) as string[];
+    const search = searchParts.join(' ').trim();
+    let results = await tenantRoommateProfileService.list({
+      search: search || undefined,
+      tags: filters?.lifestyle,
+    });
 
-    if (filters?.location) {
-      const q = filters.location.toLowerCase();
-      results = results.filter((r) => r.location?.toLowerCase().includes(q));
-    }
     if (filters?.minBudget !== undefined) {
       results = results.filter((r) => (r.budget ?? 0) >= filters.minBudget!);
     }
     if (filters?.maxBudget !== undefined) {
       results = results.filter((r) => (r.budget ?? Infinity) <= filters.maxBudget!);
-    }
-    if (filters?.lifestyle && filters.lifestyle.length > 0) {
-      results = results.filter((r) =>
-        filters.lifestyle!.some((tag) => r.tags.includes(tag)),
-      );
     }
     if (filters?.role) {
       results = results.filter((r) => r.role === filters.role);
@@ -114,12 +149,7 @@ export const userService = {
    * BACKEND: GET /roommates/:id
    */
   getRoommateById: async (id: string): Promise<RoommateProfile> => {
-    await delay(500);
-    const profile = ROOMMATE_PROFILES.find((r) => r.id === id || r.userId === id);
-    if (!profile) {
-      throw new Error(`Roommate profile not found: ${id}`);
-    }
-    return profile;
+    return tenantRoommateProfileService.getById(id);
   },
 
   /**
@@ -128,7 +158,12 @@ export const userService = {
    */
   sendRequest: async (roommateId: string, message?: string): Promise<RoommateRequest> => {
     await delay();
-    const target = ROOMMATE_PROFILES.find((r) => r.id === roommateId || r.userId === roommateId);
+    let target: RoommateProfile | null = null;
+    try {
+      target = await tenantRoommateProfileService.getById(roommateId);
+    } catch {
+      target = null;
+    }
     const newRequest: RoommateRequest = {
       id: `req${Date.now()}`,
       senderId: 'u1',

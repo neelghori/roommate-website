@@ -1,11 +1,10 @@
 /**
- * User group layout.
- * All routes inside (user)/ are wrapped by this.
- * Auth check: redirect to /login if not authenticated.
- * BACKEND INTEGRATION: Replace mock auth check with real session validation.
+ * User group layout — session bootstrap + gate: guests browse public routes;
+ * protected routes redirect to /#browse; signed-in users see all routes.
  */
 import React from 'react';
+import { UserAuthGate } from '@/components/shared/UserAuthGate';
 
 export default function UserGroupLayout({ children }: { children: React.ReactNode }) {
-  return <>{children}</>;
+  return <UserAuthGate>{children}</UserAuthGate>;
 }

@@ -7,23 +7,32 @@
  *           sticky right column (price, owner, CTAs)
  */
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import {
   ChevronLeft, MapPin, CheckCircle, BadgeCheck,
   Wifi, Wind, UtensilsCrossed, ShoppingBag,
   Car, Dumbbell, Shield, Zap, Eye,
+  Pencil, Trash2, UserPlus, Users,
 } from 'lucide-react';
 import { UserLayout } from '@/components/shared/UserLayout';
 import { ListingCard } from '@/components/features/ListingCard';
 import { ListingDetailModal } from '@/components/features/ListingDetailModal';
+import { ListingResidentEditorModal } from '@/components/features/ListingResidentEditorModal';
+import { ListingResidentsViewModal } from '@/components/features/ListingResidentsViewModal';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { EmptyState } from '@/components/shared/EmptyState';
-import { MOCK_LISTINGS } from '@/mock/data';
 import { useToast } from '@/hooks/useToast';
+import {
+  listingHasVerification,
+  listingService,
+  listingVerificationLabel,
+  MAX_LISTING_RESIDENTS,
+} from '@/services/modules/listing.service';
 import { formatRupees } from '@/lib/utils/format';
-import { Listing } from '@/types';
+import { Listing, type ListingResidentSnapshot } from '@/types';
+import { useAuthStore } from '@/store/authStore';
 
 const AMENITY_ICONS: Record<string, React.ReactNode> = {
   WiFi:           <Wifi size={15} />,
@@ -54,19 +63,118 @@ function maskPhone(phone: string): string {
   return `+91 ${digits.slice(0, 2)}xxxxx${digits.slice(-3)}`;
 }
 
+const RESIDENT_PRO_LABEL: Record<string, string> = {
+  student: 'Student',
+  work_professional: 'Working professional',
+  freelancer: 'Freelancer',
+  business: 'Business',
+  other: 'Other',
+};
+
 export default function ListingDetailPage() {
   const params   = useParams();
   const router   = useRouter();
   const toast    = useToast();
+  const user = useAuthStore((s) => s.user);
   const [isApplying,    setIsApplying]    = useState(false);
   const [isBooking,     setIsBooking]     = useState(false);
   const [previewListing, setPreviewListing] = useState<Listing | null>(null);
+  const [listing, setListing] = useState<Listing | null>(null);
+  const [similarListings, setSimilarListings] = useState<Listing[]>([]);
+  const [loadState, setLoadState] = useState<'loading' | 'ok' | 'error'>('loading');
+  const [showResidentEditor, setShowResidentEditor] = useState(false);
+  const [residentEditorIndex, setResidentEditorIndex] = useState<number | null>(null);
+  const [removingResidentIndex, setRemovingResidentIndex] = useState<number | null>(null);
+  const [showResidentsViewModal, setShowResidentsViewModal] = useState(false);
+  const [residentsForViewModal, setResidentsForViewModal] = useState<ListingResidentSnapshot[]>([]);
 
   const id = params?.id as string;
-  const listing = MOCK_LISTINGS.find((l) => l.id === id);
-  const similarListings = MOCK_LISTINGS.filter((l) => l.id !== id && l.type === listing?.type).slice(0, 4);
 
-  if (!listing) {
+  const openAddResident = () => {
+    if (!listing) return;
+    const rows = listing.residentSnapshots ?? [];
+    if (rows.length >= MAX_LISTING_RESIDENTS) {
+      toast.error('Limit reached', `You can add at most ${MAX_LISTING_RESIDENTS} residents per listing.`);
+      return;
+    }
+    setResidentEditorIndex(null);
+    setShowResidentEditor(true);
+  };
+
+  const openEditResident = (index: number) => {
+    setResidentEditorIndex(index);
+    setShowResidentEditor(true);
+  };
+
+  const handleRemoveResident = async (index: number) => {
+    if (!listing) return;
+    const rows = listing.residentSnapshots ?? [];
+    const rid = rows[index]?.id;
+    if (!rid) {
+      toast.error(
+        'Cannot remove this entry',
+        'This row has no server id yet. Refresh the page, or edit and save once to sync.',
+      );
+      return;
+    }
+    setRemovingResidentIndex(index);
+    try {
+      const updated = await listingService.removeListingResident(listing.id, rid);
+      setListing(updated);
+      toast.success('Removed', 'That person was removed from your listing.');
+    } catch (e) {
+      toast.error('Could not remove', e instanceof Error ? e.message : 'Try again.');
+    } finally {
+      setRemovingResidentIndex(null);
+    }
+  };
+
+  const openViewResidents = (rows: ListingResidentSnapshot[]) => {
+    if (rows.length === 0) return;
+    setResidentsForViewModal(rows);
+    setShowResidentsViewModal(true);
+  };
+
+  const closeViewResidentsModal = () => {
+    setShowResidentsViewModal(false);
+    setResidentsForViewModal([]);
+  };
+
+  useEffect(() => {
+    if (!id) return;
+    let cancelled = false;
+    setLoadState('loading');
+    (async () => {
+      try {
+        const l = await listingService.getListingById(id);
+        if (cancelled) return;
+        setListing(l);
+        setLoadState('ok');
+        const rows = await listingService.getListings({ type: l.type });
+        if (cancelled) return;
+        setSimilarListings(rows.filter((x) => x.id !== id).slice(0, 4));
+      } catch {
+        if (!cancelled) {
+          setListing(null);
+          setSimilarListings([]);
+          setLoadState('error');
+        }
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [id]);
+
+  if (loadState === 'loading') {
+    return (
+      <UserLayout pageSuffix="Listing" showFab={false}>
+        <div className="max-w-lg mx-auto px-4 py-12 text-center text-sm text-gray-500">Loading listing…</div>
+      </UserLayout>
+    );
+  }
+
+  if (loadState === 'error' || !listing) {
     return (
       <UserLayout pageSuffix="Listing" showFab={false}>
         <div className="max-w-lg mx-auto px-4 py-8">
@@ -98,6 +206,9 @@ export default function ListingDetailPage() {
   };
 
   const ownerInitials = listing.ownerName.split(' ').map((n) => n[0]).join('').toUpperCase().slice(0, 2);
+  const isOwner =
+    Boolean(user?.id && listing.ownerId) && String(user!.id) === String(listing.ownerId);
+  const residents = listing.residentSnapshots ?? [];
 
   return (
     <UserLayout pageSuffix="Listing Detail" showSearch={false} showFab={false}>
@@ -106,12 +217,26 @@ export default function ListingDetailPage() {
         {/* Back button */}
         <div className="px-4 lg:px-0 py-3">
           <button
+            type="button"
             onClick={() => router.back()}
             className="flex items-center gap-1.5 text-sm font-medium text-gray-600 hover:text-gray-900 transition-colors"
           >
             <ChevronLeft size={18} /> Back
           </button>
         </div>
+
+        {listing.approvalStatus === 'REJECTED' && listing.rejectionReason && (
+          <div
+            className="mx-4 lg:mx-0 mb-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-900"
+            role="alert"
+          >
+            <p className="font-semibold">This listing was not approved</p>
+            <p className="mt-1 text-red-800/95">{listing.rejectionReason}</p>
+            <p className="mt-2 text-xs text-red-700/90">
+              Update your listing and resubmit, or contact support if you think this is a mistake.
+            </p>
+          </div>
+        )}
 
         {/* ── Desktop: 2-column grid ── */}
         <div className="lg:grid lg:grid-cols-[1fr_360px] lg:gap-8 lg:items-start">
@@ -140,9 +265,10 @@ export default function ListingDetailPage() {
                   <Badge variant={BADGE_VARIANT_MAP[listing.badge]}>{listing.badge}</Badge>
                 </div>
               )}
-              {listing.isVerified && (
-                <div className="absolute top-3 right-3 flex items-center gap-1 text-white text-xs font-semibold px-2.5 py-1 rounded-full" style={{ backgroundColor: '#1B8F8F' }}>
-                  <BadgeCheck size={12} /> Verified
+              {listingHasVerification(listing) && (
+                <div className="absolute top-3 right-3 flex items-center gap-1 text-white text-xs font-semibold px-2.5 py-1 rounded-full max-w-[min(200px,calc(100%-5rem))]" style={{ backgroundColor: '#1B8F8F' }}>
+                  <BadgeCheck size={12} className="shrink-0" />
+                  <span className="truncate">{listingVerificationLabel(listing)}</span>
                 </div>
               )}
             </div>
@@ -157,6 +283,12 @@ export default function ListingDetailPage() {
                   <MapPin size={14} className="text-gray-400 flex-shrink-0" />
                   <span>{listing.location}</span>
                 </div>
+                {listingHasVerification(listing) && (
+                  <div className="mt-2 inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold text-white" style={{ backgroundColor: '#1B8F8F' }}>
+                    <BadgeCheck size={12} className="shrink-0" />
+                    {listingVerificationLabel(listing)}
+                  </div>
+                )}
               </div>
 
               {/* Amenities */}
@@ -177,6 +309,128 @@ export default function ListingDetailPage() {
                 <h2 className="text-sm font-bold text-gray-700 mb-2">About this place</h2>
                 <p className="text-sm text-gray-600 leading-relaxed">{listing.description}</p>
               </div>
+
+              {isOwner && (
+                <div className="rounded-2xl border border-dashed border-teal-200 bg-teal-50/50 p-4">
+                  <div className="flex flex-wrap items-start justify-between gap-2 mb-2">
+                    <div>
+                      <h2 className="text-sm font-bold text-gray-800 flex items-center gap-2">
+                        <Users size={16} className="text-teal-700 shrink-0" aria-hidden />
+                        Who lives here
+                      </h2>
+                      <p className="text-xs text-gray-600 mt-1">
+                        Manage people currently staying here (up to {MAX_LISTING_RESIDENTS}). This appears on your
+                        public listing.
+                      </p>
+                    </div>
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      size="sm"
+                      className="shrink-0"
+                      onClick={openAddResident}
+                      disabled={residents.length >= MAX_LISTING_RESIDENTS}
+                    >
+                      <UserPlus size={14} className="inline mr-1 -mt-0.5 align-middle" aria-hidden />
+                      Add resident
+                    </Button>
+                  </div>
+
+                  {residents.length > 0 ? (
+                    <ul className="mt-3 divide-y divide-teal-100 rounded-xl border border-teal-100 bg-white overflow-hidden">
+                      {residents.map((r, i) => (
+                        <li
+                          key={`resident-row-${i}-${r.profileImageUrl ?? ''}-${r.fullName ?? ''}`}
+                          className="flex flex-wrap items-center gap-3 px-3 py-3 text-sm"
+                        >
+                          <div className="h-10 w-10 rounded-full bg-gray-100 border border-gray-200 overflow-hidden shrink-0 flex items-center justify-center text-xs font-semibold text-gray-500">
+                            {r.profileImageUrl ? (
+                              <img src={r.profileImageUrl} alt="" className="h-full w-full object-cover" />
+                            ) : (
+                              (r.fullName?.trim()?.[0] ?? '?').toUpperCase()
+                            )}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="font-semibold text-gray-900 truncate">
+                              {r.fullName?.trim() || 'Unnamed resident'}
+                            </p>
+                            <p className="text-xs text-gray-500 truncate">
+                              {r.professionalType
+                                ? RESIDENT_PRO_LABEL[r.professionalType] ?? r.professionalType
+                                : '—'}
+                              {r.collegeOrCompanyName ? ` · ${r.collegeOrCompanyName}` : ''}
+                            </p>
+                          </div>
+                          <div className="flex items-center gap-1 shrink-0">
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              className="!px-2"
+                              aria-label={`View details for ${r.fullName?.trim() || 'resident'}`}
+                              onClick={() => openViewResidents([residents[i]])}
+                            >
+                              <Eye size={14} aria-hidden />
+                            </Button>
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              className="!px-2"
+                              aria-label={`Edit ${r.fullName?.trim() || 'resident'}`}
+                              disabled={!r.id}
+                              title={!r.id ? 'Refresh the page to sync this row with the server.' : undefined}
+                              onClick={() => openEditResident(i)}
+                            >
+                              <Pencil size={14} aria-hidden />
+                            </Button>
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              className="!px-2 text-red-600 border-red-200 hover:bg-red-50"
+                              aria-label={`Remove ${r.fullName?.trim() || 'resident'}`}
+                              isLoading={removingResidentIndex === i}
+                              disabled={removingResidentIndex != null || !r.id}
+                              title={!r.id ? 'Refresh the page to sync this row with the server.' : undefined}
+                              onClick={() => void handleRemoveResident(i)}
+                            >
+                              <Trash2 size={14} aria-hidden />
+                            </Button>
+                          </div>
+                        </li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <p className="text-xs text-gray-500 mt-2">No residents added yet. Use &quot;Add resident&quot; to add the first one.</p>
+                  )}
+                </div>
+              )}
+
+              {!isOwner && residents.length > 0 && (
+                <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-gray-100 bg-white p-3 shadow-sm">
+                  <p className="text-sm text-gray-700 flex items-center gap-2 min-w-0">
+                    <Users size={16} className="text-teal-700 shrink-0" aria-hidden />
+                    <span>
+                      Who lives here
+                      <span className="text-gray-500 font-normal">
+                        {' '}
+                        ({residents.length} {residents.length === 1 ? 'person' : 'people'})
+                      </span>
+                    </span>
+                  </p>
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    size="sm"
+                    className="shrink-0"
+                    onClick={() => openViewResidents(residents)}
+                  >
+                    <Eye size={14} className="inline mr-1.5 -mt-0.5 align-middle" aria-hidden />
+                    View
+                  </Button>
+                </div>
+              )}
 
               {/* Map placeholder */}
               <div>
@@ -215,6 +469,12 @@ export default function ListingDetailPage() {
                 <MapPin size={14} className="text-gray-400 flex-shrink-0" />
                 <span>{listing.location}</span>
               </div>
+              {listingHasVerification(listing) && (
+                <div className="mt-2 inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold text-white" style={{ backgroundColor: '#1B8F8F' }}>
+                  <BadgeCheck size={12} className="shrink-0" />
+                  {listingVerificationLabel(listing)}
+                </div>
+              )}
             </div>
 
             {/* Price card */}
@@ -267,7 +527,15 @@ export default function ListingDetailPage() {
                     <p className="text-xs text-gray-500 mt-0.5">📞 {maskPhone(listing.ownerPhone)}</p>
                   )}
                 </div>
-                {listing.isVerified && <CheckCircle size={18} className="text-green-500 flex-shrink-0" />}
+                {listingHasVerification(listing) && (
+                  <span
+                    className="shrink-0 text-green-500"
+                    title={listingVerificationLabel(listing)}
+                  >
+                    <CheckCircle size={18} className="shrink-0" aria-hidden />
+                    <span className="sr-only">{listingVerificationLabel(listing)}</span>
+                  </span>
+                )}
               </div>
             </div>
           </div>
@@ -275,6 +543,27 @@ export default function ListingDetailPage() {
       </div>
 
       <ListingDetailModal listing={previewListing} isOpen={!!previewListing} onClose={() => setPreviewListing(null)} />
+
+      <ListingResidentsViewModal
+        isOpen={showResidentsViewModal}
+        onClose={closeViewResidentsModal}
+        residents={residentsForViewModal}
+      />
+
+      {isOwner && (
+        <ListingResidentEditorModal
+          isOpen={showResidentEditor}
+          onClose={() => setShowResidentEditor(false)}
+          propertyId={listing.id}
+          listingTitle={listing.title}
+          residents={residents}
+          editingIndex={residentEditorIndex}
+          initialSnapshot={
+            residentEditorIndex === null ? undefined : residents[residentEditorIndex]
+          }
+          onSaved={(updated) => setListing(updated)}
+        />
+      )}
     </UserLayout>
   );
 }

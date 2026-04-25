@@ -14,7 +14,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter, usePathname } from 'next/navigation';
 import {
-  Bell, User, Search, Plus, Home, LogOut, ChevronDown,
+  Bell, User, Search, Plus, Home, LogOut, ChevronDown, KeyRound,
   Compass, Heart, MessageCircle, Users, Star, AlertCircle, CheckCircle
 } from 'lucide-react';
 import { useAuthStore } from '@/store/authStore';
@@ -64,11 +64,12 @@ const AvatarDropdown: React.FC = () => {
     await authService.logout();
     logout();
     toast.success('Logged out', 'See you soon!');
-    router.push('/login');
+    router.push('/');
   };
 
   const MENU = [
     { icon: User, label: 'Profile', href: '/profile' },
+    { icon: KeyRound, label: 'Change password', href: '/profile/change-password' },
     { icon: Home, label: 'My Listings', href: '/my-listings' },
   ];
 

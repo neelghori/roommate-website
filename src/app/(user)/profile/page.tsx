@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { UserLayout } from '@/components/shared/UserLayout';
@@ -9,19 +9,13 @@ import { Modal } from '@/components/ui/Modal';
 import { useAuthStore } from '@/store/authStore';
 import { useToast } from '@/hooks/useToast';
 import { authService } from '@/services/modules/auth.service';
+import { faqService, type FaqItem } from '@/services/modules/faq.service';
 import { CURRENT_USER } from '@/mock/data/users';
 import {
   Pencil, Settings, Home, Users, BadgeCheck,
   HelpCircle, LogOut, ChevronRight, Phone, Building2,
-  Star, Heart, UserCheck,
+  Star, Heart, UserCheck, KeyRound,
 } from 'lucide-react';
-
-const FAQS = [
-  { q: 'How do I post a listing?', a: 'Go to My Listings → + Add Listing. Listings are reviewed within 24 hours.' },
-  { q: 'Is Roommat free to use?', a: 'Basic browsing and profile creation are free. Premium features require a subscription.' },
-  { q: 'How does roommate matching work?', a: 'Our algorithm matches you on lifestyle, budget, location and move-in preferences.' },
-  { q: 'How do I verify my identity?', a: 'Go to Verify Identity below and upload your Aadhar card. Verified in 2 business days.' },
-];
 
 export default function ProfilePage() {
   const router = useRouter();
@@ -33,17 +27,41 @@ export default function ProfilePage() {
   const [showVerify, setShowVerify] = useState(false);
   const [showHelp, setShowHelp] = useState(false);
   const [openFaq, setOpenFaq] = useState<number | null>(null);
+  const [faqItems, setFaqItems] = useState<FaqItem[]>([]);
+  const [faqLoading, setFaqLoading] = useState(false);
+
+  useEffect(() => {
+    if (!showHelp) return;
+    setOpenFaq(null);
+    let cancelled = false;
+    setFaqLoading(true);
+    faqService
+      .getFaqs()
+      .then((list) => {
+        if (!cancelled) setFaqItems(list);
+      })
+      .catch(() => {
+        if (!cancelled) setFaqItems([]);
+      })
+      .finally(() => {
+        if (!cancelled) setFaqLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [showHelp]);
 
   const handleLogout = async () => {
     await authService.logout();
     logout();
     toast.success('Logged out', 'See you soon!');
-    router.push('/login');
+    router.push('/');
   };
 
   const menuItems = [
     { icon: Settings, label: 'Super Admin Panel', href: '/admin', admin: true },
     { icon: Home, label: 'My Listings', href: '/my-listings' },
+    { icon: KeyRound, label: 'Change password', href: '/profile/change-password' },
     { icon: Users, label: 'Tenant Profiles', href: '/roommates' },
     { icon: BadgeCheck, label: 'Verify Identity', onClick: () => setShowVerify(true) },
     { icon: HelpCircle, label: 'Help & Support', onClick: () => setShowHelp(true) },
@@ -215,18 +233,31 @@ export default function ProfilePage() {
 
         <Modal isOpen={showHelp} onClose={() => setShowHelp(false)} title="❓ Help & Support" size="md">
           <div className="space-y-2">
-            {FAQS.map((faq, i) => (
-              <div key={i} className="border border-gray-100 rounded-xl overflow-hidden">
-                <button
-                  onClick={() => setOpenFaq(openFaq === i ? null : i)}
-                  className="w-full flex items-center justify-between px-4 py-3 text-left text-sm font-medium text-gray-900 hover:bg-gray-50"
-                >
-                  {faq.q}
-                  <ChevronRight size={16} className={`text-gray-400 transition-transform ${openFaq === i ? 'rotate-90' : ''}`} />
-                </button>
-                {openFaq === i && <div className="px-4 pb-3 text-sm text-gray-600">{faq.a}</div>}
-              </div>
-            ))}
+            {faqLoading && (
+              <p className="text-sm text-gray-500 text-center py-4">Loading FAQs…</p>
+            )}
+            {!faqLoading && faqItems.length === 0 && (
+              <p className="text-sm text-gray-500 text-center py-8">No FAQ found.</p>
+            )}
+            {!faqLoading &&
+              faqItems.map((faq, i) => (
+                <div key={faq.id} className="border border-gray-100 rounded-xl overflow-hidden">
+                  <button
+                    type="button"
+                    onClick={() => setOpenFaq(openFaq === i ? null : i)}
+                    className="w-full flex items-center justify-between px-4 py-3 text-left text-sm font-medium text-gray-900 hover:bg-gray-50"
+                  >
+                    {faq.question}
+                    <ChevronRight
+                      size={16}
+                      className={`text-gray-400 shrink-0 transition-transform ${openFaq === i ? 'rotate-90' : ''}`}
+                    />
+                  </button>
+                  {openFaq === i && (
+                    <div className="px-4 pb-3 text-sm text-gray-600">{faq.answer}</div>
+                  )}
+                </div>
+              ))}
             <div className="pt-2 text-center">
               <p className="text-xs text-gray-400">Contact us: <a href="mailto:support@roommat.in" className="underline">support@roommat.in</a></p>
             </div>

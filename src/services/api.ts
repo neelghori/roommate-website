@@ -2,10 +2,10 @@
  * services/api.ts
  * Axios instance configuration for backend integration.
  *
- * BACKEND INTEGRATION: When the Node.js backend is ready:
- * 1. Set NEXT_PUBLIC_API_URL in .env.local
- * 2. Remove mock interceptor
- * 3. All service modules will automatically use real endpoints
+ * BACKEND INTEGRATION:
+ * 1. Set NEXT_PUBLIC_API_URL to your API origin (e.g. https://api.example.com or http://localhost:8080).
+ *    Leave unset or use '' so paths like /api/v1/... resolve from the site origin (useful with Next.js rewrites).
+ * 2. Avoid NEXT_PUBLIC_API_URL=/api together with request paths that already start with /api/... (double /api).
  *
  * Security:
  * - Tokens stored in httpOnly cookies (set by backend) — NOT localStorage
@@ -13,8 +13,9 @@
  * - All requests over HTTPS in production
  */
 import axios from 'axios';
+import { getAccessToken } from '@/lib/authToken';
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? '/api';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:5000';
 
 export const apiClient = axios.create({
   baseURL: API_BASE_URL,
@@ -27,13 +28,13 @@ export const apiClient = axios.create({
   withCredentials: true, // Send httpOnly cookies with requests
 });
 
-// Request interceptor — attach auth token if available
+// Request interceptor — Bearer JWT from login/register + cookies (withCredentials)
 apiClient.interceptors.request.use(
   (config) => {
-    // BACKEND NOTE: Token will come from httpOnly cookie automatically via withCredentials
-    // For JWT in Authorization header (if backend prefers), uncomment:
-    // const token = getTokenFromSecureStorage();
-    // if (token) config.headers.Authorization = `Bearer ${token}`;
+    const token = getAccessToken();
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
     return config;
   },
   (error) => Promise.reject(error),
@@ -44,9 +45,18 @@ apiClient.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
-      // Redirect to login on unauthorized
-      if (typeof window !== 'undefined') {
-        window.location.href = '/login';
+      const url = String(error.config?.url ?? '');
+      // Don’t redirect for:
+      // - failed login (wrong password) — avoid reload loop on /login
+      // - /auth/me — used to load profile; 401 must be handled in-page (toast / re-auth), not a hard redirect
+      const skipRedirect =
+        url.includes('/auth/login') ||
+        url.includes('/auth/register') ||
+        url.includes('/auth/me') ||
+        url.includes('/auth/change-password') ||
+        url.includes('/tenant-roommate-profiles/me');
+      if (!skipRedirect && typeof window !== 'undefined') {
+        window.location.href = '/';
       }
     }
     return Promise.reject(error);
