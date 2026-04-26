@@ -10,7 +10,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Eye, EyeOff, Home, User, Building2 } from 'lucide-react';
+import { Eye, EyeOff, Home, User, Building2, Users } from 'lucide-react';
 import { registerSchema, type RegisterFormData } from '@/lib/validations/auth.schema';
 import { authService } from '@/services/modules/auth.service';
 import { useToast } from '@/hooks/useToast';
@@ -75,7 +75,7 @@ export default function RegisterPageClient() {
   };
 
   return (
-    <div className="w-full max-w-sm mx-auto">
+    <div className="w-full max-w-md mx-auto px-1">
       {/* Card */}
       <div className="bg-white rounded-2xl shadow-lg p-6 sm:p-8 flex flex-col gap-5 w-full overflow-visible">
 
@@ -102,10 +102,11 @@ export default function RegisterPageClient() {
         {/* Role Toggle */}
         <div className="flex flex-col gap-1.5">
           <span className="text-sm font-medium text-gray-700">I am a…</span>
-          <div className="grid grid-cols-2 gap-2">
+          <div className="grid grid-cols-3 gap-2">
             {(
               [
                 { value: 'TENANT', label: "I'm a Tenant", Icon: User },
+                { value: 'ROOMMATE', label: 'I want a roommate', Icon: Users },
                 { value: 'OWNER', label: "I'm an Owner", Icon: Building2 },
               ] as const
             ).map(({ value, label, Icon }) => {
@@ -116,7 +117,7 @@ export default function RegisterPageClient() {
                   type="button"
                   onClick={() => setValue('role', value, { shouldValidate: true })}
                   className={[
-                    'flex flex-col items-center gap-1.5 py-3 px-2 rounded-xl border-2 text-sm font-medium transition-all duration-200',
+                    'flex flex-col items-center gap-1.5 py-3 px-1.5 sm:px-2 rounded-xl border-2 text-xs sm:text-sm font-medium transition-all duration-200 text-center leading-tight',
                     active
                       ? 'text-white'
                       : 'border-gray-200 text-gray-600 bg-white hover:border-teal-300',

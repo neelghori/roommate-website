@@ -52,6 +52,7 @@ export default function AdminUserDetailPage() {
   const roleColor: Record<string, string> = {
     TENANT: 'bg-blue-50 text-blue-600 border-blue-100',
     OWNER: 'bg-orange-50 text-orange-600 border-orange-100',
+    ROOMMATE: 'bg-teal-50 text-teal-700 border-teal-100',
     ADMIN: 'bg-purple-50 text-purple-600 border-purple-100',
   };
 

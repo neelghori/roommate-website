@@ -7,24 +7,41 @@ import { UserLayout } from '@/components/shared/UserLayout';
 import { Button } from '@/components/ui/Button';
 import { Modal } from '@/components/ui/Modal';
 import { useAuthStore } from '@/store/authStore';
-import { useToast } from '@/hooks/useToast';
 import { authService } from '@/services/modules/auth.service';
+import { userService } from '@/services/modules/user.service';
+import { useToast } from '@/hooks/useToast';
 import { faqService, type FaqItem } from '@/services/modules/faq.service';
 import { CURRENT_USER } from '@/mock/data/users';
 import {
-  Pencil, Settings, Home, Users, BadgeCheck,
+  Pencil, Settings, Home, BadgeCheck,
   HelpCircle, LogOut, ChevronRight, Phone, Building2,
-  Star, Heart, UserCheck, KeyRound,
+  Star, Heart, UserCheck, KeyRound, CalendarDays,
 } from 'lucide-react';
 
 export default function ProfilePage() {
   const router = useRouter();
   const toast = useToast();
-  const { user, logout } = useAuthStore();
+  const { user, logout, setUser, isAuthenticated } = useAuthStore();
   const profile = user ?? CURRENT_USER;
+
+  useEffect(() => {
+    if (!isAuthenticated) return;
+    let cancelled = false;
+    void authService
+      .getMe()
+      .then((u) => {
+        if (!cancelled) setUser(u);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [isAuthenticated, setUser]);
 
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const [showVerify, setShowVerify] = useState(false);
+  const [verifyFile, setVerifyFile] = useState<File | null>(null);
+  const [verifySubmitting, setVerifySubmitting] = useState(false);
   const [showHelp, setShowHelp] = useState(false);
   const [openFaq, setOpenFaq] = useState<number | null>(null);
   const [faqItems, setFaqItems] = useState<FaqItem[]>([]);
@@ -61,9 +78,15 @@ export default function ProfilePage() {
   const menuItems = [
     { icon: Settings, label: 'Super Admin Panel', href: '/admin', admin: true },
     { icon: Home, label: 'My Listings', href: '/my-listings' },
+    { icon: CalendarDays, label: 'Visit bookings', href: '/profile/bookings' },
+    { icon: Heart, label: 'Saved listings', href: '/profile/saved' },
     { icon: KeyRound, label: 'Change password', href: '/profile/change-password' },
-    { icon: Users, label: 'Tenant Profiles', href: '/roommates' },
-    { icon: BadgeCheck, label: 'Verify Identity', onClick: () => setShowVerify(true) },
+    {
+      icon: BadgeCheck,
+      label: 'Verify Identity',
+      onClick: () => setShowVerify(true),
+      skip: profile.role === 'ADMIN',
+    },
     { icon: HelpCircle, label: 'Help & Support', onClick: () => setShowHelp(true) },
   ];
 
@@ -80,8 +103,17 @@ export default function ProfilePage() {
               {/* Avatar & Edit Icon Row (Mobile) */}
               <div className="w-full flex items-center justify-between lg:w-auto lg:block relative">
                 <div className="relative group shrink-0">
-                  <div className="w-24 h-24 lg:w-48 lg:h-48 rounded-3xl lg:rounded-[3.5rem] bg-primary/5 border-2 border-primary/10 flex items-center justify-center text-primary text-3xl lg:text-6xl font-black shadow-inner transition-transform group-hover:scale-[1.02]">
-                    {profile.avatarInitial}
+                  <div className="w-24 h-24 lg:w-48 lg:h-48 rounded-3xl lg:rounded-[3.5rem] bg-primary/5 border-2 border-primary/10 overflow-hidden shadow-inner transition-transform group-hover:scale-[1.02] flex items-center justify-center">
+                    {profile.avatarUrl ? (
+                      // eslint-disable-next-line @next/next/no-img-element -- user-uploaded URL from API
+                      <img
+                        src={profile.avatarUrl}
+                        alt=""
+                        className="h-full w-full object-cover"
+                      />
+                    ) : (
+                      <span className="text-primary text-3xl lg:text-6xl font-black">{profile.avatarInitial}</span>
+                    )}
                   </div>
                   <div className="absolute bottom-1 right-1 w-6 h-6 lg:w-10 lg:h-10 bg-green-500 border-4 border-white rounded-full shadow-md" />
                 </div>
@@ -104,7 +136,12 @@ export default function ProfilePage() {
                     )}
                   </div>
                   <p className="text-base lg:text-2xl text-gray-500 font-medium leading-tight">
-                    {profile.role === 'TENANT' ? 'Looking for a home' : 'Property Owner'} • {profile.location || 'Ahmedabad'}
+                    {profile.role === 'OWNER'
+                      ? 'Property Owner'
+                      : profile.role === 'ROOMMATE'
+                        ? 'Looking for a roommate'
+                        : 'Looking for a home'}{' '}
+                    • {profile.location || 'Ahmedabad'}
                   </p>
                 </div>
                 
@@ -112,7 +149,22 @@ export default function ProfilePage() {
                 <div className="flex flex-wrap gap-2 lg:gap-3 pt-1">
                   {profile.isPhoneVerified && (
                     <span className="flex items-center gap-1.5 text-[11px] lg:text-sm font-bold text-green-600 bg-green-50 px-3.5 py-1.5 lg:px-5 lg:py-2.5 rounded-full border border-green-100">
-                      <UserCheck size={16} className="shrink-0" /> Verified
+                      <UserCheck size={16} className="shrink-0" /> Phone verified
+                    </span>
+                  )}
+                  {(profile.identityVerificationStatus === 'verified' || profile.isAadharVerified) && (
+                    <span className="flex items-center gap-1.5 text-[11px] lg:text-sm font-bold text-green-600 bg-green-50 px-3.5 py-1.5 lg:px-5 lg:py-2.5 rounded-full border border-green-100">
+                      <BadgeCheck size={16} className="shrink-0" /> ID verified
+                    </span>
+                  )}
+                  {profile.identityVerificationStatus === 'pending' && (
+                    <span className="flex items-center gap-1.5 text-[11px] lg:text-sm font-bold text-amber-700 bg-amber-50 px-3.5 py-1.5 lg:px-5 lg:py-2.5 rounded-full border border-amber-100">
+                      <BadgeCheck size={16} className="shrink-0" /> ID verification pending
+                    </span>
+                  )}
+                  {profile.identityVerificationStatus === 'rejected' && (
+                    <span className="flex items-center gap-1.5 text-[11px] lg:text-sm font-bold text-red-600 bg-red-50 px-3.5 py-1.5 lg:px-5 lg:py-2.5 rounded-full border border-red-100">
+                      <BadgeCheck size={16} className="shrink-0" /> ID needs resubmission
                     </span>
                   )}
                   {profile.isCompanyVerified && (
@@ -141,9 +193,9 @@ export default function ProfilePage() {
                 {/* Stats */}
                 <div className="bg-gray-50 lg:bg-primary/5 rounded-3xl p-6 lg:p-8 border border-gray-100 lg:border-primary/10 grid grid-cols-3 gap-4">
                   {[
-                    { value: profile.listingCount,    label: 'Listings' },
+                    { value: profile.listingCount, label: 'Listings' },
                     { value: profile.shortlistedCount, label: 'Saved' },
-                    { value: profile.connectCount,    label: 'Matches' },
+                    { value: profile.bookingCount ?? 0, label: 'Bookings' },
                   ].map(({ value, label }) => (
                     <div key={label} className="text-center space-y-1">
                       <div className="text-2xl lg:text-3xl font-black text-primary">{value}</div>
@@ -152,7 +204,7 @@ export default function ProfilePage() {
                   ))}
                 </div>
 
-                {profile.role === 'TENANT' && (
+                {(profile.role === 'TENANT' || profile.role === 'ROOMMATE') && (
                 <div className="bg-white lg:bg-gray-50/50 rounded-3xl p-6 lg:p-8 border border-gray-100 lg:border-primary/10 space-y-4">
                     <div className="flex items-center justify-between">
                       <h3 className="text-sm lg:text-base font-bold text-gray-900">Profile Strength</h3>
@@ -170,7 +222,8 @@ export default function ProfilePage() {
 
               <div className="lg:col-span-2 space-y-6 lg:space-y-8">
                 <div className="bg-white lg:bg-gray-50/50 rounded-3xl border border-gray-100 lg:border-primary/10 overflow-hidden">
-                  {menuItems.map(({ icon: Icon, label, href, onClick, admin }, i) => {
+                  {menuItems.map(({ icon: Icon, label, href, onClick, admin, skip }, i) => {
+                    if (skip) return null;
                     if (admin && profile.role !== 'ADMIN') return null;
                     const content = (
                       <div className="flex items-center gap-4 px-5 py-5 lg:px-8 lg:py-6 hover:bg-gray-50 lg:hover:bg-white active:bg-gray-100 transition-all cursor-pointer group">
@@ -217,17 +270,81 @@ export default function ProfilePage() {
           </div>
         </Modal>
 
-        <Modal isOpen={showVerify} onClose={() => setShowVerify(false)} title="🪪 Verify Identity" size="md">
+        <Modal
+          isOpen={showVerify}
+          onClose={() => {
+            setShowVerify(false);
+            setVerifyFile(null);
+          }}
+          title="Verify identity"
+          size="md"
+        >
           <div className="space-y-4">
-            <p className="text-sm text-gray-600">Upload your Aadhar card to get verified. Verification is completed within 2 business days.</p>
-            <div className="border-2 border-dashed border-gray-200 rounded-xl p-8 text-center">
-              <BadgeCheck size={32} className="mx-auto mb-2 text-gray-400" />
-              <p className="text-sm text-gray-500">Tap to upload Aadhar card</p>
-              <p className="text-xs text-gray-400 mt-1">JPG, PNG or PDF · Max 5 MB</p>
-            </div>
-            <Button variant="primary" fullWidth onClick={() => { setShowVerify(false); toast.success('Document submitted!', 'Verification takes up to 2 business days.'); }}>
-              Submit for Verification
-            </Button>
+            <p className="text-sm text-gray-600">
+              Upload a clear photo or PDF of your government ID (e.g. Aadhaar). A super administrator will review it in
+              the admin panel.
+            </p>
+            {profile.identityVerificationStatus === 'verified' ? (
+              <p className="text-sm font-medium text-green-700">Your identity is already verified.</p>
+            ) : null}
+            {profile.identityVerificationStatus === 'pending' ? (
+              <p className="text-sm text-amber-800 bg-amber-50 border border-amber-100 rounded-xl px-3 py-2">
+                Your document is under review. You can replace it below if you uploaded the wrong file.
+              </p>
+            ) : null}
+            {profile.identityVerificationStatus === 'rejected' && profile.identityRejectionReason ? (
+              <p className="text-sm text-red-800 bg-red-50 border border-red-100 rounded-xl px-3 py-2">
+                {profile.identityRejectionReason}
+              </p>
+            ) : null}
+            {profile.identityVerificationStatus !== 'verified' ? (
+              <>
+                <input
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp,application/pdf"
+                  className="hidden"
+                  id="verify-id-input"
+                  onChange={(e) => {
+                    const f = e.target.files?.[0];
+                    setVerifyFile(f ?? null);
+                  }}
+                />
+                <label
+                  htmlFor="verify-id-input"
+                  className="block border-2 border-dashed border-gray-200 rounded-xl p-8 text-center cursor-pointer hover:border-primary/40 hover:bg-primary/3 transition-colors"
+                >
+                  <BadgeCheck size={32} className="mx-auto mb-2 text-gray-400" />
+                  <p className="text-sm text-gray-500">
+                    {verifyFile ? verifyFile.name : 'Tap to choose JPEG, PNG, WebP, or PDF'}
+                  </p>
+                  <p className="text-xs text-gray-400 mt-1">Max 10 MB</p>
+                </label>
+                <Button
+                  variant="primary"
+                  fullWidth
+                  disabled={!verifyFile || verifySubmitting}
+                  isLoading={verifySubmitting}
+                  onClick={async () => {
+                    if (!verifyFile) return;
+                    setVerifySubmitting(true);
+                    try {
+                      await userService.uploadIdentityDocument(verifyFile);
+                      const u = await authService.getMe();
+                      setUser(u);
+                      setVerifyFile(null);
+                      toast.success('Document submitted', 'We will notify you once it is reviewed.');
+                      setShowVerify(false);
+                    } catch (err) {
+                      toast.error('Upload failed', err instanceof Error ? err.message : 'Try again.');
+                    } finally {
+                      setVerifySubmitting(false);
+                    }
+                  }}
+                >
+                  Submit for verification
+                </Button>
+              </>
+            ) : null}
           </div>
         </Modal>
 

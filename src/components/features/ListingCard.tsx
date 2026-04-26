@@ -5,9 +5,10 @@
  */
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useRouter, usePathname } from 'next/navigation';
 import {
-  Heart, CheckCircle, MapPin,
+  Heart, MapPin,
   Wifi, Wind, UtensilsCrossed, ShoppingBag,
   Car, Dumbbell, Shield, Zap, Eye,
 } from 'lucide-react';
@@ -16,11 +17,10 @@ import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
 import { useToast } from '@/hooks/useToast';
 import { formatRupees } from '@/lib/utils/format';
-import { escapeHtml } from '@/lib/utils/sanitize';
-import {
-  listingHasVerification,
-  listingVerificationLabel,
-} from '@/services/modules/listing.service';
+import { ListingVerificationBadge } from '@/components/features/ListingVerificationBadge';
+import { BookVisitModal } from '@/components/features/BookVisitModal';
+import { useAuthStore } from '@/store/authStore';
+import { listingService } from '@/services/modules/listing.service';
 
 const AMENITY_ICONS: Record<string, React.ReactNode> = {
   WiFi:          <Wifi size={11} />,
@@ -53,39 +53,73 @@ const BADGE_VARIANT_MAP: Record<string, 'hot' | 'limited' | 'new'> = {
 interface ListingCardProps {
   listing: Listing;
   onViewDetail?: (listing: Listing) => void;
+  /** When save/unsave completes (for parent lists e.g. saved page). */
+  onSavedChange?: (listingId: string, saved: boolean) => void;
 }
 
-export const ListingCard: React.FC<ListingCardProps> = ({ listing, onViewDetail }) => {
-  const [isSaved, setIsSaved]     = useState(listing.isSaved ?? false);
-  const [isApplying, setIsApplying] = useState(false);
-  const [isBooking, setIsBooking]   = useState(false);
+export const ListingCard: React.FC<ListingCardProps> = ({ listing, onViewDetail, onSavedChange }) => {
+  const [isSaved, setIsSaved] = useState(listing.isSaved ?? false);
+  const [saveBusy, setSaveBusy] = useState(false);
+  const [visitModalOpen, setVisitModalOpen] = useState(false);
+  const router = useRouter();
+  const pathname = usePathname();
+  const user = useAuthStore((s) => s.user);
+  const setUser = useAuthStore((s) => s.setUser);
   const toast = useToast();
+  const isOwnListing = Boolean(user?.id && listing.ownerId && String(user.id) === String(listing.ownerId));
+
+  useEffect(() => {
+    setIsSaved(listing.isSaved ?? false);
+  }, [listing.id, listing.isSaved]);
 
   const handleSave = async (e: React.MouseEvent) => {
     e.stopPropagation();
-    setIsSaved((prev) => !prev);
-    toast.success(isSaved ? 'Removed from saved' : 'Saved to favourites!');
+    if (!user) {
+      toast.error('Sign in to save', 'Log in to add this listing to your saved homes.');
+      router.push(`/login?next=${encodeURIComponent(pathname || '/')}`);
+      return;
+    }
+    if (isOwnListing) {
+      toast.warning('Your listing', 'You cannot save your own property.');
+      return;
+    }
+    setSaveBusy(true);
+    try {
+      if (isSaved) {
+        await listingService.unsaveListing(listing.id);
+        setIsSaved(false);
+        setUser({
+          ...user,
+          shortlistedCount: Math.max(0, user.shortlistedCount - 1),
+        });
+        onSavedChange?.(listing.id, false);
+        toast.success('Removed from saved');
+      } else {
+        await listingService.saveListing(listing.id);
+        setIsSaved(true);
+        setUser({
+          ...user,
+          shortlistedCount: user.shortlistedCount + 1,
+        });
+        onSavedChange?.(listing.id, true);
+        toast.success('Saved to favourites');
+      }
+    } catch (err) {
+      toast.error('Could not update', err instanceof Error ? err.message : 'Try again.');
+    } finally {
+      setSaveBusy(false);
+    }
   };
 
-  const handleApply = async (e: React.MouseEvent) => {
+  const handleBookVisit = (e: React.MouseEvent) => {
     e.stopPropagation();
-    setIsApplying(true);
-    await new Promise((r) => setTimeout(r, 800));
-    setIsApplying(false);
-    toast.success('Application Sent!', `Your application for ${escapeHtml(listing.title)} has been sent.`);
-  };
-
-  const handleBookVisit = async (e: React.MouseEvent) => {
-    e.stopPropagation();
-    setIsBooking(true);
-    await new Promise((r) => setTimeout(r, 800));
-    setIsBooking(false);
-    toast.success('Visit Booked!', 'The owner will contact you shortly.');
+    setVisitModalOpen(true);
   };
 
   const cardBg = TYPE_COLORS[listing.type] ?? '#c8eeee';
 
   return (
+    <>
     <div
       className="group bg-white rounded-2xl overflow-hidden shadow-sm border border-gray-100 cursor-pointer hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 flex flex-col"
       onClick={() => onViewDetail?.(listing)}
@@ -134,8 +168,10 @@ export const ListingCard: React.FC<ListingCardProps> = ({ listing, onViewDetail 
 
         {/* Heart */}
         <button
+          type="button"
           onClick={handleSave}
-          className="absolute top-2 right-2 w-8 h-8 rounded-full bg-white/85 backdrop-blur-sm flex items-center justify-center shadow-sm hover:bg-white transition-colors"
+          disabled={saveBusy}
+          className="absolute top-2 right-2 w-8 h-8 rounded-full bg-white/85 backdrop-blur-sm flex items-center justify-center shadow-sm hover:bg-white transition-colors disabled:opacity-60"
           aria-label={isSaved ? 'Remove from saved' : 'Save listing'}
         >
           <Heart size={14} fill={isSaved ? '#EF4444' : 'none'} stroke={isSaved ? '#EF4444' : '#6B7280'} />
@@ -163,12 +199,7 @@ export const ListingCard: React.FC<ListingCardProps> = ({ listing, onViewDetail 
             </span>
             <span className="text-xs text-gray-400">/mo</span>
           </div>
-          {listingHasVerification(listing) && (
-            <div className="flex max-w-[48%] items-center gap-1 text-xs font-medium text-green-600">
-              <CheckCircle size={12} className="shrink-0" />
-              <span className="truncate">{listingVerificationLabel(listing)}</span>
-            </div>
-          )}
+          <ListingVerificationBadge listing={listing} variant="card" />
         </div>
 
         {/* Amenities */}
@@ -192,16 +223,27 @@ export const ListingCard: React.FC<ListingCardProps> = ({ listing, onViewDetail 
           </span>
         </div>
 
-        {/* CTA Buttons — pushed to bottom */}
-        <div className="flex gap-2 mt-auto">
-          <Button variant="secondary" size="sm" fullWidth isLoading={isApplying} onClick={handleApply} className="text-xs">
-            Apply Now
-          </Button>
-          <Button variant="accent" size="sm" fullWidth isLoading={isBooking} onClick={handleBookVisit} className="text-xs">
-            Book Visit
+        {/* CTA — pushed to bottom */}
+        <div className="mt-auto">
+          <Button
+            variant="accent"
+            size="sm"
+            fullWidth
+            onClick={handleBookVisit}
+            className="text-xs"
+            disabled={isOwnListing}
+            title={isOwnListing ? 'You cannot book your own listing' : undefined}
+          >
+            {isOwnListing ? 'Your listing' : 'Book Visit'}
           </Button>
         </div>
       </div>
     </div>
+    <BookVisitModal
+      listing={listing}
+      isOpen={visitModalOpen}
+      onClose={() => setVisitModalOpen(false)}
+    />
+    </>
   );
 };

@@ -10,11 +10,11 @@ import { MessageBubble } from '@/components/features/chat/MessageBubble';
 import { MessageInput } from '@/components/features/chat/MessageInput';
 import { TypingIndicator } from '@/components/features/chat/TypingIndicator';
 import { ChatSidebar } from '@/components/features/chat/ChatSidebar';
-import { ChatMessage } from '@/types';
+import { ChatMessage, type ChatConversation } from '@/types';
 import { TopBar } from '@/components/shared/TopBar';
 import { BottomNav } from '@/components/shared/BottomNav';
-
-const CURRENT_USER_ID = 'u1'; // BACKEND: replace with authStore.user?.id
+import { useAuthStore } from '@/store/authStore';
+import { getAccessToken } from '@/lib/authToken';
 
 /** Returns true if two ISO timestamps are on different calendar days */
 function isDifferentDay(a: string, b: string): boolean {
@@ -37,12 +37,16 @@ export default function ChatThreadPage() {
     messagesByChatId,
     typing,
     setMessages,
+    mergeThreadFromServer,
     appendMessage,
     confirmMessage,
     failMessage,
     setActiveChatId,
     markConversationRead,
+    upsertConversation,
   } = useChatStore();
+
+  const currentUserId = useAuthStore((s) => s.user?.id ?? '');
 
   const messages: ChatMessage[] = messagesByChatId[chatId] ?? [];
   const conversation = conversations.find((c) => c.id === chatId);
@@ -56,21 +60,49 @@ export default function ChatThreadPage() {
   useEffect(() => {
     if (!chatId) return;
     setActiveChatId(chatId);
-    wsService.connect();
+    wsService.connect(getAccessToken() ?? undefined);
+    setLoading(true);
 
-    Promise.all([
-      chatService.getMessages(chatId),
-      chatService.markAsRead(chatId),
-    ]).then(([msgs]) => {
-      setMessages(chatId, msgs);
-      markConversationRead(chatId);
-      setLoading(false);
-    });
+    void (async () => {
+      try {
+        const { messages: msgs, partner } = await chatService.getThread(chatId);
+        mergeThreadFromServer(chatId, msgs);
+        await chatService.markAsRead(chatId).catch(() => undefined);
+        markConversationRead(chatId);
+
+        const existing = useChatStore.getState().conversations.find((c) => c.id === chatId);
+        if (!existing) {
+          const name = partner?.fullName?.trim() || 'User';
+          const initials = name
+            .split(/\s+/)
+            .map((n) => n[0])
+            .join('')
+            .toUpperCase()
+            .slice(0, 2) || 'U';
+          const last = msgs.length ? msgs[msgs.length - 1] : null;
+          const stub: ChatConversation = {
+            id: chatId,
+            participantId: chatId,
+            participantName: name,
+            participantAvatar: initials,
+            lastMessage: last?.content ?? '',
+            lastMessageTime: last?.timestamp ?? new Date().toISOString(),
+            unreadCount: 0,
+            isOnline: false,
+          };
+          upsertConversation(stub);
+        }
+      } catch {
+        setMessages(chatId, []);
+      } finally {
+        setLoading(false);
+      }
+    })();
 
     return () => {
       setActiveChatId(null);
     };
-  }, [chatId, setActiveChatId, setMessages, markConversationRead]);
+  }, [chatId, setActiveChatId, setMessages, mergeThreadFromServer, markConversationRead, upsertConversation]);
 
   // ── Load conversations if not hydrated (direct URL visit) ───────────────────
   useEffect(() => {
@@ -81,6 +113,28 @@ export default function ChatThreadPage() {
     }
   }, [conversations.length]);
 
+  // ── Poll thread while open (backup if WS down; merges so no duplicates) ─────
+  useEffect(() => {
+    if (!chatId || loading) return;
+    const sync = () => {
+      void chatService
+        .getThread(chatId)
+        .then(({ messages: msgs }) => {
+          useChatStore.getState().mergeThreadFromServer(chatId, msgs);
+        })
+        .catch(() => undefined);
+    };
+    const interval = setInterval(sync, 4000);
+    const onVis = () => {
+      if (document.visibilityState === 'visible') sync();
+    };
+    document.addEventListener('visibilitychange', onVis);
+    return () => {
+      clearInterval(interval);
+      document.removeEventListener('visibilitychange', onVis);
+    };
+  }, [chatId, loading]);
+
   // ── Auto-scroll to bottom ────────────────────────────────────────────────────
   useEffect(() => {
     if (messages.length === 0) return;
@@ -89,12 +143,12 @@ export default function ChatThreadPage() {
     isFirstLoad.current = false;
   }, [messages.length, isTyping]);
 
-  // ── Back-nav guard ───────────────────────────────────────────────────────────
+  // ── Back-nav guard: unknown thread id with no messages after load ───────────
   useEffect(() => {
-    if (!loading && conversations.length > 0 && !conversation) {
+    if (!loading && conversations.length > 0 && !conversation && messages.length === 0) {
       router.replace('/chat');
     }
-  }, [loading, conversation, conversations.length, router]);
+  }, [loading, conversation, conversations.length, messages.length, router]);
 
   // ── Send message ─────────────────────────────────────────────────────────────
   const handleSend = useCallback(
@@ -105,8 +159,8 @@ export default function ChatThreadPage() {
       const tempId = `temp-${Date.now()}`;
       const optimistic: ChatMessage = {
         id: tempId,
-        senderId: CURRENT_USER_ID,
-        receiverId: conversation?.participantId ?? '',
+        senderId: currentUserId,
+        receiverId: conversation?.participantId ?? chatId,
         content,
         timestamp: new Date().toISOString(),
         isRead: false,
@@ -123,7 +177,7 @@ export default function ChatThreadPage() {
         failMessage(chatId, tempId);
       }
     },
-    [chatId, conversation, appendMessage, confirmMessage, failMessage]
+    [chatId, conversation, currentUserId, appendMessage, confirmMessage, failMessage]
   );
 
   // ── Typing ───────────────────────────────────────────────────────────────────
@@ -172,7 +226,7 @@ export default function ChatThreadPage() {
                 <MessageBubble
                   key={msg.id}
                   message={msg}
-                  isOwn={msg.senderId === CURRENT_USER_ID}
+                  isOwn={msg.senderId === currentUserId}
                   showDateSeparator={showSep}
                   separatorDate={msg.timestamp}
                 />

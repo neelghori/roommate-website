@@ -45,7 +45,7 @@ export default function TenantRoommateProfilePage() {
   const router = useRouter();
   const { success: toastSuccess, error: toastError } = useToast();
   const user = useAuthStore((s) => s.user);
-  const isTenant = user?.role === 'TENANT';
+  const isTenant = user?.role === 'TENANT' || user?.role === 'ROOMMATE';
 
   const [loadState, setLoadState] = useState<'idle' | 'loading' | 'ready'>('idle');
   const [submitting, setSubmitting] = useState(false);
@@ -99,7 +99,9 @@ export default function TenantRoommateProfilePage() {
     return () => {
       cancelled = true;
     };
-  }, [isTenant, user?.id, reset, toastError]);
+    // Intentionally omit `reset` / toast: fetch once per tenant session (user id), not on every RHF or toast identity change.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isTenant, user?.id]);
 
   const onSubmit = async (data: TenantRoommateProfileFormData) => {
     setSubmitting(true);

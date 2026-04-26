@@ -1,105 +1,106 @@
 /**
- * chat.service.ts
- * Chat & messaging service module.
- *
- * MOCK MODE: Returns mock data with artificial delay.
- * BACKEND INTEGRATION: Replace mock functions with apiClient calls.
- * For real-time, integrate Socket.IO or Pusher alongside these REST endpoints.
- *
- * Expected endpoints:
- *   GET  /chat/conversations              → ChatConversation[]
- *   GET  /chat/conversations/:id/messages → ChatMessage[]
- *   POST /chat/conversations/:id/messages → ChatMessage
- *   PUT  /chat/conversations/:id/read     → void
- *   POST /chat/conversations              → ChatConversation
+ * chat.service.ts — REST chat API (/api/v1/chat/*).
  */
 
-import { ChatConversation, ChatMessage } from '@/types';
-import { CHAT_CONVERSATIONS, CHAT_MESSAGES } from '@/mock/data/users';
+import type { ChatConversation, ChatMessage } from '@/types';
+import { apiClient } from '@/services/api';
+import { authApiErrorMessage } from '@/services/modules/auth.service';
 
-// Mock delay to simulate network latency
-const delay = (ms = 600) => new Promise((resolve) => setTimeout(resolve, ms));
+function apiErr(err: unknown, fallback: string): string {
+  return authApiErrorMessage(err, fallback);
+}
+
+function parseCreatedAt(raw: unknown): string {
+  if (raw instanceof Date) return raw.toISOString();
+  if (typeof raw === 'string' && raw) return raw;
+  return new Date().toISOString();
+}
+
+/** Maps API / Mongo chat document to UI message (also used by WebSocket handler). */
+export function mapChatMessageFromApi(raw: Record<string, unknown>): ChatMessage {
+  return {
+    id: String(raw._id ?? ''),
+    senderId: String(raw.sender ?? ''),
+    receiverId: String(raw.receiver ?? ''),
+    content: String(raw.message ?? ''),
+    timestamp: parseCreatedAt(raw.createdAt),
+    isRead: raw.readAt != null,
+    type: 'text',
+  };
+}
+
+function mapMessage(raw: Record<string, unknown>): ChatMessage {
+  return mapChatMessageFromApi(raw);
+}
+
+export type ChatThreadPartner = {
+  id: string;
+  fullName: string;
+  profileImageUrl?: string;
+};
 
 export const chatService = {
-  /**
-   * Get all conversations for the current user.
-   * BACKEND: GET /chat/conversations
-   */
   getConversations: async (): Promise<ChatConversation[]> => {
-    await delay();
-    return [...CHAT_CONVERSATIONS].sort(
-      (a, b) =>
-        new Date(b.lastMessageTime).getTime() - new Date(a.lastMessageTime).getTime(),
-    );
-  },
-
-  /**
-   * Get all messages in a conversation.
-   * BACKEND: GET /chat/conversations/:id/messages
-   */
-  getMessages: async (conversationId: string): Promise<ChatMessage[]> => {
-    await delay();
-    const messages = CHAT_MESSAGES[conversationId];
-    if (!messages) {
-      return [];
+    try {
+      const { data } = await apiClient.get<unknown>('/api/v1/chat/conversations');
+      const inner = (data as Record<string, unknown>)?.data as Record<string, unknown> | undefined;
+      const items = inner?.items;
+      if (!Array.isArray(items)) return [];
+      return items as ChatConversation[];
+    } catch (err) {
+      throw new Error(apiErr(err, 'Could not load conversations'));
     }
-    return [...messages].sort(
-      (a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime(),
-    );
   },
 
-  /**
-   * Send a new message in a conversation.
-   * BACKEND: POST /chat/conversations/:id/messages
-   */
-  sendMessage: async (conversationId: string, content: string): Promise<ChatMessage> => {
-    await delay(300);
-    const conversation = CHAT_CONVERSATIONS.find((c) => c.id === conversationId);
-    if (!conversation) {
-      throw new Error(`Conversation not found: ${conversationId}`);
+  /** Thread with one other user + partner summary for the header. */
+  getThread: async (
+    partnerUserId: string,
+  ): Promise<{ messages: ChatMessage[]; partner: ChatThreadPartner | null }> => {
+    try {
+      const { data } = await apiClient.get<unknown>(`/api/v1/chat/thread/${partnerUserId}`);
+      const inner = (data as Record<string, unknown>)?.data as Record<string, unknown> | undefined;
+      const rawItems = Array.isArray(inner?.items) ? inner.items : [];
+      const messages = (rawItems as Record<string, unknown>[]).map(mapMessage);
+      const p = inner?.partner as Record<string, unknown> | null | undefined;
+      const partner =
+        p && typeof p.id === 'string' && typeof p.fullName === 'string'
+          ? {
+              id: p.id,
+              fullName: p.fullName,
+              profileImageUrl: typeof p.profileImageUrl === 'string' ? p.profileImageUrl : undefined,
+            }
+          : null;
+      return { messages, partner };
+    } catch (err) {
+      throw new Error(apiErr(err, 'Could not load messages'));
     }
-    const newMessage: ChatMessage = {
-      id: `msg-${Date.now()}`,
-      senderId: 'u1',
-      receiverId: conversation.participantId,
-      content,
-      timestamp: new Date().toISOString(),
-      isRead: false,
-      type: 'text',
-    };
-    return newMessage;
   },
 
-  /**
-   * Mark all messages in a conversation as read.
-   * BACKEND: PUT /chat/conversations/:id/read
-   */
-  markAsRead: async (conversationId: string): Promise<void> => {
-    await delay(200);
-    void conversationId; // used in real implementation
+  getMessages: async (partnerUserId: string): Promise<ChatMessage[]> => {
+    const { messages } = await chatService.getThread(partnerUserId);
+    return messages;
   },
 
-  /**
-   * Start a new conversation with a user.
-   * BACKEND: POST /chat/conversations
-   */
-  startConversation: async (userId: string): Promise<ChatConversation> => {
-    await delay();
-    const existing = CHAT_CONVERSATIONS.find((c) => c.participantId === userId);
-    if (existing) {
-      return existing;
+  sendMessage: async (partnerUserId: string, content: string): Promise<ChatMessage> => {
+    try {
+      const { data } = await apiClient.post<unknown>('/api/v1/chat/messages', {
+        receiverId: partnerUserId,
+        message: content.trim(),
+      });
+      const inner = (data as Record<string, unknown>)?.data as Record<string, unknown> | undefined;
+      const raw = inner?.message as Record<string, unknown> | undefined;
+      if (!raw || raw._id == null) throw new Error('Invalid send response');
+      return mapMessage(raw);
+    } catch (err) {
+      throw new Error(apiErr(err, 'Could not send message'));
     }
-    // Return a new empty conversation
-    const newConversation: ChatConversation = {
-      id: `conv-${Date.now()}`,
-      participantId: userId,
-      participantName: 'New Contact',
-      participantAvatar: 'NC',
-      lastMessage: '',
-      lastMessageTime: new Date().toISOString(),
-      unreadCount: 0,
-      isOnline: false,
-    };
-    return newConversation;
+  },
+
+  markAsRead: async (partnerUserId: string): Promise<void> => {
+    try {
+      await apiClient.post(`/api/v1/chat/thread/${partnerUserId}/read`);
+    } catch (err) {
+      throw new Error(apiErr(err, 'Could not mark messages read'));
+    }
   },
 };

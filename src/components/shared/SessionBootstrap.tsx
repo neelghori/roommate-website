@@ -26,6 +26,11 @@ export function SessionBootstrap() {
       try {
         const user = await authService.getMe();
         if (!cancelled) setUser(user);
+        if (!cancelled && user) {
+          void import('@/services/wsService').then((m) =>
+            m.wsService.connect(getAccessToken() ?? undefined),
+          );
+        }
       } catch {
         clearAccessToken();
         if (!cancelled) setUser(null);

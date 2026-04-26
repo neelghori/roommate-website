@@ -1,12 +1,13 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import Link from 'next/link';
-import { Search, SlidersHorizontal, MapPin, IndianRupee, Heart, MessageCircle, X } from 'lucide-react';
+import { Search, SlidersHorizontal, MapPin, IndianRupee, Eye, MessageCircle, X } from 'lucide-react';
 import { UserLayout } from '@/components/shared/UserLayout';
 import { RoommateProfile } from '@/types';
 import { useAuthStore } from '@/store/authStore';
 import { tenantRoommateProfileService } from '@/services/modules/tenantRoommateProfile.service';
+import { RoommateProfileDetailModal } from '@/components/features/RoommateProfileDetailModal';
 
 const LIFESTYLE_FILTER_OPTIONS = [
   'Non-Smoker', 'Vegetarian', 'Non-Veg', 'Early Bird', 'Night Owl',
@@ -17,12 +18,14 @@ export default function RoommatesPageClient() {
   const [search, setSearch]           = useState('');
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [showFilters, setShowFilters]   = useState(false); // mobile only
-  const [savedIds, setSavedIds]         = useState<Set<string>>(new Set());
   const [profiles, setProfiles]         = useState<RoommateProfile[]>([]);
   const [listState, setListState]       = useState<'loading' | 'ok' | 'error'>('loading');
 
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
-  const isTenant = useAuthStore((s) => s.user?.role === 'TENANT');
+  const user = useAuthStore((s) => s.user);
+  const isTenant = useAuthStore(
+    (s) => s.user?.role === 'TENANT' || s.user?.role === 'ROOMMATE',
+  );
 
   const loadProfiles = useCallback(async () => {
     setListState('loading');
@@ -49,15 +52,12 @@ export default function RoommatesPageClient() {
     );
   };
 
-  const toggleSave = (id: string) => {
-    setSavedIds((prev) => {
-      const next = new Set(prev);
-      next.has(id) ? next.delete(id) : next.add(id);
-      return next;
-    });
-  };
+  const profilesWithoutSelf = useMemo(() => {
+    if (!user?.id) return profiles;
+    return profiles.filter((p) => String(p.userId) !== String(user.id));
+  }, [profiles, user?.id]);
 
-  const filtered = profiles;
+  const filtered = profilesWithoutSelf;
 
   // ── Shared filter panel content ────────────────────────────────────────────
   const FilterContent = () => (
@@ -271,8 +271,8 @@ export default function RoommatesPageClient() {
                   <RoommateCard
                     key={profile.id}
                     profile={profile}
-                    isSaved={savedIds.has(profile.id)}
-                    onSave={() => toggleSave(profile.id)}
+                    isAuthenticated={isAuthenticated}
+                    viewerUserId={user?.id}
                   />
                 ))}
               </div>
@@ -287,11 +287,28 @@ export default function RoommatesPageClient() {
 // ── Card ──────────────────────────────────────────────────────────────────────
 interface RoommateCardProps {
   profile: RoommateProfile;
-  isSaved: boolean;
-  onSave: () => void;
+  isAuthenticated: boolean;
+  viewerUserId?: string;
 }
 
-function RoommateCard({ profile, isSaved, onSave }: RoommateCardProps) {
+function RoommateCard({ profile, isAuthenticated, viewerUserId }: RoommateCardProps) {
+  const [detailOpen, setDetailOpen] = useState(false);
+  const [detailProfile, setDetailProfile] = useState<RoommateProfile | null>(null);
+  const [detailLoading, setDetailLoading] = useState(false);
+
+  const openDetails = () => {
+    setDetailProfile(profile);
+    setDetailOpen(true);
+    setDetailLoading(true);
+    void tenantRoommateProfileService
+      .getById(profile.id)
+      .then((full) => setDetailProfile(full))
+      .catch(() => {
+        /* keep list snapshot */
+      })
+      .finally(() => setDetailLoading(false));
+  };
+
   const matchColor =
     profile.matchPercent >= 85
       ? '#22C55E'
@@ -300,6 +317,7 @@ function RoommateCard({ profile, isSaved, onSave }: RoommateCardProps) {
         : '#F57C00';
 
   return (
+    <>
     <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden flex flex-col hover:shadow-md transition-shadow">
       {/* Top row: avatar + name + match */}
       <div className="flex items-start gap-3 p-4">
@@ -372,18 +390,22 @@ function RoommateCard({ profile, isSaved, onSave }: RoommateCardProps) {
       {/* Actions — pushed to bottom */}
       <div className="mt-auto flex border-t border-gray-100">
         <button
-          onClick={onSave}
-          className={`flex-1 flex items-center justify-center gap-1.5 py-3 text-sm font-medium transition-colors ${
-            isSaved ? 'text-red-500' : 'text-gray-500 hover:text-red-400'
-          }`}
+          type="button"
+          onClick={openDetails}
+          className="flex-1 flex items-center justify-center gap-1.5 py-3 text-sm font-medium text-gray-600 hover:text-teal-700 hover:bg-teal-50/60 transition-colors"
         >
-          <Heart className={`w-4 h-4 ${isSaved ? 'fill-red-500' : ''}`} />
-          {isSaved ? 'Saved' : 'Save'}
+          <Eye className="w-4 h-4" />
+          View details
         </button>
         <div className="w-px bg-gray-100" />
-        {profile.isConnected ? (
+        {profile.userId &&
+        (!viewerUserId || String(viewerUserId) !== String(profile.userId)) ? (
           <Link
-            href="/chat"
+            href={
+              isAuthenticated
+                ? `/chat/${profile.userId}`
+                : `/login?next=${encodeURIComponent(`/chat/${profile.userId}`)}`
+            }
             className="flex-1 flex items-center justify-center gap-1.5 py-3 text-sm font-medium text-teal-600 hover:bg-teal-50 transition-colors"
           >
             <MessageCircle className="w-4 h-4" />
@@ -399,5 +421,15 @@ function RoommateCard({ profile, isSaved, onSave }: RoommateCardProps) {
         )}
       </div>
     </div>
+    <RoommateProfileDetailModal
+      profile={detailProfile}
+      isOpen={detailOpen}
+      onClose={() => {
+        setDetailOpen(false);
+        setDetailProfile(null);
+      }}
+      isLoading={detailLoading}
+    />
+    </>
   );
 }

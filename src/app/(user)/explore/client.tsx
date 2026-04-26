@@ -4,25 +4,61 @@
  * Explore page client component — src/app/(user)/explore/client.tsx
  * Browse by category, popular areas, and full listing grid.
  * Metadata is exported from page.tsx (server component).
+ *
+ * Query: `/explore?q=shiv+pg` — initial search text from `q` (shareable / deep link).
  */
 
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { Search } from 'lucide-react';
+import { useSearchParams, useRouter } from 'next/navigation';
 import { UserLayout } from '@/components/shared/UserLayout';
 import { ListingCard } from '@/components/features/ListingCard';
 import { ListingDetailModal } from '@/components/features/ListingDetailModal';
 import { CategoryGrid } from '@/components/features/CategoryGrid';
 import { POPULAR_AREAS } from '@/lib/staticData';
+import { buildExploreCategoriesFromListings } from '@/lib/exploreCategories';
+import { useFilterStore } from '@/store/filterStore';
 import { Listing } from '@/types';
 import { listingService } from '@/services/modules/listing.service';
 import { useToast } from '@/hooks/useToast';
 
+function listingMatchesExploreSearch(listing: Listing, q: string): boolean {
+  const s = q.trim().toLowerCase();
+  if (!s) return true;
+  const hay = [
+    listing.title,
+    listing.location,
+    listing.city,
+    listing.formattedAddress,
+    listing.addressLine2,
+    listing.description,
+    listing.type,
+  ]
+    .filter(Boolean)
+    .join(' ')
+    .toLowerCase();
+  return hay.includes(s);
+}
+
 export default function ExplorePageClient() {
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const filtersType = useFilterStore((s) => s.filters.type);
   const [selectedListing, setSelectedListing] = useState<Listing | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedArea, setSelectedArea] = useState<string | null>(null);
   const [listings, setListings] = useState<Listing[]>([]);
   const toast = useToast();
+
+  /** Keep search box in sync with `?q=` (e.g. `/explore?q=shiv%20pg`). Omitting `q` clears the field. */
+  useEffect(() => {
+    if (!searchParams.has('q')) {
+      setSearchQuery('');
+      return;
+    }
+    const raw = searchParams.get('q') ?? '';
+    setSearchQuery(raw === '' ? '' : decodeURIComponent(raw.replace(/\+/g, ' ')));
+  }, [searchParams]);
 
   useEffect(() => {
     let c = false;
@@ -43,23 +79,31 @@ export default function ExplorePageClient() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  const exploreCategories = useMemo(() => buildExploreCategoriesFromListings(listings), [listings]);
+
   const filteredListings = useMemo(() => {
     return listings.filter((l) => {
-      const matchesSearch =
-        !searchQuery ||
-        l.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        l.location.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        l.type.toLowerCase().includes(searchQuery.toLowerCase());
+      const matchesType =
+        !filtersType || filtersType === 'All' || l.type === filtersType;
+      const matchesSearch = listingMatchesExploreSearch(l, searchQuery);
       const matchesArea =
         !selectedArea || l.location.toLowerCase().includes(selectedArea.toLowerCase());
-      return matchesSearch && matchesArea;
+      return matchesType && matchesSearch && matchesArea;
     });
-  }, [listings, searchQuery, selectedArea]);
+  }, [listings, searchQuery, selectedArea, filtersType]);
 
-  const handleSearch = (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    // search is already reactive via state
-  };
+  const handleSearch = useCallback(
+    (e: React.FormEvent<HTMLFormElement>) => {
+      e.preventDefault();
+      const q = searchQuery.trim();
+      const next = new URLSearchParams(searchParams.toString());
+      if (q) next.set('q', q);
+      else next.delete('q');
+      const qs = next.toString();
+      router.replace(qs ? `/explore?${qs}` : '/explore', { scroll: false });
+    },
+    [router, searchParams, searchQuery],
+  );
 
   return (
     <UserLayout pageSuffix="Explore" showSearch={false} showFab>
@@ -140,7 +184,7 @@ export default function ExplorePageClient() {
           <p id="category-heading" className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3">
             Browse by Category
           </p>
-          <CategoryGrid />
+          <CategoryGrid categories={exploreCategories} />
         </section>
 
         {/* Popular Areas */}

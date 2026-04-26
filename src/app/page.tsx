@@ -1,13 +1,6 @@
-/**
- * Home page metadata — exported from a server segment
- * so Next.js can include it in the <head> even though page.tsx is 'use client'.
- *
- * SEO targets:
- *   - "PG in Ahmedabad"  → 2,400 searches/mo
- *   - "room for rent Ahmedabad" → 1,900 searches/mo
- *   - "shared flat Ahmedabad"  → 880 searches/mo
- */
 import type { Metadata } from 'next';
+import { UserAuthGate } from '@/components/shared/UserAuthGate';
+import HomePageClient from './(user)/client';
 
 const BASE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://roommat.in';
 
@@ -38,3 +31,12 @@ export const metadata: Metadata = {
     images: [{ url: '/og-image.png', width: 1200, height: 630, alt: 'Roommat Listings in Ahmedabad' }],
   },
 };
+
+/** Root `/` — lives outside `(user)` so Next always resolves the homepage route. */
+export default function HomePage() {
+  return (
+    <UserAuthGate>
+      <HomePageClient />
+    </UserAuthGate>
+  );
+}

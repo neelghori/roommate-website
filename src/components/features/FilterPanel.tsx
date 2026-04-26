@@ -13,25 +13,34 @@ import React, { useRef, useState, useEffect, useCallback } from 'react';
 import {
   ChevronDown, X, SlidersHorizontal, BadgeCheck,
   Wifi, Wind, UtensilsCrossed, ShoppingBag,
-  Car, Dumbbell, Shield, Zap, Eye,
+  Car, Dumbbell, Shield, Zap, Eye, Sparkles,
 } from 'lucide-react';
 import { useFilterStore } from '@/store/filterStore';
-import { Amenity, GenderPreference } from '@/types';
+import { POPULAR_AREAS } from '@/lib/staticData';
+import { amenityService, type ApiAmenity } from '@/services/modules/amenity.service';
+import type { GenderPreference } from '@/types';
 
 /* ─── Static data ─────────────────────────────────────────────────── */
 
-const AMENITY_META: { key: Amenity; icon: React.ReactNode }[] = [
-  { key: 'WiFi', icon: <Wifi size={13} /> },
-  { key: 'AC', icon: <Wind size={13} /> },
-  { key: 'Food', icon: <UtensilsCrossed size={13} /> },
-  { key: 'Kitchen', icon: <UtensilsCrossed size={13} /> },
-  { key: 'Laundry', icon: <ShoppingBag size={13} /> },
-  { key: 'Parking', icon: <Car size={13} /> },
-  { key: 'Gym', icon: <Dumbbell size={13} /> },
-  { key: 'Security', icon: <Shield size={13} /> },
-  { key: 'Power Backup', icon: <Zap size={13} /> },
-  { key: 'CCTV', icon: <Eye size={13} /> },
-];
+/** Decorative icon by slug/name — master list drives labels; icons are hints only. */
+function amenityIcon(slug: string | undefined, name: string): React.ReactNode {
+  const key = `${slug ?? ''} ${name}`.toLowerCase();
+  if (key.includes('wifi')) return <Wifi size={13} aria-hidden />;
+  if (key.includes('cctv') || key.includes('camera')) return <Eye size={13} aria-hidden />;
+  if (key.includes('power') || key.includes('backup')) return <Zap size={13} aria-hidden />;
+  if (key.includes('security')) return <Shield size={13} aria-hidden />;
+  if (key.includes('gym')) return <Dumbbell size={13} aria-hidden />;
+  if (key.includes('parking')) return <Car size={13} aria-hidden />;
+  if (key.includes('laundry')) return <ShoppingBag size={13} aria-hidden />;
+  if (key.includes('kitchen') || key.includes('food')) return <UtensilsCrossed size={13} aria-hidden />;
+  if (/\bac\b|air[- ]?con|cooling/i.test(key)) return <Wind size={13} aria-hidden />;
+  return <Sparkles size={13} className="opacity-70" aria-hidden />;
+}
+
+function amenityRowSelected(selected: string[], masterName: string): boolean {
+  const m = masterName.trim().toLowerCase();
+  return selected.some((s) => s.trim().toLowerCase() === m);
+}
 
 const BUDGET_PRESETS = [
   { label: 'Under ₹5k', min: 0, max: 5000 },
@@ -42,6 +51,12 @@ const BUDGET_PRESETS = [
 ];
 
 const GENDER_OPTIONS: GenderPreference[] = ['Male', 'Female', 'Any'];
+
+const CITY_OPTIONS: { label: string; city?: string }[] = [
+  { label: 'All locations' },
+  { label: 'Ahmedabad', city: 'Ahmedabad' },
+  { label: 'Gandhinagar', city: 'Gandhinagar' },
+];
 
 /* ─── Small helpers ───────────────────────────────────────────────── */
 
@@ -109,8 +124,55 @@ function TriggerBtn({
 
 export const FilterPanel: React.FC = () => {
   const { filters, setFilter, setFilters, resetFilters } = useFilterStore();
-  const [openDropdown, setOpenDropdown] = useState<'budget' | 'amenities' | 'gender' | null>(null);
+  const [openDropdown, setOpenDropdown] = useState<'budget' | 'amenities' | 'gender' | 'location' | null>(null);
+  const [amenitiesMaster, setAmenitiesMaster] = useState<ApiAmenity[]>([]);
+  const [amenitiesLoadState, setAmenitiesLoadState] = useState<'loading' | 'ready' | 'error'>('loading');
   const barRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    setAmenitiesLoadState('loading');
+    amenityService
+      .list()
+      .then((rows) => {
+        if (cancelled) return;
+        const sorted = [...rows].sort((a, b) => a.name.localeCompare(b.name));
+        setAmenitiesMaster(sorted);
+        setAmenitiesLoadState('ready');
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setAmenitiesMaster([]);
+          setAmenitiesLoadState('error');
+        }
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  /** Keep saved chip names aligned with master `name` strings (case + removed stale labels). */
+  useEffect(() => {
+    if (!amenitiesMaster.length) return;
+    const curr = filters.amenities ?? [];
+    if (!curr.length) return;
+    const mapped: string[] = [];
+    let changed = false;
+    for (const sel of curr) {
+      const hit = amenitiesMaster.find(
+        (m) => m.name.trim().toLowerCase() === sel.trim().toLowerCase(),
+      );
+      if (hit) {
+        if (hit.name !== sel) changed = true;
+        mapped.push(hit.name);
+      } else {
+        changed = true;
+      }
+    }
+    if (changed || mapped.length !== curr.length) {
+      setFilter('amenities', mapped);
+    }
+  }, [amenitiesMaster, filters.amenities, setFilter]);
 
   /* Close on outside click */
   useEffect(() => {
@@ -124,18 +186,20 @@ export const FilterPanel: React.FC = () => {
     return () => document.removeEventListener('mousedown', handler);
   }, [openDropdown]);
 
-  const toggle = (name: 'budget' | 'amenities' | 'gender') =>
+  const toggle = (name: 'budget' | 'amenities' | 'gender' | 'location') =>
     setOpenDropdown((prev) => (prev === name ? null : name));
 
   /* ── helpers ── */
   const activeAmenities = filters.amenities ?? [];
 
-  const toggleAmenity = useCallback(
-    (amenity: string) => {
+  const toggleAmenityMaster = useCallback(
+    (canonicalName: string) => {
       const curr = filters.amenities ?? [];
+      const m = canonicalName.trim().toLowerCase();
+      const exists = curr.some((a) => a.trim().toLowerCase() === m);
       setFilter(
         'amenities',
-        curr.includes(amenity) ? curr.filter((a) => a !== amenity) : [...curr, amenity],
+        exists ? curr.filter((a) => a.trim().toLowerCase() !== m) : [...curr, canonicalName],
       );
     },
     [filters.amenities, setFilter],
@@ -148,7 +212,8 @@ export const FilterPanel: React.FC = () => {
     setFilter('isVerified', filters.isVerified ? undefined : true);
 
   const clearBudget = () => setFilters({ minPrice: undefined, maxPrice: undefined });
-  const clearCity = () => setFilter('city', undefined);
+  const clearCity = () => setFilters({ city: undefined });
+  const clearArea = () => setFilter('area', undefined);
 
   const applyBudget = (min: number, max: number) => {
     if (filters.minPrice === min && filters.maxPrice === max) clearBudget();
@@ -161,7 +226,10 @@ export const FilterPanel: React.FC = () => {
     activeAmenities.length > 0 ||
     !!filters.genderPreference ||
     !!filters.isVerified ||
-    !!filters.city;
+    !!filters.city ||
+    !!filters.area;
+
+  const locationTriggerCount = (filters.city ? 1 : 0) + (filters.area ? 1 : 0);
 
   /* Active budget label */
   const activeBudgetLabel = hasBudget
@@ -182,6 +250,14 @@ export const FilterPanel: React.FC = () => {
           count={hasBudget ? 1 : 0}
           isOpen={openDropdown === 'budget'}
           onClick={() => toggle('budget')}
+        />
+
+        {/* Location (city + popular areas) */}
+        <TriggerBtn
+          label="Location"
+          count={locationTriggerCount}
+          isOpen={openDropdown === 'location'}
+          onClick={() => toggle('location')}
         />
 
         {/* Amenities */}
@@ -227,8 +303,11 @@ export const FilterPanel: React.FC = () => {
             {filters.city && (
               <ActiveChip label={filters.city} onRemove={clearCity} />
             )}
+            {filters.area && (
+              <ActiveChip label={filters.area} onRemove={clearArea} />
+            )}
             {activeAmenities.map((a) => (
-              <ActiveChip key={a} label={a} onRemove={() => toggleAmenity(a)} />
+              <ActiveChip key={a} label={a} onRemove={() => toggleAmenityMaster(a)} />
             ))}
             {filters.genderPreference && (
               <ActiveChip
@@ -255,7 +334,12 @@ export const FilterPanel: React.FC = () => {
 
       {/* ── Dropdown panels ──────────────────────────────────────── */}
       {openDropdown && (
-        <div className="absolute left-4 top-full mt-2 z-50 bg-white rounded-2xl shadow-xl border border-gray-100 p-4 min-w-[260px] max-w-[340px]">
+        <div
+          className={[
+            'absolute left-4 top-full mt-2 z-50 bg-white rounded-2xl shadow-xl border border-gray-100 p-4 min-w-[260px]',
+            openDropdown === 'amenities' ? 'max-w-[min(92vw,520px)]' : 'max-w-[340px]',
+          ].join(' ')}
+        >
 
           {/* Budget panel */}
           {openDropdown === 'budget' && (
@@ -285,7 +369,7 @@ export const FilterPanel: React.FC = () => {
             </div>
           )}
 
-          {/* Amenities panel */}
+          {/* Amenities panel — options from GET /api/v1/amenities (same names as listing amenityIds). */}
           {openDropdown === 'amenities' && (
             <div>
               <div className="flex items-center justify-between mb-3">
@@ -300,28 +384,42 @@ export const FilterPanel: React.FC = () => {
                   </button>
                 )}
               </div>
-              <div className="grid grid-cols-2 gap-2">
-                {AMENITY_META.map(({ key, icon }) => {
-                  const active = activeAmenities.includes(key);
-                  return (
-                    <button
-                      type="button"
-                      key={key}
-                      onClick={() => toggleAmenity(key)}
-                      className={[
-                        'flex items-center gap-2 px-3 py-2.5 rounded-xl text-sm font-medium border transition-all',
-                        active
-                          ? 'bg-primary text-white border-transparent'
-                          : 'bg-gray-50 text-gray-700 border-gray-100 hover:border-teal-300 hover:bg-teal-50',
-                      ].join(' ')}
-                    >
-                      <span className={active ? 'text-white' : 'text-gray-400'}>{icon}</span>
-                      {key}
-                    </button>
-                  );
-                })}
-              </div>
-              {activeAmenities.length > 0 && (
+              {amenitiesLoadState === 'loading' && (
+                <p className="text-sm text-gray-500 py-6 text-center">Loading amenities…</p>
+              )}
+              {amenitiesLoadState === 'error' && (
+                <p className="text-sm text-red-500 py-4 text-center">
+                  Could not load amenities. Check your connection or try again later.
+                </p>
+              )}
+              {amenitiesLoadState === 'ready' && amenitiesMaster.length === 0 && (
+                <p className="text-sm text-gray-500 py-4 text-center">No amenities in the catalogue yet.</p>
+              )}
+              {amenitiesLoadState === 'ready' && amenitiesMaster.length > 0 && (
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 max-h-[min(55vh,360px)] overflow-y-auto pr-1">
+                  {amenitiesMaster.map((row) => {
+                    const active = amenityRowSelected(activeAmenities, row.name);
+                    const icon = amenityIcon(row.slug, row.name);
+                    return (
+                      <button
+                        type="button"
+                        key={row._id}
+                        onClick={() => toggleAmenityMaster(row.name)}
+                        className={[
+                          'flex items-center gap-2 px-3 py-2.5 rounded-xl text-sm font-medium border transition-all text-left',
+                          active
+                            ? 'bg-primary text-white border-transparent'
+                            : 'bg-gray-50 text-gray-700 border-gray-100 hover:border-teal-300 hover:bg-teal-50',
+                        ].join(' ')}
+                      >
+                        <span className={active ? 'text-white' : 'text-gray-400'}>{icon}</span>
+                        <span className="leading-tight">{row.name}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+              {activeAmenities.length > 0 && amenitiesMaster.length > 0 && (
                 <button
                   type="button"
                   onClick={() => setOpenDropdown(null)}
@@ -330,6 +428,70 @@ export const FilterPanel: React.FC = () => {
                   Apply ({activeAmenities.length} selected)
                 </button>
               )}
+            </div>
+          )}
+
+          {/* Location panel */}
+          {openDropdown === 'location' && (
+            <div className="max-h-[min(70vh,420px)] overflow-y-auto">
+              <p className="text-xs font-bold text-gray-500 uppercase tracking-wide mb-2">City</p>
+              <div className="flex flex-col gap-2 mb-4">
+                {CITY_OPTIONS.map((opt) => {
+                  const active =
+                    opt.city === undefined
+                      ? !filters.city && !filters.area
+                      : filters.city === opt.city && !filters.area;
+                  return (
+                    <button
+                      type="button"
+                      key={opt.label}
+                      onClick={() => {
+                        if (opt.city === undefined) {
+                          setFilters({ city: undefined, area: undefined });
+                        } else {
+                          setFilters({ city: opt.city, area: undefined });
+                        }
+                        setOpenDropdown(null);
+                      }}
+                      className={[
+                        'w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-sm font-medium border transition-all',
+                        active
+                          ? 'bg-primary text-white border-transparent'
+                          : 'bg-gray-50 text-gray-700 border-gray-100 hover:border-teal-300 hover:bg-teal-50',
+                      ].join(' ')}
+                    >
+                      <span>{opt.label}</span>
+                      {active && <X size={14} />}
+                    </button>
+                  );
+                })}
+              </div>
+              <p className="text-xs font-bold text-gray-500 uppercase tracking-wide mb-2">
+                Popular areas (Ahmedabad)
+              </p>
+              <div className="flex flex-wrap gap-2">
+                {POPULAR_AREAS.map((area) => {
+                  const active = filters.area === area;
+                  return (
+                    <button
+                      type="button"
+                      key={area}
+                      onClick={() => {
+                        setFilters({ city: 'Ahmedabad', area });
+                        setOpenDropdown(null);
+                      }}
+                      className={[
+                        'px-3 py-1.5 rounded-full text-xs font-semibold border transition-all',
+                        active
+                          ? 'bg-primary text-white border-transparent'
+                          : 'bg-gray-50 text-gray-700 border-gray-200 hover:border-teal-300',
+                      ].join(' ')}
+                    >
+                      {area}
+                    </button>
+                  );
+                })}
+              </div>
             </div>
           )}
 

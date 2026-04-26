@@ -4,16 +4,15 @@
  * Desktop : left sticky image + right scrollable details panel
  *
  * BACKEND INTEGRATION:
- * - Apply: POST /listings/{id}/apply
- * - Book Visit: POST /listings/{id}/book-visit
+ * - Book Visit: POST /api/v1/bookings (see BookVisitModal)
  */
 'use client';
 
 import React, { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import {
   ChevronLeft,
   ChevronRight,
-  CheckCircle,
   MapPin,
   Wifi,
   Wind,
@@ -24,21 +23,20 @@ import {
   Shield,
   Zap,
   Eye,
-  BadgeCheck,
   Users,
   X,
+  Sparkles,
+  MessageCircle,
 } from 'lucide-react';
 import { Listing } from '@/types';
 import { Modal } from '@/components/ui/Modal';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
-import { useToast } from '@/hooks/useToast';
 import { formatRupees } from '@/lib/utils/format';
-import { ListingResidentsViewModal } from '@/components/features/ListingResidentsViewModal';
-import {
-  listingHasVerification,
-  listingVerificationLabel,
-} from '@/services/modules/listing.service';
+import { ListingVerificationBadge } from '@/components/features/ListingVerificationBadge';
+import { ListingLocationMap } from '@/components/features/ListingLocationMap';
+import { BookVisitModal } from '@/components/features/BookVisitModal';
+import { useAuthStore } from '@/store/authStore';
 
 const AMENITY_ICONS: Record<string, React.ReactNode> = {
   WiFi:           <Wifi size={14} />,
@@ -74,46 +72,42 @@ export const ListingDetailModal: React.FC<ListingDetailModalProps> = ({
   isOpen,
   onClose,
 }) => {
+  const router = useRouter();
   const [currentImage, setCurrentImage] = useState(0);
-  const [isApplying, setIsApplying] = useState(false);
-  const [isBooking, setIsBooking] = useState(false);
-  const [showResidentsViewModal, setShowResidentsViewModal] = useState(false);
-  const toast = useToast();
+  const [visitBookingOpen, setVisitBookingOpen] = useState(false);
+  const user = useAuthStore((s) => s.user);
+  const isOwnListing = Boolean(
+    user?.id && listing?.ownerId && String(user.id) === String(listing?.ownerId),
+  );
+  const ownerChatPath = listing?.ownerId ? `/chat/${listing.ownerId}` : '';
+
+  const handleMessageOwner = () => {
+    if (!ownerChatPath) return;
+    if (!user?.id) {
+      router.push(`/login?next=${encodeURIComponent(ownerChatPath)}`);
+      onClose();
+      return;
+    }
+    router.push(ownerChatPath);
+    onClose();
+  };
 
   React.useEffect(() => {
     setCurrentImage(0);
   }, [listing?.id]);
-
-  React.useEffect(() => {
-    if (!isOpen) setShowResidentsViewModal(false);
-  }, [isOpen]);
 
   if (!listing) return null;
 
   const images    = listing.images.length > 0 ? listing.images : [];
   const hasImages = images.length > 0;
   const typeBgCls = TYPE_BG_CLASS[listing.type] ?? 'bg-[#c8eeee]';
-  const residentRows = listing.residentSnapshots ?? [];
-
   const prevImage = () =>
     setCurrentImage((p) => (p === 0 ? images.length - 1 : p - 1));
   const nextImage = () =>
     setCurrentImage((p) => (p === images.length - 1 ? 0 : p + 1));
 
-  const handleApply = async () => {
-    setIsApplying(true);
-    await new Promise((r) => setTimeout(r, 900));
-    setIsApplying(false);
-    toast.success('Application Sent!', `Your application for ${listing.title} has been sent.`);
-    onClose();
-  };
-
-  const handleBookVisit = async () => {
-    setIsBooking(true);
-    await new Promise((r) => setTimeout(r, 900));
-    setIsBooking(false);
-    toast.success('Visit Booked!', 'The owner will contact you shortly.');
-    onClose();
+  const handleBookVisit = () => {
+    setVisitBookingOpen(true);
   };
 
   const ownerInitials = listing.ownerName
@@ -229,12 +223,7 @@ export const ListingDetailModal: React.FC<ListingDetailModalProps> = ({
             >
               {listing.type}
             </span>
-            {listingHasVerification(listing) && (
-              <span className="flex max-w-[200px] items-center gap-1 rounded-full bg-green-500 px-2.5 py-1 text-xs font-semibold text-white">
-                <BadgeCheck size={11} className="shrink-0" />
-                <span className="truncate">{listingVerificationLabel(listing)}</span>
-              </span>
-            )}
+            <ListingVerificationBadge listing={listing} variant="modalDesktopPill" />
             <span className="ml-auto text-xs text-gray-500">
               <Users size={12} className="inline mr-1 mb-0.5" />
               {listing.spotsLeft} spot{listing.spotsLeft !== 1 ? 's' : ''} left
@@ -270,12 +259,7 @@ export const ListingDetailModal: React.FC<ListingDetailModalProps> = ({
             <div className="lg:hidden">
               <div className="flex items-start justify-between gap-2">
                 <h2 className="text-lg font-bold text-gray-900 leading-tight">{listing.title}</h2>
-                {listingHasVerification(listing) && (
-                  <div className="flex max-w-[min(200px,45%)] flex-shrink-0 items-center gap-1 rounded-full bg-primary px-2 py-1 text-xs font-semibold text-white">
-                    <BadgeCheck size={12} className="shrink-0" />
-                    <span className="truncate">{listingVerificationLabel(listing)}</span>
-                  </div>
-                )}
+                <ListingVerificationBadge listing={listing} variant="modalMobilePill" />
               </div>
               <div className="flex items-center gap-1.5 mt-1">
                 <MapPin size={13} className="text-gray-400 flex-shrink-0" />
@@ -310,17 +294,25 @@ export const ListingDetailModal: React.FC<ListingDetailModalProps> = ({
             {/* Amenities */}
             <div>
               <h3 className="text-sm font-semibold text-gray-700 mb-2.5">Amenities</h3>
-              <div className="grid grid-cols-3 lg:grid-cols-4 gap-2">
-                {listing.amenities.map((amenity) => (
-                  <div
-                    key={amenity}
-                    className="flex flex-col items-center gap-1.5 bg-gray-50 border border-gray-100 rounded-xl p-2.5 text-center"
-                  >
-                    <span className="text-primary">{AMENITY_ICONS[amenity]}</span>
-                    <span className="text-[11px] text-gray-600 leading-tight">{amenity}</span>
-                  </div>
-                ))}
-              </div>
+              {listing.amenities.length === 0 ? (
+                <p className="text-sm text-gray-500">No amenities listed for this place.</p>
+              ) : (
+                <div className="grid grid-cols-3 lg:grid-cols-4 gap-2">
+                  {listing.amenities.map((amenity) => (
+                    <div
+                      key={amenity}
+                      className="flex flex-col items-center gap-1.5 bg-gray-50 border border-gray-100 rounded-xl p-2.5 text-center"
+                    >
+                      <span className="text-primary">
+                        {AMENITY_ICONS[amenity] ?? (
+                          <Sparkles size={14} className="opacity-70" aria-hidden />
+                        )}
+                      </span>
+                      <span className="text-[11px] text-gray-600 leading-tight">{amenity}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
 
             {/* Description */}
@@ -328,33 +320,6 @@ export const ListingDetailModal: React.FC<ListingDetailModalProps> = ({
               <h3 className="text-sm font-semibold text-gray-700 mb-1.5">About this place</h3>
               <p className="text-sm text-gray-600 leading-relaxed">{listing.description}</p>
             </div>
-
-            {residentRows.length > 0 && (
-              <div className="rounded-xl border border-gray-100 bg-gray-50/80 p-3">
-                <div className="flex flex-wrap items-center justify-between gap-2">
-                  <div className="flex items-start gap-2 min-w-0">
-                    <Users size={16} className="text-primary shrink-0 mt-0.5" aria-hidden />
-                    <div className="min-w-0">
-                      <h3 className="text-sm font-semibold text-gray-800">Who lives here</h3>
-                      <p className="text-xs text-gray-500 mt-0.5">
-                        {residentRows.length === 1 ? '1 resident' : `${residentRows.length} residents`} — tap
-                        View for full details.
-                      </p>
-                    </div>
-                  </div>
-                  <Button
-                    type="button"
-                    variant="secondary"
-                    size="sm"
-                    className="shrink-0"
-                    onClick={() => setShowResidentsViewModal(true)}
-                  >
-                    <Eye size={14} className="inline mr-1.5 -mt-0.5 align-middle" aria-hidden />
-                    View
-                  </Button>
-                </div>
-              </div>
-            )}
 
             {/* Owner info */}
             <div className="flex items-center gap-3 bg-gray-50 rounded-xl p-3 border border-gray-100">
@@ -367,46 +332,55 @@ export const ListingDetailModal: React.FC<ListingDetailModalProps> = ({
                 <p className="text-sm font-semibold text-gray-800">{listing.ownerName}</p>
                 <p className="text-xs text-gray-500">Property Owner</p>
               </div>
-              {listingHasVerification(listing) && (
-                <span
-                  className="shrink-0 text-green-500"
-                  title={listingVerificationLabel(listing)}
-                >
-                  <CheckCircle size={18} className="shrink-0" aria-hidden />
-                  <span className="sr-only">{listingVerificationLabel(listing)}</span>
-                </span>
-              )}
+              <ListingVerificationBadge listing={listing} variant="ownerIconOnly" />
             </div>
 
-            {/* Map placeholder */}
+            {/* Map — Google embed iframe from lat/lng (no API key) */}
             <div>
               <h3 className="text-sm font-semibold text-gray-700 mb-2">Location</h3>
-              <div
-                className="w-full h-28 lg:h-36 rounded-xl flex flex-col items-center justify-center gap-1.5 bg-teal-50 border-1.5 border-dashed border-teal-200"
-              >
-                <MapPin size={26} className="text-primary" />
-                <p className="text-sm font-medium text-primary">{listing.location}</p>
-                <p className="text-xs text-gray-400">Map view coming soon</p>
-              </div>
+              <ListingLocationMap
+                latitude={listing.latitude}
+                longitude={listing.longitude}
+                locationLabel={listing.location}
+                minHeightClass="min-h-[180px] lg:min-h-[200px]"
+                roundedClass="rounded-xl"
+                embedHeightClass="h-[180px] sm:h-[200px] lg:h-[220px]"
+              />
             </div>
           </div>
 
           {/* CTA — pinned to bottom of right panel */}
-          <div className="px-5 lg:px-6 py-4 border-t border-gray-100 flex gap-3 bg-white rounded-br-2xl">
-            <Button variant="primary" size="md" fullWidth isLoading={isApplying} onClick={handleApply}>
-              Apply Now
-            </Button>
-            <Button variant="accent" size="md" fullWidth isLoading={isBooking} onClick={handleBookVisit}>
-              Book Visit
+          <div className="px-5 lg:px-6 py-4 border-t border-gray-100 bg-white rounded-br-2xl space-y-2">
+            {!isOwnListing && ownerChatPath ? (
+              <Button
+                type="button"
+                variant="secondary"
+                size="md"
+                fullWidth
+                onClick={handleMessageOwner}
+              >
+                <MessageCircle size={16} className="inline mr-2 -mt-0.5 align-middle" aria-hidden />
+                Message owner
+              </Button>
+            ) : null}
+            <Button
+              variant="accent"
+              size="md"
+              fullWidth
+              onClick={handleBookVisit}
+              disabled={isOwnListing}
+              title={isOwnListing ? 'You cannot book your own listing' : undefined}
+            >
+              {isOwnListing ? 'Your listing' : 'Book Visit'}
             </Button>
           </div>
         </div>
       </div>
     </Modal>
-    <ListingResidentsViewModal
-      isOpen={showResidentsViewModal}
-      onClose={() => setShowResidentsViewModal(false)}
-      residents={residentRows}
+    <BookVisitModal
+      listing={listing}
+      isOpen={visitBookingOpen}
+      onClose={() => setVisitBookingOpen(false)}
     />
     </>
   );

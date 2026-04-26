@@ -10,26 +10,24 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import {
-  ChevronLeft, MapPin, CheckCircle, BadgeCheck,
+  ChevronLeft, ChevronRight, MapPin,
   Wifi, Wind, UtensilsCrossed, ShoppingBag,
   Car, Dumbbell, Shield, Zap, Eye,
-  Pencil, Trash2, UserPlus, Users,
+  Pencil, Trash2, UserPlus, Users, Sparkles, MessageCircle,
 } from 'lucide-react';
 import { UserLayout } from '@/components/shared/UserLayout';
 import { ListingCard } from '@/components/features/ListingCard';
 import { ListingDetailModal } from '@/components/features/ListingDetailModal';
+import { ListingVerificationBadge } from '@/components/features/ListingVerificationBadge';
+import { ListingLocationMap } from '@/components/features/ListingLocationMap';
 import { ListingResidentEditorModal } from '@/components/features/ListingResidentEditorModal';
 import { ListingResidentsViewModal } from '@/components/features/ListingResidentsViewModal';
+import { BookVisitModal } from '@/components/features/BookVisitModal';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { EmptyState } from '@/components/shared/EmptyState';
 import { useToast } from '@/hooks/useToast';
-import {
-  listingHasVerification,
-  listingService,
-  listingVerificationLabel,
-  MAX_LISTING_RESIDENTS,
-} from '@/services/modules/listing.service';
+import { listingService, MAX_LISTING_RESIDENTS } from '@/services/modules/listing.service';
 import { formatRupees } from '@/lib/utils/format';
 import { Listing, type ListingResidentSnapshot } from '@/types';
 import { useAuthStore } from '@/store/authStore';
@@ -76,8 +74,7 @@ export default function ListingDetailPage() {
   const router   = useRouter();
   const toast    = useToast();
   const user = useAuthStore((s) => s.user);
-  const [isApplying,    setIsApplying]    = useState(false);
-  const [isBooking,     setIsBooking]     = useState(false);
+  const [visitModalOpen, setVisitModalOpen] = useState(false);
   const [previewListing, setPreviewListing] = useState<Listing | null>(null);
   const [listing, setListing] = useState<Listing | null>(null);
   const [similarListings, setSimilarListings] = useState<Listing[]>([]);
@@ -87,6 +84,8 @@ export default function ListingDetailPage() {
   const [removingResidentIndex, setRemovingResidentIndex] = useState<number | null>(null);
   const [showResidentsViewModal, setShowResidentsViewModal] = useState(false);
   const [residentsForViewModal, setResidentsForViewModal] = useState<ListingResidentSnapshot[]>([]);
+  /** Gallery hero index — reset when navigating to another listing or image count shrinks. */
+  const [photoIndex, setPhotoIndex] = useState(0);
 
   const id = params?.id as string;
 
@@ -166,6 +165,17 @@ export default function ListingDetailPage() {
     };
   }, [id]);
 
+  useEffect(() => {
+    setPhotoIndex(0);
+  }, [id]);
+
+  useEffect(() => {
+    if (!listing?.images?.length) return;
+    const n = listing.images.filter(Boolean).length;
+    if (n === 0) return;
+    setPhotoIndex((p) => (p >= n ? 0 : p));
+  }, [listing?.id, listing?.images?.length]);
+
   if (loadState === 'loading') {
     return (
       <UserLayout pageSuffix="Listing" showFab={false}>
@@ -190,24 +200,28 @@ export default function ListingDetailPage() {
   }
 
   const cardBg = TYPE_COLORS[listing.type] ?? '#c8eeee';
-
-  const handleApply = async () => {
-    setIsApplying(true);
-    await new Promise((r) => setTimeout(r, 900));
-    setIsApplying(false);
-    toast.success('Application Sent!', `Your application for "${listing.title}" has been sent.`);
-  };
-
-  const handleBookVisit = async () => {
-    setIsBooking(true);
-    await new Promise((r) => setTimeout(r, 900));
-    setIsBooking(false);
-    toast.success('Visit Booked!', 'The owner will contact you shortly.');
-  };
+  const galleryImages = (listing.images ?? []).filter(Boolean);
+  const galleryCount = galleryImages.length;
+  const activePhotoIdx = galleryCount ? Math.min(photoIndex, galleryCount - 1) : 0;
+  const mainPhotoSrc = galleryCount ? galleryImages[activePhotoIdx] : '';
 
   const ownerInitials = listing.ownerName.split(' ').map((n) => n[0]).join('').toUpperCase().slice(0, 2);
   const isOwner =
     Boolean(user?.id && listing.ownerId) && String(user!.id) === String(listing.ownerId);
+
+  const handleMessageOwner = () => {
+    if (!listing.ownerId || isOwner) return;
+    const path = `/chat/${listing.ownerId}`;
+    if (!user?.id) {
+      router.push(`/login?next=${encodeURIComponent(path)}`);
+      return;
+    }
+    router.push(path);
+  };
+
+  const handleBookVisit = () => {
+    setVisitModalOpen(true);
+  };
   const residents = listing.residentSnapshots ?? [];
 
   return (
@@ -243,32 +257,97 @@ export default function ListingDetailPage() {
 
           {/* ── LEFT: Image + Details ── */}
           <div>
-            {/* Hero image */}
-            <div
-              className="relative w-full h-56 md:h-72 lg:h-80 lg:rounded-2xl overflow-hidden"
-              style={{ backgroundColor: cardBg }}
-            >
-              {listing.images[0] ? (
-                <img src={listing.images[0]} alt={listing.title} className="w-full h-full object-cover" />
-              ) : (
-                <div className="flex items-center justify-center h-full">
-                  <svg width="100" height="100" viewBox="0 0 80 80" fill="none" className="opacity-30">
-                    <rect x="10" y="30" width="60" height="40" rx="4" fill="#1B8F8F" opacity="0.5" />
-                    <rect x="20" y="20" width="40" height="50" rx="4" fill="#1B8F8F" opacity="0.6" />
-                    <rect x="30" y="10" width="20" height="60" rx="4" fill="#1B8F8F" opacity="0.7" />
-                    <rect x="32" y="50" width="16" height="20" rx="2" fill="white" opacity="0.5" />
-                  </svg>
-                </div>
-              )}
-              {listing.badge && (
-                <div className="absolute top-3 left-3">
-                  <Badge variant={BADGE_VARIANT_MAP[listing.badge]}>{listing.badge}</Badge>
-                </div>
-              )}
-              {listingHasVerification(listing) && (
-                <div className="absolute top-3 right-3 flex items-center gap-1 text-white text-xs font-semibold px-2.5 py-1 rounded-full max-w-[min(200px,calc(100%-5rem))]" style={{ backgroundColor: '#1B8F8F' }}>
-                  <BadgeCheck size={12} className="shrink-0" />
-                  <span className="truncate">{listingVerificationLabel(listing)}</span>
+            {/* Photo gallery — hero + thumbnails (all listing.images) */}
+            <div className="space-y-2">
+              <div
+                className="relative w-full h-56 md:h-72 lg:h-[22rem] lg:rounded-2xl overflow-hidden bg-gray-100"
+                style={{ backgroundColor: cardBg }}
+              >
+                {mainPhotoSrc ? (
+                  <img
+                    src={mainPhotoSrc}
+                    alt={`${listing.title} — photo ${activePhotoIdx + 1} of ${galleryCount}`}
+                    className="h-full w-full object-cover object-center"
+                    decoding="async"
+                    fetchPriority={activePhotoIdx === 0 ? 'high' : 'auto'}
+                  />
+                ) : (
+                  <div className="flex h-full items-center justify-center">
+                    <svg width="100" height="100" viewBox="0 0 80 80" fill="none" className="opacity-30">
+                      <rect x="10" y="30" width="60" height="40" rx="4" fill="#1B8F8F" opacity="0.5" />
+                      <rect x="20" y="20" width="40" height="50" rx="4" fill="#1B8F8F" opacity="0.6" />
+                      <rect x="30" y="10" width="20" height="60" rx="4" fill="#1B8F8F" opacity="0.7" />
+                      <rect x="32" y="50" width="16" height="20" rx="2" fill="white" opacity="0.5" />
+                    </svg>
+                  </div>
+                )}
+                {galleryCount > 1 && (
+                  <>
+                    <button
+                      type="button"
+                      aria-label="Previous photo"
+                      className="absolute left-2 top-1/2 z-10 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-black/45 text-white shadow-md backdrop-blur-sm transition hover:bg-black/60"
+                      onClick={() =>
+                        setPhotoIndex((p) => (p - 1 + galleryCount) % galleryCount)
+                      }
+                    >
+                      <ChevronLeft size={22} aria-hidden />
+                    </button>
+                    <button
+                      type="button"
+                      aria-label="Next photo"
+                      className="absolute right-2 top-1/2 z-10 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-black/45 text-white shadow-md backdrop-blur-sm transition hover:bg-black/60"
+                      onClick={() => setPhotoIndex((p) => (p + 1) % galleryCount)}
+                    >
+                      <ChevronRight size={22} aria-hidden />
+                    </button>
+                    <div
+                      className="absolute bottom-3 left-1/2 z-10 -translate-x-1/2 rounded-full bg-black/50 px-3 py-1 text-xs font-semibold text-white backdrop-blur-sm"
+                      aria-live="polite"
+                    >
+                      {activePhotoIdx + 1} / {galleryCount}
+                    </div>
+                  </>
+                )}
+                {listing.badge && (
+                  <div className="absolute top-3 left-3 z-10">
+                    <Badge variant={BADGE_VARIANT_MAP[listing.badge]}>{listing.badge}</Badge>
+                  </div>
+                )}
+                <ListingVerificationBadge listing={listing} variant="heroOverlay" />
+              </div>
+              {galleryCount > 1 && (
+                <div
+                  className="flex gap-2 overflow-x-auto px-4 pb-1 pt-0.5 lg:px-0 [scrollbar-width:thin]"
+                  role="tablist"
+                  aria-label="Listing photos"
+                >
+                  {galleryImages.map((src, idx) => (
+                    <button
+                      key={`${src}-${idx}`}
+                      type="button"
+                      role="tab"
+                      aria-selected={idx === activePhotoIdx}
+                      aria-label={`Show photo ${idx + 1}`}
+                      className={[
+                        'relative shrink-0 overflow-hidden rounded-xl border-2 transition focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-1 focus-visible:ring-teal-500',
+                        idx === activePhotoIdx
+                          ? 'border-teal-500 ring-2 ring-teal-400/80 ring-offset-1'
+                          : 'border-transparent opacity-80 hover:opacity-100',
+                      ].join(' ')}
+                      onClick={() => setPhotoIndex(idx)}
+                    >
+                      <img
+                        src={src}
+                        alt=""
+                        width={112}
+                        height={72}
+                        className="h-[4.5rem] w-[7rem] object-cover sm:h-[5rem] sm:w-[7.5rem]"
+                        loading="lazy"
+                        decoding="async"
+                      />
+                    </button>
+                  ))}
                 </div>
               )}
             </div>
@@ -283,25 +362,31 @@ export default function ListingDetailPage() {
                   <MapPin size={14} className="text-gray-400 flex-shrink-0" />
                   <span>{listing.location}</span>
                 </div>
-                {listingHasVerification(listing) && (
-                  <div className="mt-2 inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold text-white" style={{ backgroundColor: '#1B8F8F' }}>
-                    <BadgeCheck size={12} className="shrink-0" />
-                    {listingVerificationLabel(listing)}
-                  </div>
-                )}
+                <ListingVerificationBadge listing={listing} variant="inlinePill" />
               </div>
 
               {/* Amenities */}
               <div>
                 <h2 className="text-sm font-bold text-gray-700 mb-2">Amenities</h2>
-                <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-5 gap-2">
-                  {listing.amenities.map((amenity) => (
-                    <div key={amenity} className="flex flex-col items-center gap-1.5 bg-white rounded-xl p-3 text-center shadow-sm border border-gray-100">
-                      <span style={{ color: '#1B8F8F' }}>{AMENITY_ICONS[amenity]}</span>
-                      <span className="text-xs text-gray-600 leading-tight">{amenity}</span>
-                    </div>
-                  ))}
-                </div>
+                {listing.amenities.length === 0 ? (
+                  <p className="text-sm text-gray-500">No amenities listed for this place.</p>
+                ) : (
+                  <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-5 gap-2">
+                    {listing.amenities.map((amenity) => (
+                      <div
+                        key={amenity}
+                        className="flex flex-col items-center gap-1.5 bg-white rounded-xl p-3 text-center shadow-sm border border-gray-100"
+                      >
+                        <span style={{ color: '#1B8F8F' }}>
+                          {AMENITY_ICONS[amenity] ?? (
+                            <Sparkles size={15} className="opacity-70" aria-hidden />
+                          )}
+                        </span>
+                        <span className="text-xs text-gray-600 leading-tight">{amenity}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
 
               {/* Description */}
@@ -432,17 +517,14 @@ export default function ListingDetailPage() {
                 </div>
               )}
 
-              {/* Map placeholder */}
+              {/* Map — Google embed iframe from lat/lng (no API key) */}
               <div>
                 <h2 className="text-sm font-bold text-gray-700 mb-2">Location</h2>
-                <div
-                  className="w-full h-36 lg:h-48 rounded-2xl flex flex-col items-center justify-center gap-2"
-                  style={{ backgroundColor: '#EDF5F5', border: '1.5px dashed #1B8F8F44' }}
-                >
-                  <MapPin size={32} style={{ color: '#1B8F8F' }} />
-                  <p className="text-sm font-semibold" style={{ color: '#1B8F8F' }}>{listing.location}</p>
-                  <p className="text-xs text-gray-400">Map view coming soon</p>
-                </div>
+                <ListingLocationMap
+                  latitude={listing.latitude}
+                  longitude={listing.longitude}
+                  locationLabel={listing.location}
+                />
               </div>
 
               {/* Similar listings */}
@@ -469,12 +551,7 @@ export default function ListingDetailPage() {
                 <MapPin size={14} className="text-gray-400 flex-shrink-0" />
                 <span>{listing.location}</span>
               </div>
-              {listingHasVerification(listing) && (
-                <div className="mt-2 inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold text-white" style={{ backgroundColor: '#1B8F8F' }}>
-                  <BadgeCheck size={12} className="shrink-0" />
-                  {listingVerificationLabel(listing)}
-                </div>
-              )}
+              <ListingVerificationBadge listing={listing} variant="inlinePill" />
             </div>
 
             {/* Price card */}
@@ -500,14 +577,29 @@ export default function ListingDetailPage() {
                 </span>
               </div>
 
-              <div className="flex flex-col gap-3">
-                <Button variant="primary" size="lg" fullWidth isLoading={isApplying} onClick={handleApply}>
-                  Apply Now
+              {!isOwner && listing.ownerId ? (
+                <Button
+                  type="button"
+                  variant="secondary"
+                  size="lg"
+                  fullWidth
+                  className="mb-2"
+                  onClick={handleMessageOwner}
+                >
+                  <MessageCircle size={18} className="inline mr-2 -mt-0.5 align-middle" aria-hidden />
+                  Message owner
                 </Button>
-                <Button variant="accent" size="lg" fullWidth isLoading={isBooking} onClick={handleBookVisit}>
-                  Book Visit
-                </Button>
-              </div>
+              ) : null}
+              <Button
+                variant="accent"
+                size="lg"
+                fullWidth
+                onClick={handleBookVisit}
+                disabled={isOwner}
+                title={isOwner ? 'You cannot book your own listing' : undefined}
+              >
+                {isOwner ? 'Your listing' : 'Book Visit'}
+              </Button>
             </div>
 
             {/* Owner card */}
@@ -527,15 +619,7 @@ export default function ListingDetailPage() {
                     <p className="text-xs text-gray-500 mt-0.5">📞 {maskPhone(listing.ownerPhone)}</p>
                   )}
                 </div>
-                {listingHasVerification(listing) && (
-                  <span
-                    className="shrink-0 text-green-500"
-                    title={listingVerificationLabel(listing)}
-                  >
-                    <CheckCircle size={18} className="shrink-0" aria-hidden />
-                    <span className="sr-only">{listingVerificationLabel(listing)}</span>
-                  </span>
-                )}
+                <ListingVerificationBadge listing={listing} variant="ownerIconOnly" />
               </div>
             </div>
           </div>
@@ -543,6 +627,12 @@ export default function ListingDetailPage() {
       </div>
 
       <ListingDetailModal listing={previewListing} isOpen={!!previewListing} onClose={() => setPreviewListing(null)} />
+
+      <BookVisitModal
+        listing={listing}
+        isOpen={visitModalOpen}
+        onClose={() => setVisitModalOpen(false)}
+      />
 
       <ListingResidentsViewModal
         isOpen={showResidentsViewModal}

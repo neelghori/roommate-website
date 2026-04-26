@@ -8,6 +8,8 @@ import { authService } from '@/services/modules/auth.service';
 import { useToast } from './useToast';
 import { useRouter } from 'next/navigation';
 import { LoginPayload, RegisterPayload } from '@/services/modules/auth.service';
+import { getAccessToken } from '@/lib/authToken';
+import { wsService } from '@/services/wsService';
 
 export const useAuth = () => {
   const { user, isAuthenticated, isAdmin, setUser, setLoading, logout: logoutStore } = useAuthStore();
@@ -19,6 +21,7 @@ export const useAuth = () => {
     try {
       const { user } = await authService.login(payload);
       setUser(user);
+      wsService.connect(getAccessToken() ?? undefined);
       toast.success('Welcome back!', `Logged in as ${user.name}`);
       router.push('/');
     } catch {
@@ -33,6 +36,7 @@ export const useAuth = () => {
     try {
       const { user } = await authService.register(payload);
       setUser(user);
+      wsService.connect(getAccessToken() ?? undefined);
       toast.success('Account created!', 'Welcome to Roommat');
       router.push('/onboarding');
     } catch {

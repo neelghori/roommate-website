@@ -9,7 +9,7 @@ export type SessionUser = {
   id: string;
   name: string;
   email: string;
-  role: 'TENANT' | 'OWNER' | 'ADMIN';
+  role: 'TENANT' | 'OWNER' | 'ROOMMATE' | 'ADMIN';
 };
 
 /** Mock: always returns null (no real session in frontend-only mode) */

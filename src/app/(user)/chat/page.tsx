@@ -5,6 +5,7 @@ import { Search, MessageSquarePlus } from 'lucide-react';
 import { useChatStore } from '@/store/chatStore';
 import { chatService } from '@/services/modules/chat.service';
 import { wsService } from '@/services/wsService';
+import { getAccessToken } from '@/lib/authToken';
 import { ConversationItem } from '@/components/features/chat/ConversationItem';
 import { ChatSidebar } from '@/components/features/chat/ChatSidebar';
 import { UserLayout } from '@/components/shared/UserLayout';
@@ -25,7 +26,7 @@ export default function ChatListPage() {
         setLoading(false);
       }
     });
-    wsService.connect();
+    wsService.connect(getAccessToken() ?? undefined);
     return () => { mounted = false; };
   }, [setConversations]);
 

@@ -14,6 +14,8 @@ import { Eye, EyeOff, Home } from 'lucide-react';
 import { loginSchema, type LoginFormData } from '@/lib/validations/auth.schema';
 import { authService } from '@/services/modules/auth.service';
 import { useAuthStore } from '@/store/authStore';
+import { getAccessToken } from '@/lib/authToken';
+import { wsService } from '@/services/wsService';
 import { useToast } from '@/hooks/useToast';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
@@ -48,6 +50,7 @@ export default function LoginPageClient() {
     try {
       const res = await authService.login(data);
       setUser(res.user);
+      wsService.connect(getAccessToken() ?? undefined);
       success('Welcome back!', `Logged in as ${res.user.name}`);
       router.push(safeNextPath(searchParams.get('next')));
     } catch (err) {

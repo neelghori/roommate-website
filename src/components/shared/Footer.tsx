@@ -3,7 +3,7 @@
 import React from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { Mail, Phone, SendHorizontal } from 'lucide-react';
+import { Mail, Phone } from 'lucide-react';
 
 const FacebookSVG = ({ size = 18 }: { size?: number }) => (
   <svg
@@ -62,36 +62,6 @@ export const Footer: React.FC = () => {
   return (
     <footer className="bg-white border-t border-gray-100 pt-8 pb-8 lg:pt-10 lg:pb-10">
       <div className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-10 xl:px-14">
-
-        {/* Newsletter Section */}
-        <div className="bg-primary/5 rounded-[2.5rem] p-6 lg:p-8 mb-12 flex flex-col lg:flex-row items-center justify-between gap-6 border border-primary/10 relative overflow-hidden">
-          <div className="max-w-lg text-center lg:text-left z-10">
-            <h2 className="text-xl lg:text-2xl font-extrabold text-gray-900 mb-2 tracking-tight">Stay Updated</h2>
-            <p className="text-gray-500 text-sm leading-relaxed">
-              Join 5,000+ people getting the latest PG listings directly in your inbox.
-            </p>
-          </div>
-          <form className="w-full max-w-md flex flex-col sm:flex-row items-stretch gap-3 z-10" onSubmit={(e) => e.preventDefault()}>
-            <div className="relative flex-1">
-              <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-              <input
-                type="email"
-                placeholder="Enter your email"
-                className="w-full pl-12 pr-4 py-4 bg-white border border-gray-200 rounded-2xl focus:outline-none focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all text-sm font-medium"
-              />
-            </div>
-            <button
-              type="submit"
-              className="bg-primary text-white px-8 py-4 rounded-2xl hover:bg-primary/90 transition-all shadow-lg shadow-primary/20 active:scale-[0.98] font-bold text-sm whitespace-nowrap"
-            >
-              Subscribe Now
-            </button>
-          </form>
-
-          {/* Decorative elements */}
-          <div className="absolute -right-10 -bottom-10 w-40 h-40 bg-primary/10 rounded-full blur-3xl" />
-          <div className="absolute -left-10 -top-10 w-32 h-32 bg-secondary/10 rounded-full blur-2xl" />
-        </div>
 
         {/* Main Footer Grid */}
         <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-8 lg:gap-12 mb-12">

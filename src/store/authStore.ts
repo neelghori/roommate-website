@@ -36,6 +36,7 @@ export const useAuthStore = create<AuthState>((set) => ({
   setSessionReady: (sessionReady) => set({ sessionReady }),
   logout: () => {
     clearAccessToken();
+    void import('@/services/wsService').then((m) => m.wsService.disconnect());
     set({
       user: null,
       isAuthenticated: false,

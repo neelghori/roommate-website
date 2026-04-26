@@ -6,6 +6,7 @@
  * Since ExplorePage is 'use client', we wrap it here.
  */
 import type { Metadata } from 'next';
+import { Suspense } from 'react';
 import ExplorePageClient from './client';
 
 const BASE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://roommat.in';
@@ -37,6 +38,18 @@ export const metadata: Metadata = {
   },
 };
 
+function ExploreFallback() {
+  return (
+    <div className="min-h-[50vh] flex items-center justify-center text-sm text-gray-500">
+      Loading explore…
+    </div>
+  );
+}
+
 export default function ExplorePage() {
-  return <ExplorePageClient />;
+  return (
+    <Suspense fallback={<ExploreFallback />}>
+      <ExplorePageClient />
+    </Suspense>
+  );
 }

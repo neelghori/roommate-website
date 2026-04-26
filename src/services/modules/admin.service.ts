@@ -91,7 +91,7 @@ export type UpdateUserPayload = {
   name?: string;
   email?: string;
   phone?: string;
-  role?: 'TENANT' | 'OWNER' | 'ADMIN';
+  role?: 'TENANT' | 'OWNER' | 'ROOMMATE' | 'ADMIN';
   isActive?: boolean;
   isVerified?: boolean;
 };

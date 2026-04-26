@@ -1,0 +1,152 @@
+'use client';
+
+/**
+ * Full roommate / seeker details in a popup (used from ProfileCard sidebar).
+ */
+import React from 'react';
+import { MapPin, IndianRupee, Mail, Phone, Calendar, Briefcase } from 'lucide-react';
+import { Modal } from '@/components/ui/Modal';
+import type { RoommateProfile } from '@/types';
+
+function Row({ label, children }: { label: string; children: React.ReactNode }) {
+  if (children == null || children === '') return null;
+  return (
+    <div className="flex flex-col sm:flex-row sm:gap-3 py-2 border-b border-gray-100 last:border-0 text-sm">
+      <dt className="text-gray-500 font-medium shrink-0 sm:w-36">{label}</dt>
+      <dd className="text-gray-900 min-w-0 break-words">{children}</dd>
+    </div>
+  );
+}
+
+export type RoommateProfileDetailModalProps = {
+  profile: RoommateProfile | null;
+  isOpen: boolean;
+  onClose: () => void;
+  isLoading?: boolean;
+};
+
+export function RoommateProfileDetailModal({
+  profile,
+  isOpen,
+  onClose,
+  isLoading,
+}: RoommateProfileDetailModalProps) {
+  const title = profile?.name ? profile.name : 'Roommate details';
+
+  return (
+    <Modal isOpen={isOpen} onClose={onClose} title={title} size="lg" showCloseButton>
+      {isLoading ? (
+        <div className="py-14 text-center text-sm text-gray-500">Loading profile…</div>
+      ) : profile ? (
+        <div className="space-y-4 -mt-1">
+          <div className="flex items-start gap-4">
+            <div
+              className="w-16 h-16 rounded-full flex items-center justify-center text-white text-lg font-bold shrink-0 bg-primary overflow-hidden"
+              aria-hidden
+            >
+              {profile.avatarUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element -- user-uploaded URL from API
+                <img src={profile.avatarUrl} alt="" className="h-full w-full object-cover" />
+              ) : (
+                profile.avatarInitial
+              )}
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="text-lg font-bold text-gray-900">{profile.name}</p>
+              {profile.occupation && (
+                <p className="text-sm text-gray-600 flex items-center gap-1.5 mt-0.5">
+                  <Briefcase className="w-3.5 h-3.5 text-gray-400 shrink-0" />
+                  {profile.occupation}
+                </p>
+              )}
+              <div className="flex flex-wrap gap-1.5 mt-2">
+                {profile.tags.map((tag) => (
+                  <span
+                    key={tag}
+                    className="text-[11px] font-semibold rounded-full px-2 py-0.5 bg-teal-50 text-teal-800 border border-teal-100"
+                  >
+                    {tag}
+                  </span>
+                ))}
+              </div>
+              <p className="text-xs text-gray-500 mt-2 flex items-center gap-1">
+                <span className="text-secondary">★</span> {profile.matchPercent}% match
+              </p>
+            </div>
+          </div>
+
+          <dl className="rounded-xl border border-gray-100 bg-gray-50/60 px-3">
+            <Row label="Budget">
+              {profile.budget != null ? (
+                <span className="inline-flex items-center gap-1">
+                  <IndianRupee className="w-3.5 h-3.5 text-gray-500" />
+                  {profile.budget.toLocaleString('en-IN')} / month
+                </span>
+              ) : null}
+            </Row>
+            <Row label="Location">
+              {profile.location ? (
+                <span className="inline-flex items-center gap-1">
+                  <MapPin className="w-3.5 h-3.5 text-gray-500 shrink-0" />
+                  {profile.location}
+                </span>
+              ) : null}
+            </Row>
+            <Row label="Move-in">
+              {profile.moveInDate ? (
+                <span className="inline-flex items-center gap-1">
+                  <Calendar className="w-3.5 h-3.5 text-gray-500 shrink-0" />
+                  {new Date(profile.moveInDate).toLocaleDateString('en-IN', {
+                    day: 'numeric',
+                    month: 'short',
+                    year: 'numeric',
+                  })}
+                </span>
+              ) : null}
+            </Row>
+            <Row label="Bio">{profile.bio}</Row>
+            <Row label="Email">
+              {profile.email ? (
+                <a href={`mailto:${profile.email}`} className="text-primary hover:underline inline-flex items-center gap-1">
+                  <Mail className="w-3.5 h-3.5 shrink-0" />
+                  {profile.email}
+                </a>
+              ) : null}
+            </Row>
+            <Row label="Phone">
+              {profile.mobile ? (
+                <a href={`tel:${profile.mobile}`} className="text-primary hover:underline inline-flex items-center gap-1">
+                  <Phone className="w-3.5 h-3.5 shrink-0" />
+                  {profile.mobile}
+                </a>
+              ) : null}
+            </Row>
+            <Row label="Age">{profile.age != null ? String(profile.age) : null}</Row>
+            <Row label="Gender">{profile.gender}</Row>
+            <Row label="Roommate pref.">{profile.roommateGenderPreference}</Row>
+            <Row label="Professional type">{profile.professionalType}</Row>
+            <Row label="Account role">{profile.accountRole}</Row>
+            {profile.lifestyleSnippet &&
+              (profile.lifestyleSnippet.diet ||
+                profile.lifestyleSnippet.smoking ||
+                profile.lifestyleSnippet.maritalStatus) && (
+                <Row label="Lifestyle">
+                  <div className="space-y-0.5">
+                    {profile.lifestyleSnippet.diet && <div>Diet: {profile.lifestyleSnippet.diet}</div>}
+                    {profile.lifestyleSnippet.smoking && (
+                      <div>Smoking: {profile.lifestyleSnippet.smoking}</div>
+                    )}
+                    {profile.lifestyleSnippet.maritalStatus && (
+                      <div>Marital: {profile.lifestyleSnippet.maritalStatus}</div>
+                    )}
+                  </div>
+                </Row>
+              )}
+          </dl>
+        </div>
+      ) : (
+        <div className="py-8 text-center text-sm text-gray-500">No profile to show.</div>
+      )}
+    </Modal>
+  );
+}

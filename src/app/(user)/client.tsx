@@ -6,7 +6,7 @@
  * Metadata is exported from page.tsx (server component).
  */
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { MapIcon } from 'lucide-react';
 import { useFilterStore } from '@/store/filterStore';
 import { useListingStore } from '@/store/listingStore';
@@ -18,12 +18,16 @@ import { RoommateFinderPanel } from '@/components/features/RoommateFinderPanel';
 import { ReferralBanner } from '@/components/features/ReferralBanner';
 import { AddListingModal } from '@/components/features/AddListingModal';
 import { SegmentedTabs } from '@/components/ui/Tabs';
-import { Listing } from '@/types';
-import {
-  listingHasVerification,
-  listingService,
-} from '@/services/modules/listing.service';
+import { Listing, type ListingFilter, type ListingType } from '@/types';
+import { listingService } from '@/services/modules/listing.service';
 import { useToast } from '@/hooks/useToast';
+import { useAuthStore } from '@/store/authStore';
+import { geocodePlaceName } from '@/lib/geocodeLocation';
+
+/** Server `$near` radius when browsing by profile location (geocoded city/area). */
+const PROFILE_NEAR_RADIUS_KM = 45;
+/** Tighter radius when the Nearby tab uses GPS or profile fallback. */
+const NEARBY_RADIUS_KM = 25;
 
 const CATEGORY_TABS = [
   { label: 'All', value: 'All' },
@@ -38,16 +42,52 @@ export default function HomePageClient() {
   const [activeTab, setActiveTab] = useState<string>('All');
   const [showAddListing, setShowAddListing] = useState(false);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const [nearCoords, setNearCoords] = useState<{ lat: number; lng: number } | null>(null);
+  const [profileGeoCoords, setProfileGeoCoords] = useState<{ lat: number; lng: number } | null>(null);
   const observerRef = React.useRef<HTMLDivElement>(null);
   const toast = useToast();
+  const user = useAuthStore((s) => s.user);
 
   const { filters } = useFilterStore();
-  const { visibleCount, loadMore, resetPagination, hasMore, listings, setListings } = useListingStore();
+  const { visibleCount, loadMore, resetPagination, listings, setListings } = useListingStore();
 
-  React.useEffect(() => {
+  useEffect(() => {
+    const loc = user?.location?.trim();
+    if (!loc) {
+      setProfileGeoCoords(null);
+      return;
+    }
+    let cancelled = false;
+    void geocodePlaceName(loc).then((coords) => {
+      if (!cancelled) setProfileGeoCoords(coords);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [user?.location]);
+
+  const apiFilter = useMemo((): ListingFilter => {
+    const f: ListingFilter = { ...filters };
+    if (activeTab !== 'All' && activeTab !== 'Nearby') {
+      f.type = activeTab as ListingType;
+    } else {
+      f.type = 'All';
+    }
+
+    const geoCenter = activeTab === 'Nearby' ? nearCoords ?? profileGeoCoords : profileGeoCoords;
+    if (geoCenter) {
+      f.nearLatitude = geoCenter.lat;
+      f.nearLongitude = geoCenter.lng;
+      f.radiusKm = activeTab === 'Nearby' ? NEARBY_RADIUS_KM : PROFILE_NEAR_RADIUS_KM;
+    }
+
+    return f;
+  }, [filters, activeTab, nearCoords, profileGeoCoords]);
+
+  useEffect(() => {
     let cancelled = false;
     listingService
-      .getListings()
+      .getListings(apiFilter)
       .then((rows) => {
         if (!cancelled) setListings(rows);
       })
@@ -61,55 +101,59 @@ export default function HomePageClient() {
     return () => {
       cancelled = true;
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- load once on mount
-  }, [setListings]);
+  }, [apiFilter, setListings, toast]);
 
+  useEffect(() => {
+    resetPagination();
+  }, [apiFilter, resetPagination]);
+
+  useEffect(() => {
+    if (activeTab !== 'Nearby') {
+      setNearCoords(null);
+      return;
+    }
+    if (typeof navigator === 'undefined' || !navigator.geolocation) {
+      setNearCoords(null);
+      return;
+    }
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        setNearCoords({ lat: pos.coords.latitude, lng: pos.coords.longitude });
+      },
+      () => setNearCoords(null),
+      { enableHighAccuracy: false, maximumAge: 300_000, timeout: 12_000 },
+    );
+  }, [activeTab]);
+
+  /** Nearby: server `$near` when GPS or geocoded profile location exists; else listings that have map pins only. */
   const filteredListings = useMemo(() => {
-    return listings.filter((l) => {
-      // 1. Tab / Category Filter
-      if (activeTab !== 'All' && activeTab !== 'Nearby') {
-        if (l.type !== activeTab) return false;
-      }
-
-      // 2. Price / Budget Filter
-      if (filters.minPrice !== undefined && l.price < filters.minPrice) return false;
-      if (filters.maxPrice !== undefined && l.price > filters.maxPrice) return false;
-
-      // 3. Verified Filter
-      if (filters.isVerified && !listingHasVerification(l)) return false;
-
-      // 4. Gender Filter
-      if (filters.genderPreference && filters.genderPreference !== 'Any') {
-        if (l.genderPreference !== filters.genderPreference) return false;
-      }
-
-      // 5. Amenities Filter
-      if (filters.amenities && filters.amenities.length > 0) {
-        const hasAllAmenities = (filters.amenities as string[]).every((a) => l.amenities.includes(a));
-        if (!hasAllAmenities) return false;
-      }
-
-      // 6. City Filter (if applicable)
-      if (filters.city && l.city !== filters.city) return false;
-
-      return true;
-    });
-  }, [activeTab, filters, listings]);
+    if (activeTab !== 'Nearby') {
+      return listings;
+    }
+    if (nearCoords ?? profileGeoCoords) {
+      return listings;
+    }
+    return listings.filter(
+      (l) => typeof l.latitude === 'number' && typeof l.longitude === 'number',
+    );
+  }, [listings, activeTab, nearCoords, profileGeoCoords]);
 
   const handleTabChange = (value: string) => {
     setActiveTab(value);
     resetPagination();
   };
 
+  const hasMoreFiltered = visibleCount < filteredListings.length;
+
   const handleIntersect = React.useCallback(() => {
-    if (hasMore) {
+    if (hasMoreFiltered) {
       setIsLoadingMore(true);
       setTimeout(() => {
         loadMore();
         setIsLoadingMore(false);
       }, 600);
     }
-  }, [hasMore, loadMore]);
+  }, [hasMoreFiltered, loadMore]);
 
   React.useEffect(() => {
     const scrollToBrowse = () => {
@@ -196,16 +240,29 @@ export default function HomePageClient() {
           scrollable
         />
 
+        {activeTab === 'Nearby' && !nearCoords && !profileGeoCoords && (
+          <p className="text-xs text-amber-800 bg-amber-50 border border-amber-100 rounded-xl px-3 py-2">
+            Allow location access or set your city in profile to see listings by distance (within ~
+            {NEARBY_RADIUS_KM} km). Until then, only listings with a map pin are shown.
+          </p>
+        )}
+        {activeTab === 'Nearby' && !nearCoords && profileGeoCoords && (
+          <p className="text-xs text-teal-900 bg-teal-50 border border-teal-100 rounded-xl px-3 py-2">
+            Using your profile location for distance (~{NEARBY_RADIUS_KM} km). Enable precise
+            location for best accuracy.
+          </p>
+        )}
+
         {/* ── Filter Chips ─────────────────────────────────────────── */}
         <div className="-mx-4 lg:mx-0">
           <FilterPanel />
         </div>
 
-        {/* ── Main content + sidebar layout ──────────────────────── */}
+        {/* ── Main content + sidebar (single roommate panel — was duplicated for lg/mobile) ── */}
         <div className="grid grid-cols-1 lg:grid-cols-[1fr_300px] xl:grid-cols-[1fr_320px] gap-6 items-start">
 
           {/* Left: listing grid */}
-          <div>
+          <div className="min-w-0">
             {/* Section header */}
             <div className="flex items-center justify-between mb-3">
               <h2 className="text-sm font-bold text-gray-800">
@@ -250,17 +307,11 @@ export default function HomePageClient() {
 
           </div>
 
-          {/* Right sidebar — visible on lg+ screens */}
-          <div className="hidden lg:flex flex-col gap-4">
+          {/* Right column: same stack on all breakpoints (below listings on mobile, sidebar on lg+) */}
+          <aside className="flex flex-col gap-4 lg:sticky lg:top-24 lg:self-start">
             <RoommateFinderPanel maxVisible={4} />
             <ReferralBanner />
-          </div>
-        </div>
-
-        {/* Roommate panel + referral banner on mobile (below listing grid) */}
-        <div className="flex flex-col gap-4 lg:hidden">
-          <RoommateFinderPanel maxVisible={3} />
-          <ReferralBanner />
+          </aside>
         </div>
       </div>
 

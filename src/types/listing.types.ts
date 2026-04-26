@@ -85,7 +85,15 @@ export interface Listing {
 }
 
 export interface ListingFilter {
+  /** When set with `nearLongitude`, the API filters by Mongo `$near` (meters cap from `radiusKm`). */
+  nearLatitude?: number;
+  nearLongitude?: number;
+  /** Search radius in km (API default 10; capped at 100). */
+  radiusKm?: number;
+  /** City name — passed to API and matched loosely on `city` / address text client-side. */
   city?: string;
+  /** Locality / area (e.g. Satellite) — substring match on title + location. */
+  area?: string;
   type?: ListingType | 'All';
   minPrice?: number;
   maxPrice?: number;

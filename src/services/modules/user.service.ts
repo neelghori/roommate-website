@@ -35,6 +35,7 @@ import { CURRENT_USER, MATCHES, ROOMMATE_REQUESTS_SENT, ROOMMATE_REQUESTS_RECEIV
 import { tenantRoommateProfileService } from '@/services/modules/tenantRoommateProfile.service';
 import { MOCK_NOTIFICATIONS } from '@/mock/data/notifications';
 import { apiClient } from '@/services/api';
+import { postMultipartForm } from '@/services/uploadForm';
 import {
   authService,
   authApiErrorMessage,
@@ -54,6 +55,8 @@ export type UpdateProfilePayload = {
   genderPreference?: string;
   lifestyle?: string[];
   phone?: string;
+  /** Set after S3 upload via POST /api/v1/upload/users/me/avatar */
+  profileImageUrl?: string;
 };
 
 export type RoommateFilters = {
@@ -86,6 +89,7 @@ function buildProfileUpdateBody(payload: UpdateProfilePayload): Record<string, u
     body.lifestyle = { tags: payload.lifestyle };
   }
   if (payload.phone !== undefined) body.mobile = payload.phone;
+  if (payload.profileImageUrl !== undefined) body.profileImageUrl = payload.profileImageUrl;
   return body;
 }
 
@@ -141,7 +145,7 @@ export const userService = {
       results = results.filter((r) => r.role === filters.role);
     }
 
-    return results.sort((a, b) => b.matchPercent - a.matchPercent);
+    return results;
   },
 
   /**
@@ -262,13 +266,37 @@ export const userService = {
     return { message: 'Phone number verified successfully' };
   },
 
-  /**
-   * Upload a new avatar image.
-   * BACKEND: POST /users/avatar (multipart/form-data)
-   */
+  /** POST `image` to S3 under `profiles/users/{userId}/`. */
   uploadAvatar: async (file: File): Promise<{ url: string }> => {
-    await delay(1200);
-    void file; // used in real implementation
-    return { url: `/images/avatars/u1-${Date.now()}.jpg` };
+    try {
+      const fd = new FormData();
+      fd.append('image', file);
+      const raw = await postMultipartForm('/api/v1/upload/users/me/avatar', fd);
+      const inner = raw.data as Record<string, unknown> | undefined;
+      const url = typeof inner?.url === 'string' ? inner.url : undefined;
+      if (!url) throw new Error('Invalid upload response');
+      return { url };
+    } catch (err) {
+      throw new Error(authApiErrorMessage(err, 'Could not upload photo'));
+    }
+  },
+
+  /** POST `document` (image or PDF) — sets identity status to pending on the server. */
+  uploadIdentityDocument: async (
+    file: File,
+  ): Promise<{ url: string; identityVerificationStatus: string }> => {
+    try {
+      const fd = new FormData();
+      fd.append('document', file);
+      const raw = await postMultipartForm('/api/v1/upload/users/me/identity-document', fd);
+      const inner = raw.data as Record<string, unknown> | undefined;
+      const url = typeof inner?.url === 'string' ? inner.url : undefined;
+      const identityVerificationStatus =
+        typeof inner?.identityVerificationStatus === 'string' ? inner.identityVerificationStatus : '';
+      if (!url || !identityVerificationStatus) throw new Error('Invalid upload response');
+      return { url, identityVerificationStatus };
+    } catch (err) {
+      throw new Error(authApiErrorMessage(err, 'Could not upload verification document'));
+    }
   },
 };

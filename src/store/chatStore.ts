@@ -12,6 +12,27 @@ interface TypingState {
   [conversationId: string]: boolean; // true = other party is typing
 }
 
+/** Merge GET /thread snapshot with in-flight local messages (avoids race: slow fetch overwriting a send). */
+function mergeThreadMessages(local: ChatMessage[], server: ChatMessage[]): ChatMessage[] {
+  const byId = new Map<string, ChatMessage>();
+  for (const m of server) {
+    if (m.id) byId.set(m.id, m);
+  }
+  for (const m of local) {
+    if (!m.id) continue;
+    if (m.id.startsWith('temp-')) {
+      byId.set(m.id, m);
+      continue;
+    }
+    if (!byId.has(m.id)) {
+      byId.set(m.id, m);
+    }
+  }
+  return [...byId.values()].sort(
+    (a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime(),
+  );
+}
+
 interface ChatState {
   // ── Conversations ──────────────────────────────────────────────────────────
   conversations: ChatConversation[];
@@ -24,6 +45,8 @@ interface ChatState {
   // ── Messages ───────────────────────────────────────────────────────────────
   messagesByChatId: Record<string, ChatMessage[]>;
   setMessages: (chatId: string, msgs: ChatMessage[]) => void;
+  /** Merge server thread with local (temp + messages not yet in server snapshot). */
+  mergeThreadFromServer: (chatId: string, serverMsgs: ChatMessage[]) => void;
   appendMessage: (chatId: string, msg: ChatMessage) => void;
   /** Optimistic update: replace tempId with real id from server */
   confirmMessage: (chatId: string, tempId: string, confirmed: ChatMessage) => void;
@@ -83,9 +106,24 @@ export const useChatStore = create<ChatState>((set, get) => ({
       messagesByChatId: { ...state.messagesByChatId, [chatId]: msgs },
     })),
 
+  mergeThreadFromServer: (chatId, serverMsgs) =>
+    set((state) => {
+      const local = state.messagesByChatId[chatId] ?? [];
+      const merged = mergeThreadMessages(local, serverMsgs);
+      return { messagesByChatId: { ...state.messagesByChatId, [chatId]: merged } };
+    }),
+
   appendMessage: (chatId, msg) =>
     set((state) => {
       const existing = state.messagesByChatId[chatId] ?? [];
+      if (msg.id && existing.some((m) => m.id === msg.id)) {
+        return {
+          messagesByChatId: {
+            ...state.messagesByChatId,
+            [chatId]: existing.map((m) => (m.id === msg.id ? msg : m)),
+          },
+        };
+      }
       return {
         messagesByChatId: { ...state.messagesByChatId, [chatId]: [...existing, msg] },
       };
@@ -93,10 +131,12 @@ export const useChatStore = create<ChatState>((set, get) => ({
 
   confirmMessage: (chatId, tempId, confirmed) =>
     set((state) => {
-      const msgs = (state.messagesByChatId[chatId] ?? []).map((m) =>
-        m.id === tempId ? confirmed : m
-      );
-      return { messagesByChatId: { ...state.messagesByChatId, [chatId]: msgs } };
+      const msgs = state.messagesByChatId[chatId] ?? [];
+      const next = msgs
+        .filter((m) => m.id !== tempId && m.id !== confirmed.id)
+        .concat([confirmed])
+        .sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
+      return { messagesByChatId: { ...state.messagesByChatId, [chatId]: next } };
     }),
 
   failMessage: (chatId, tempId) =>

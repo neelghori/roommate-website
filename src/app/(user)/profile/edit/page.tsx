@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -13,7 +13,7 @@ import { useToast } from '@/hooks/useToast';
 import { userService } from '@/services/modules/user.service';
 import type { User } from '@/types';
 import { CURRENT_USER } from '@/mock/data/users';
-import { Camera, ArrowLeft } from 'lucide-react';
+import { Camera, ArrowLeft, Loader2 } from 'lucide-react';
 import Link from 'next/link';
 
 const LIFESTYLE_OPTIONS = [
@@ -29,6 +29,9 @@ const LIFESTYLE_OPTIONS = [
 ];
 
 const GENDER_OPTIONS = ['Any', 'Male', 'Female'] as const;
+
+const AVATAR_MAX_BYTES = 5 * 1024 * 1024;
+const AVATAR_MIME = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'] as const;
 
 function moveInDateForInput(moveInDate: string | undefined): string {
   if (!moveInDate) return '';
@@ -57,6 +60,8 @@ export default function EditProfilePage() {
 
   const [isSaving, setIsSaving] = useState(false);
   const [isLoadingProfile, setIsLoadingProfile] = useState(true);
+  const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
+  const avatarFileInputRef = useRef<HTMLInputElement>(null);
 
   const {
     register,
@@ -91,6 +96,38 @@ export default function EditProfilePage() {
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps -- toast is stable; including it re-runs every render
   }, [reset, setUser]);
+
+  const handleAvatarFileChange = useCallback(
+    async (e: React.ChangeEvent<HTMLInputElement>) => {
+      const input = e.currentTarget;
+      const file = input.files?.[0];
+      input.value = '';
+      if (!file) return;
+
+      if (!AVATAR_MIME.includes(file.type as (typeof AVATAR_MIME)[number])) {
+        toast.error('Unsupported image', 'Use JPEG, PNG, WebP, or GIF.');
+        return;
+      }
+      if (file.size > AVATAR_MAX_BYTES) {
+        toast.error('File too large', 'Maximum size is 5 MB.');
+        return;
+      }
+
+      setIsUploadingAvatar(true);
+      try {
+        const { url } = await userService.uploadAvatar(file);
+        const updated = await userService.updateProfile({ profileImageUrl: url });
+        setUser(updated);
+        toast.success('Photo updated', 'Your profile picture has been saved.');
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : 'Try again.';
+        toast.error('Could not update photo', msg);
+      } finally {
+        setIsUploadingAvatar(false);
+      }
+    },
+    [setUser, toast],
+  );
 
   const onSubmit = async (data: ProfileFormData) => {
     setIsSaving(true);
@@ -130,23 +167,48 @@ export default function EditProfilePage() {
 
         {/* Avatar upload area */}
         <div className="flex flex-col items-center gap-3">
+          <input
+            ref={avatarFileInputRef}
+            type="file"
+            accept={AVATAR_MIME.join(',')}
+            className="sr-only"
+            tabIndex={-1}
+            onChange={handleAvatarFileChange}
+            aria-hidden
+          />
           <div className="relative">
-            <div
-              className="w-24 h-24 rounded-full flex items-center justify-center text-white text-3xl font-bold border-4 border-white shadow-md"
-              style={{ backgroundColor: '#1B8F8F' }}
-            >
-              {profile.avatarInitial}
-            </div>
+            {profile.avatarUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element -- user-uploaded S3 URL; remotePatterns vary per deploy
+              <img
+                src={profile.avatarUrl}
+                alt=""
+                className="w-24 h-24 rounded-full object-cover border-4 border-white shadow-md bg-gray-100"
+              />
+            ) : (
+              <div
+                className="w-24 h-24 rounded-full flex items-center justify-center text-white text-3xl font-bold border-4 border-white shadow-md"
+                style={{ backgroundColor: '#1B8F8F' }}
+              >
+                {profile.avatarInitial}
+              </div>
+            )}
             <button
               type="button"
-              className="absolute bottom-0 right-0 w-8 h-8 rounded-full bg-white border-2 border-gray-200 flex items-center justify-center shadow-sm hover:bg-gray-50"
-              onClick={() => toast.info('Photo upload coming soon', 'This feature will be available after backend integration.')}
+              disabled={isLoadingProfile || isUploadingAvatar}
+              className="absolute bottom-0 right-0 w-8 h-8 rounded-full bg-white border-2 border-gray-200 flex items-center justify-center shadow-sm hover:bg-gray-50 disabled:opacity-50 disabled:pointer-events-none"
+              onClick={() => avatarFileInputRef.current?.click()}
               aria-label="Change photo"
             >
-              <Camera size={14} className="text-gray-600" />
+              {isUploadingAvatar ? (
+                <Loader2 size={14} className="text-gray-600 animate-spin" aria-hidden />
+              ) : (
+                <Camera size={14} className="text-gray-600" aria-hidden />
+              )}
             </button>
           </div>
-          <p className="text-xs text-gray-400">Tap camera to change photo</p>
+          <p className="text-xs text-gray-400">
+            {isUploadingAvatar ? 'Uploading…' : 'Tap camera to change photo'}
+          </p>
         </div>
 
         {/* Form */}

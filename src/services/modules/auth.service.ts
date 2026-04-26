@@ -27,7 +27,7 @@ import { extractAccessTokenFromUnknown } from '@/lib/extractAccessToken';
 const delay = (ms = 800) => new Promise((resolve) => setTimeout(resolve, ms));
 
 /** Backend register DTO — enums are lowercase strings (see API validation). */
-export type RegisterApiRole = 'tenant' | 'owner';
+export type RegisterApiRole = 'tenant' | 'owner' | 'roommate';
 export type RegisterApiProfessionalType =
   | 'student'
   | 'work_professional'
@@ -50,12 +50,15 @@ const REGISTER_API_DEFAULTS: {
 };
 
 function mapAppRoleToApi(role: RegisterPayload['role']): RegisterApiRole {
-  return role === 'TENANT' ? 'tenant' : 'owner';
+  if (role === 'TENANT') return 'tenant';
+  if (role === 'ROOMMATE') return 'roommate';
+  return 'owner';
 }
 
 function mapApiRoleToUserRole(v: unknown): User['role'] | undefined {
   if (v === 'tenant' || v === 'TENANT') return 'TENANT';
   if (v === 'owner' || v === 'OWNER') return 'OWNER';
+  if (v === 'roommate' || v === 'ROOMMATE') return 'ROOMMATE';
   if (v === 'admin' || v === 'ADMIN') return 'ADMIN';
   return undefined;
 }
@@ -77,7 +80,7 @@ export type RegisterPayload = {
   email: string;
   phone: string;
   password: string;
-  role: 'TENANT' | 'OWNER';
+  role: 'TENANT' | 'OWNER' | 'ROOMMATE';
   /** Optional — used when callers supply full profile data; otherwise defaults below are sent. */
   professionalType?: RegisterApiProfessionalType;
   /** API expects a JSON object; arrays are wrapped as `{ tags: [...] }`. */
@@ -193,6 +196,26 @@ export function mapApiUserToUser(
     }
   }
 
+  /** Stored on User as tenant-style chip labels (see PATCH /auth/me). */
+  const API_LIFESTYLE_TAG_TO_APP: Record<string, User['lifestyle'][number]> = {
+    Student: 'STUDENT',
+    Working: 'WORKING',
+    Vegetarian: 'VEGETARIAN',
+    'Non-Veg': 'NON_VEG',
+    'Non-Smoker': 'NON_SMOKER',
+    Smoker: 'SMOKER',
+    'Pet Friendly': 'PET_FRIENDLY',
+    'Night Owl': 'NIGHT_OWL',
+    'Early Bird': 'EARLY_BIRD',
+  };
+  if (!lifestyle.length && Array.isArray(raw.lifestyleTags)) {
+    const fromTags = (raw.lifestyleTags as unknown[])
+      .filter((t): t is string => typeof t === 'string')
+      .map((t) => API_LIFESTYLE_TAG_TO_APP[t])
+      .filter((x): x is User['lifestyle'][number] => Boolean(x));
+    if (fromTags.length) lifestyle = fromTags;
+  }
+
   const avatarUrl =
     typeof raw.avatarUrl === 'string'
       ? raw.avatarUrl
@@ -222,6 +245,21 @@ export function mapApiUserToUser(
   const num = (v: unknown): number | undefined =>
     typeof v === 'number' && !Number.isNaN(v) ? v : undefined;
 
+  const idStatusRaw = raw.identityVerificationStatus;
+  const idStatus =
+    idStatusRaw === 'none' ||
+    idStatusRaw === 'pending' ||
+    idStatusRaw === 'verified' ||
+    idStatusRaw === 'rejected'
+      ? idStatusRaw
+      : undefined;
+
+  const isAadharFromStatus = idStatus === 'verified';
+  const isAadharVerified =
+    typeof raw.isAadharVerified === 'boolean'
+      ? raw.isAadharVerified
+      : isAadharFromStatus || false;
+
   return {
     id,
     name,
@@ -237,11 +275,16 @@ export function mapApiUserToUser(
     moveInDate,
     genderPreference,
     isPhoneVerified: typeof raw.isPhoneVerified === 'boolean' ? raw.isPhoneVerified : false,
-    isAadharVerified: typeof raw.isAadharVerified === 'boolean' ? raw.isAadharVerified : false,
+    isAadharVerified,
     isCompanyVerified: typeof raw.isCompanyVerified === 'boolean' ? raw.isCompanyVerified : false,
+    identityVerificationStatus: idStatus ?? 'none',
+    identityDocumentUrl: typeof raw.identityDocumentUrl === 'string' ? raw.identityDocumentUrl : undefined,
+    identityRejectionReason:
+      typeof raw.identityRejectionReason === 'string' ? raw.identityRejectionReason : undefined,
+    identitySubmittedAt: typeof raw.identitySubmittedAt === 'string' ? raw.identitySubmittedAt : undefined,
     listingCount: num(raw.listingCount) ?? 0,
-    shortlistedCount: num(raw.shortlistedCount) ?? 0,
-    connectCount: num(raw.connectCount) ?? 0,
+    shortlistedCount: num(raw.shortlistedCount ?? raw.savedCount) ?? 0,
+    bookingCount: num(raw.bookingCount) ?? 0,
     createdAt:
       typeof raw.createdAt === 'string'
         ? raw.createdAt

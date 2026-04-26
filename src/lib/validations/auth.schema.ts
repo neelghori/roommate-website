@@ -38,7 +38,7 @@ export const registerSchema = z
         'Password must contain uppercase, lowercase, and a number',
       ),
     confirmPassword: z.string(),
-    role: z.enum(['TENANT', 'OWNER']),
+    role: z.enum(['TENANT', 'OWNER', 'ROOMMATE']),
     agreeToTerms: z.boolean().refine((val) => val === true, 'You must agree to the terms'),
   })
   .refine((data) => data.password === data.confirmPassword, {

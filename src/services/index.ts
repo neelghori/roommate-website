@@ -13,6 +13,10 @@ export { faqService } from './modules/faq.service';
 export { amenityService } from './modules/amenity.service';
 export { adminAuthService } from './modules/adminAuth.service';
 export { tenantRoommateProfileService } from './modules/tenantRoommateProfile.service';
+export { bookingService } from './modules/booking.service';
+export type { MyVisitBooking, BookingStatus } from './modules/booking.service';
+export { notificationService } from './modules/notification.service';
+export type { ApiNotification } from './modules/notification.service';
 
 export type {
   LoginPayload,

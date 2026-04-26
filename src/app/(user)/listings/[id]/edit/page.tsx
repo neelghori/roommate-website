@@ -60,6 +60,7 @@ export default function EditListingPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
   const [pendingData, setPendingData] = useState<ListingFormData | null>(null);
+  const [pendingImages, setPendingImages] = useState<File[]>([]);
 
   useEffect(() => {
     if (!id) return;
@@ -85,8 +86,9 @@ export default function EditListingPage() {
 
   const formDefaults = useMemo(() => (listing ? listingToFormData(listing) : undefined), [listing]);
 
-  const handleFinish = (data: ListingFormData) => {
+  const handleFinish = (data: ListingFormData, uploadedImages: File[]) => {
     setPendingData(data);
+    setPendingImages(uploadedImages);
     setShowConfirm(true);
   };
 
@@ -95,7 +97,13 @@ export default function EditListingPage() {
     setShowConfirm(false);
     setIsSubmitting(true);
     try {
-      const updated = await listingService.updateListingFromForm(id, pendingData, []);
+      const existing = listing?.images ?? [];
+      let merged = existing;
+      if (pendingImages.length > 0) {
+        const newUrls = await listingService.uploadPropertyListingImages(id, pendingImages);
+        merged = [...existing, ...newUrls].slice(0, 30);
+      }
+      const updated = await listingService.updateListingFromForm(id, pendingData, merged);
       setListing(updated);
       toast.success(
         'Listing updated',
@@ -106,6 +114,7 @@ export default function EditListingPage() {
       const msg = e instanceof Error ? e.message : 'Update failed';
       toast.error('Could not save listing', msg);
     } finally {
+      setPendingImages([]);
       setIsSubmitting(false);
     }
   };
@@ -157,7 +166,15 @@ export default function EditListingPage() {
         onFinish={handleFinish}
       />
 
-      <Modal isOpen={showConfirm} onClose={() => setShowConfirm(false)} title="Save Changes?" size="sm">
+      <Modal
+        isOpen={showConfirm}
+        onClose={() => {
+          setShowConfirm(false);
+          setPendingImages([]);
+        }}
+        title="Save Changes?"
+        size="sm"
+      >
         <div className="space-y-4">
           <div className="flex items-start gap-3">
             <div

@@ -105,7 +105,7 @@ export function ListingResidentEditorModal({
     try {
       let profileImageUrl: string | null | undefined;
       if (profileFiles.length > 0) {
-        const { url } = await listingService.uploadListingResidentImage(profileFiles[0]);
+        const { url } = await listingService.uploadListingResidentImage(profileFiles[0], propertyId);
         profileImageUrl = url;
       } else if (profileRemoved) {
         profileImageUrl = null;

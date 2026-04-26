@@ -17,10 +17,15 @@ export default function AddListingPage() {
   const toast = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleFinish = async (data: ListingFormData, _uploadedImages: File[]) => {
+  const handleFinish = async (data: ListingFormData, uploadedImages: File[]) => {
     setIsSubmitting(true);
     try {
-      await listingService.createListingFromForm(data, []);
+      const created = await listingService.createListingFromForm(data, []);
+      const pid = created.id;
+      if (uploadedImages.length > 0 && pid) {
+        const urls = await listingService.uploadPropertyListingImages(pid, uploadedImages);
+        await listingService.patchListingImages(pid, urls);
+      }
       toast.success(
         'Listing submitted',
         'Your property is pending admin approval. You will see it on the home page after it is approved.',

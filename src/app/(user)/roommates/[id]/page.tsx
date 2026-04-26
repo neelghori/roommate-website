@@ -18,6 +18,7 @@ import { UserLayout } from '@/components/shared/UserLayout';
 import { useToast } from '@/hooks/useToast';
 import type { RoommateProfile } from '@/types';
 import { tenantRoommateProfileService } from '@/services/modules/tenantRoommateProfile.service';
+import { useAuthStore } from '@/store/authStore';
 
 const LIFESTYLE_EMOJI: Record<string, string> = {
   'Non-Smoker': '🚭',
@@ -34,6 +35,8 @@ export default function RoommateDetailPage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
   const { success: toastSuccess, info: toastInfo } = useToast();
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+  const viewerId = useAuthStore((s) => s.user?.id);
 
   const [profile, setProfile] = useState<RoommateProfile | null>(null);
   const [loadState, setLoadState] = useState<'loading' | 'ok' | 'error'>('loading');
@@ -248,27 +251,59 @@ export default function RoommateDetailPage() {
             {isSaved ? 'Saved' : 'Save'}
           </button>
 
-          {profile.isConnected || requested ? (
-            <Link
-              href="/chat"
-              className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-white font-semibold text-sm transition-opacity hover:opacity-90"
-              style={{ backgroundColor: '#1B8F8F' }}
-            >
-              <MessageCircle className="w-4 h-4" />
-              Message
-            </Link>
-          ) : (
-            <button
-              type="button"
-              onClick={handleConnect}
-              className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-white font-semibold text-sm transition-opacity hover:opacity-90"
-              style={{ backgroundColor: requested ? '#6B7280' : '#1B8F8F' }}
-              disabled={requested}
-            >
-              <UserPlus className="w-4 h-4" />
-              {requested ? 'Request Sent' : 'Send Connect Request'}
-            </button>
-          )}
+          {(() => {
+            const isSelf = Boolean(
+              viewerId && profile.userId && String(viewerId) === String(profile.userId),
+            );
+            const canDm = Boolean(profile.userId) && !isSelf;
+            if (canDm) {
+              return (
+                <Link
+                  href={
+                    isAuthenticated
+                      ? `/chat/${profile.userId}`
+                      : `/login?next=${encodeURIComponent(`/chat/${profile.userId}`)}`
+                  }
+                  className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-white font-semibold text-sm transition-opacity hover:opacity-90"
+                  style={{ backgroundColor: '#1B8F8F' }}
+                >
+                  <MessageCircle className="w-4 h-4" />
+                  Message
+                </Link>
+              );
+            }
+            if (isSelf) {
+              return (
+                <div className="flex-1 flex items-center justify-center rounded-xl border border-gray-200 bg-gray-50 text-sm font-medium text-gray-500">
+                  Your profile
+                </div>
+              );
+            }
+            if (profile.isConnected || requested) {
+              return (
+                <Link
+                  href="/chat"
+                  className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-white font-semibold text-sm transition-opacity hover:opacity-90"
+                  style={{ backgroundColor: '#1B8F8F' }}
+                >
+                  <MessageCircle className="w-4 h-4" />
+                  Message
+                </Link>
+              );
+            }
+            return (
+              <button
+                type="button"
+                onClick={handleConnect}
+                className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-white font-semibold text-sm transition-opacity hover:opacity-90"
+                style={{ backgroundColor: requested ? '#6B7280' : '#1B8F8F' }}
+                disabled={requested}
+              >
+                <UserPlus className="w-4 h-4" />
+                {requested ? 'Request Sent' : 'Send Connect Request'}
+              </button>
+            );
+          })()}
         </div>
       </div>
     </UserLayout>

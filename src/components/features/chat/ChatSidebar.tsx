@@ -5,6 +5,7 @@ import { Search, MessageSquarePlus } from 'lucide-react';
 import { useChatStore } from '@/store/chatStore';
 import { chatService } from '@/services/modules/chat.service';
 import { wsService } from '@/services/wsService';
+import { getAccessToken } from '@/lib/authToken';
 import { ConversationItem } from './ConversationItem';
 
 interface ChatSidebarProps {
@@ -28,7 +29,7 @@ export const ChatSidebar: React.FC<ChatSidebarProps> = ({ activeChatId }) => {
     } else {
       setLoading(false);
     }
-    wsService.connect();
+    wsService.connect(getAccessToken() ?? undefined);
     return () => { mounted = false; };
   }, [conversations.length, setConversations]);
 

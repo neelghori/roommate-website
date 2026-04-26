@@ -7,7 +7,7 @@ import { ADMIN_USERS } from '@/mock/data/admin';
 import { AdminUser } from '@/types';
 import { formatDate } from '@/lib/utils/format';
 
-type RoleFilter = 'ALL' | 'TENANT' | 'OWNER' | 'ADMIN';
+type RoleFilter = 'ALL' | 'TENANT' | 'OWNER' | 'ROOMMATE' | 'ADMIN';
 type StatusFilter = 'ALL' | 'ACTIVE' | 'INACTIVE';
 
 export default function AdminUsersPage() {
@@ -54,7 +54,7 @@ export default function AdminUsersPage() {
 
         <div className="flex gap-2 flex-wrap">
           {/* Role filter */}
-          {(['ALL', 'TENANT', 'OWNER', 'ADMIN'] as RoleFilter[]).map((r) => (
+          {(['ALL', 'TENANT', 'OWNER', 'ROOMMATE', 'ADMIN'] as RoleFilter[]).map((r) => (
             <button
               key={r}
               onClick={() => setRoleFilter(r)}
@@ -108,6 +108,7 @@ function UserRow({ user }: { user: AdminUser }) {
   const roleColor: Record<string, string> = {
     TENANT: 'bg-blue-50 text-blue-600',
     OWNER: 'bg-orange-50 text-orange-600',
+    ROOMMATE: 'bg-teal-50 text-teal-700',
     ADMIN: 'bg-purple-50 text-purple-600',
   };
 

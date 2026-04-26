@@ -14,7 +14,6 @@ interface FilterState {
 }
 
 const DEFAULT_FILTERS: ListingFilter = {
-  city: 'Ahmedabad',
   type: 'All',
 };
 

@@ -49,12 +49,21 @@ apiClient.interceptors.response.use(
       // Don’t redirect for:
       // - failed login (wrong password) — avoid reload loop on /login
       // - /auth/me — used to load profile; 401 must be handled in-page (toast / re-auth), not a hard redirect
+      const pathOnly = url.split('?')[0];
+      const isPublicRoommateRead =
+        pathOnly.includes('/tenant-roommate-profiles') &&
+        !pathOnly.includes('/tenant-roommate-profiles/me');
       const skipRedirect =
         url.includes('/auth/login') ||
         url.includes('/auth/register') ||
         url.includes('/auth/me') ||
         url.includes('/auth/change-password') ||
-        url.includes('/tenant-roommate-profiles/me');
+        url.includes('/tenant-roommate-profiles/me') ||
+        isPublicRoommateRead ||
+        url.includes('/upload/') ||
+        url.includes('/bookings') ||
+        url.includes('/chat/') ||
+        (url.includes('/properties/') && url.includes('/save'));
       if (!skipRedirect && typeof window !== 'undefined') {
         window.location.href = '/';
       }

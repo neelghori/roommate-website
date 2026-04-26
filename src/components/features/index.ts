@@ -8,7 +8,10 @@
 
 export { ListingCard } from './ListingCard';
 export { ListingDetailModal } from './ListingDetailModal';
+export { ListingVerificationBadge } from './ListingVerificationBadge';
+export { ListingLocationMap } from './ListingLocationMap';
 export { ProfileCard } from './ProfileCard';
+export { RoommateProfileDetailModal } from './RoommateProfileDetailModal';
 export { RequestCard } from './RequestCard';
 export { ChatBubble } from './ChatBubble';
 export { FilterPanel } from './FilterPanel';
@@ -22,3 +25,4 @@ export { PropertyAddressFields } from './PropertyAddressFields';
 export { ListingResidentDetails } from './ListingResidentDetails';
 export { ListingResidentsViewModal } from './ListingResidentsViewModal';
 export { ListingResidentEditorModal } from './ListingResidentEditorModal';
+export { BookVisitModal } from './BookVisitModal';

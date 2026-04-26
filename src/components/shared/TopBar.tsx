@@ -14,13 +14,24 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter, usePathname } from 'next/navigation';
 import {
-  Bell, User, Search, Plus, Home, LogOut, ChevronDown, KeyRound,
-  Compass, Heart, MessageCircle, Users, Star, AlertCircle, CheckCircle
+  Bell,
+  User,
+  Search,
+  Plus,
+  Home,
+  LogOut,
+  ChevronDown,
+  KeyRound,
+  MessageCircle,
+  Star,
 } from 'lucide-react';
 import { useAuthStore } from '@/store/authStore';
 import { authService } from '@/services/modules/auth.service';
+import { notificationService, type ApiNotification } from '@/services/modules/notification.service';
 import { sanitizeSearchQuery } from '@/lib/utils/sanitize';
+import { formatRelativeTime } from '@/lib/utils/formatRelativeTime';
 import { useToast } from '@/hooks/useToast';
+import { Modal } from '@/components/ui/Modal';
 
 interface TopBarProps {
   pageSuffix?: string;
@@ -85,12 +96,19 @@ const AvatarDropdown: React.FC = () => {
         aria-expanded={open}
         aria-label="Account menu"
       >
-        {/* Avatar circle */}
-        <div
-          className="w-8 h-8 lg:w-9 lg:h-9 rounded-full flex items-center justify-center text-white text-xs font-bold shadow-sm bg-primary"
-        >
-          {initials}
-        </div>
+        {/* Avatar — photo when available (stays in sync with profile edit via useAuthStore) */}
+        {user?.avatarUrl ? (
+          // eslint-disable-next-line @next/next/no-img-element -- S3/CDN URL from API; keeps TopBar in sync without remotePatterns edge cases
+          <img
+            src={user.avatarUrl}
+            alt=""
+            className="w-8 h-8 lg:w-9 lg:h-9 rounded-full object-cover shadow-sm ring-2 ring-white"
+          />
+        ) : (
+          <div className="w-8 h-8 lg:w-9 lg:h-9 rounded-full flex items-center justify-center text-white text-xs font-bold shadow-sm bg-primary shrink-0">
+            {initials}
+          </div>
+        )}
         <span className="hidden lg:block text-sm font-medium text-gray-700 max-w-[100px] truncate">
           {user?.name?.split(' ')[0] ?? 'Account'}
         </span>
@@ -138,11 +156,45 @@ const AvatarDropdown: React.FC = () => {
   );
 };
 
-// ── Notification Popover ──────────────────────────────────────────────────────
+// ── Notification Popover (API: GET /api/v1/notifications) ───────────────────
+function categoryStyle(type: string): { icon: React.ElementType; color: string; bg: string } {
+  const t = (type || '').toLowerCase();
+  if (t === 'message') return { icon: MessageCircle, color: 'text-green-600', bg: 'bg-green-50' };
+  if (t === 'listing') return { icon: Home, color: 'text-primary', bg: 'bg-primary/10' };
+  if (t === 'payment') return { icon: Star, color: 'text-amber-600', bg: 'bg-amber-50' };
+  return { icon: Bell, color: 'text-gray-600', bg: 'bg-gray-100' };
+}
+
 const NotificationPopover: React.FC = () => {
   const router = useRouter();
+  const toast = useToast();
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const [open, setOpen] = useState(false);
+  const [items, setItems] = useState<ApiNotification[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [detail, setDetail] = useState<ApiNotification | null>(null);
   const ref = useRef<HTMLDivElement>(null);
+
+  const load = React.useCallback(async () => {
+    if (!isAuthenticated) return;
+    setLoading(true);
+    try {
+      setItems(await notificationService.listMine());
+    } catch (e) {
+      toast.error('Notifications', e instanceof Error ? e.message : 'Could not load');
+      setItems([]);
+    } finally {
+      setLoading(false);
+    }
+  }, [isAuthenticated, toast]);
+
+  useEffect(() => {
+    if (isAuthenticated) void load();
+  }, [isAuthenticated, load]);
+
+  useEffect(() => {
+    if (open && isAuthenticated) void load();
+  }, [open, isAuthenticated, load]);
 
   useEffect(() => {
     const close = (e: MouseEvent) => {
@@ -153,35 +205,51 @@ const NotificationPopover: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    const esc = (e: KeyboardEvent) => { if (e.key === 'Escape') setOpen(false); };
+    const esc = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setOpen(false);
+    };
     document.addEventListener('keydown', esc);
     return () => document.removeEventListener('keydown', esc);
   }, []);
 
-  const NOTIFICATIONS = [
-    { id: '1', title: 'New message from Ravi Sharma', subtitle: 'Hey! Is the room in Satellite...', time: '2 min ago', read: false, category: 'message' },
-    { id: '2', title: 'Roommate match found!', subtitle: 'Priya M. matches 92% of your preferences.', time: '15 min ago', read: false, category: 'match' },
-    { id: '3', title: 'Your listing was approved', subtitle: '2BHK in Bodakdev has been published.', time: '1 hr ago', read: false, category: 'listing' },
-  ];
-
-  const categoryConfig: Record<string, { icon: React.ElementType; color: string; bg: string }> = {
-    message: { icon: MessageCircle, color: 'text-green-600', bg: 'bg-green-50' },
-    match: { icon: Heart, color: 'text-pink-500', bg: 'bg-pink-50' },
-    listing: { icon: Home, color: 'text-primary', bg: 'bg-primary/10' },
-    system: { icon: Bell, color: 'text-secondary', bg: 'bg-secondary/10' },
-  };
+  const unreadCount = items.filter((n) => !n.isRead).length;
 
   const handleToggle = () => {
     if (window.innerWidth < 1024) {
       router.push('/notifications');
     } else {
-      setOpen(!open);
+      setOpen((o) => !o);
+    }
+  };
+
+  const openDetail = async (n: ApiNotification) => {
+    setDetail(n);
+    if (!n.isRead) {
+      try {
+        await notificationService.markRead(n._id);
+        setItems((prev) => prev.map((x) => (x._id === n._id ? { ...x, isRead: true } : x)));
+      } catch {
+        /* still show detail */
+      }
+    }
+  };
+
+  const markAllRead = async () => {
+    const unread = items.filter((n) => !n.isRead);
+    if (!unread.length) return;
+    try {
+      await Promise.all(unread.map((n) => notificationService.markRead(n._id)));
+      setItems((prev) => prev.map((n) => ({ ...n, isRead: true })));
+      toast.success('Updated', 'All notifications marked as read.');
+    } catch (e) {
+      toast.error('Could not update', e instanceof Error ? e.message : '');
     }
   };
 
   return (
     <div ref={ref} className="relative">
       <button
+        type="button"
         onClick={handleToggle}
         className="relative p-1.5 rounded-full hover:bg-gray-100 transition-colors focus:outline-none"
         aria-label="Notifications"
@@ -189,47 +257,60 @@ const NotificationPopover: React.FC = () => {
         aria-expanded={open}
       >
         <Bell size={20} className="text-gray-600" />
-        <span className="absolute top-1 right-1 w-2 h-2 rounded-full bg-red-500 border-2 border-white shadow-sm" />
+        {unreadCount > 0 ? (
+          <span className="absolute top-1 right-1 min-w-[8px] h-2 px-0.5 rounded-full bg-red-500 border-2 border-white shadow-sm" />
+        ) : null}
       </button>
 
       {open && (
         <div className="absolute right-0 top-full mt-2 w-80 bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden z-50 animate-scale-in">
           <div className="px-4 py-3 border-b border-gray-50 flex items-center justify-between bg-white">
             <h3 className="text-sm font-bold text-gray-900">Notifications</h3>
-            <button className="text-[11px] font-semibold text-primary hover:text-primary/80 transition-colors">
+            <button
+              type="button"
+              onClick={() => void markAllRead()}
+              disabled={!unreadCount}
+              className="text-[11px] font-semibold text-primary hover:text-primary/80 transition-colors disabled:opacity-40 disabled:pointer-events-none"
+            >
               Mark all read
             </button>
           </div>
 
           <div className="max-h-[360px] overflow-y-auto">
-            {NOTIFICATIONS.length > 0 ? (
-              NOTIFICATIONS.map((n) => {
-                const config = categoryConfig[n.category] || categoryConfig.system;
+            {loading && items.length === 0 ? (
+              <div className="py-10 text-center px-4 text-sm text-gray-400">Loading…</div>
+            ) : items.length > 0 ? (
+              items.map((n) => {
+                const config = categoryStyle(n.type);
                 const Icon = config.icon;
                 return (
-                  <div
-                    key={n.id}
-                    className="flex items-start gap-3 px-4 py-3 hover:bg-gray-50 transition-colors border-b border-gray-50 last:border-0 cursor-pointer"
+                  <button
+                    type="button"
+                    key={n._id}
+                    onClick={() => void openDetail(n)}
+                    className="w-full text-left flex items-start gap-3 px-4 py-3 hover:bg-gray-50 transition-colors border-b border-gray-50 last:border-0 cursor-pointer"
                   >
                     <div
-                      className={['flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center mt-0.5', config.bg].join(' ')}
+                      className={['shrink-0 w-8 h-8 rounded-full flex items-center justify-center mt-0.5', config.bg].join(
+                        ' ',
+                      )}
                     >
                       <Icon size={14} className={config.color} />
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="text-xs font-semibold text-gray-900 leading-tight mb-0.5">{n.title}</p>
-                      <p className="text-[11px] text-gray-500 truncate">{n.subtitle}</p>
-                      <p className="text-[10px] text-gray-400 mt-1">{n.time}</p>
+                      {n.description ? (
+                        <p className="text-[11px] text-gray-500 line-clamp-2">{n.description}</p>
+                      ) : null}
+                      <p className="text-[10px] text-gray-400 mt-1">{formatRelativeTime(n.createdAt)}</p>
                     </div>
-                    {!n.read && (
-                      <div className="w-1.5 h-1.5 rounded-full bg-primary mt-1.5" />
-                    )}
-                  </div>
+                    {!n.isRead ? <div className="w-1.5 h-1.5 rounded-full bg-primary mt-1.5 shrink-0" /> : null}
+                  </button>
                 );
               })
             ) : (
               <div className="py-10 text-center px-4">
-                <p className="text-sm text-gray-400">No new notifications</p>
+                <p className="text-sm text-gray-400">No notifications yet</p>
               </div>
             )}
           </div>
@@ -243,6 +324,43 @@ const NotificationPopover: React.FC = () => {
           </Link>
         </div>
       )}
+
+      <Modal
+        isOpen={!!detail}
+        onClose={() => setDetail(null)}
+        title={detail?.title ?? 'Notification'}
+        size="sm"
+      >
+        {detail ? (
+          <div className="space-y-4">
+            {detail.description ? <p className="text-sm text-gray-600">{detail.description}</p> : null}
+            <p className="text-xs text-gray-400">{formatRelativeTime(detail.createdAt)}</p>
+            {detail.type?.toLowerCase() === 'message' && detail.payload?.senderId ? (
+              <Link
+                href={`/chat/${detail.payload.senderId}`}
+                className="inline-flex items-center justify-center w-full py-2.5 rounded-xl text-sm font-semibold text-white bg-primary hover:opacity-95"
+                onClick={() => {
+                  setDetail(null);
+                  setOpen(false);
+                }}
+              >
+                Open chat
+              </Link>
+            ) : detail.payload?.propertyId ? (
+              <Link
+                href={`/listings/${detail.payload.propertyId}`}
+                className="inline-flex items-center justify-center w-full py-2.5 rounded-xl text-sm font-semibold text-white bg-primary hover:opacity-95"
+                onClick={() => {
+                  setDetail(null);
+                  setOpen(false);
+                }}
+              >
+                View listing
+              </Link>
+            ) : null}
+          </div>
+        ) : null}
+      </Modal>
     </div>
   );
 };
