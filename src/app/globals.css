@@ -1,0 +1,357 @@
+@import "tailwindcss";
+
+/* ============================================================
+   ROOMMAT DESIGN SYSTEM — CSS Custom Properties
+   Primary: #1B8F8F (teal, hsl 180 68% 33%)
+   Accent:  #F57C00 (orange)
+   ============================================================ */
+
+@theme {
+  /* Colors — Primary scale anchored on #1B8F8F = hsl(180 68% 33%) */
+  --color-primary-50:  hsl(180 68% 97%);
+  --color-primary-100: hsl(180 60% 92%);
+  --color-primary-200: hsl(180 62% 82%);
+  --color-primary-300: hsl(180 64% 67%);
+  --color-primary-400: hsl(180 66% 50%);
+  --color-primary-500: hsl(180 68% 41%);
+  --color-primary-600: hsl(180 68% 33%);   /* #1B8F8F — brand primary */
+  --color-primary:     hsl(180 68% 33%);
+  --color-primary-700: hsl(180 70% 25%);
+  --color-primary-800: hsl(180 72% 18%);
+  --color-primary-900: hsl(180 74% 12%);
+  --color-primary-950: hsl(180 75% 7%);
+
+  --color-secondary-50: hsl(33 100% 96%);
+  --color-secondary-100: hsl(33 100% 90%);
+  --color-secondary-200: hsl(33 100% 80%);
+  --color-secondary-300: hsl(33 96% 68%);
+  --color-secondary-400: hsl(33 94% 58%);
+  --color-secondary-500: hsl(29 94% 48%);
+  --color-secondary: hsl(29 94% 48%);
+  --color-secondary-600: hsl(29 96% 40%);
+  --color-secondary-700: hsl(29 98% 32%);
+  --color-secondary-800: hsl(29 96% 24%);
+  --color-secondary-900: hsl(29 94% 16%);
+
+  --color-accent-400: hsl(33 94% 58%);
+  --color-accent-500: hsl(29 94% 48%);
+  --color-accent: hsl(29 94% 48%);
+  --color-accent-600: hsl(29 96% 40%);
+
+  --color-surface: #ffffff;
+  --color-surface-elevated: #ffffff;
+  --color-background: #EDF5F5;
+
+  /* Fonts */
+  --font-sans: "Inter", "system-ui", "sans-serif";
+  --font-heading: "Inter", "system-ui", "sans-serif";
+
+  /* Animations */
+  --animate-fade-in: fadeIn 0.2s ease-out;
+  --animate-slide-in-right: slideInRight 0.3s ease-out;
+  --animate-slide-in-up: slideInUp 0.3s ease-out;
+  --animate-scale-in: scaleIn 0.2s ease-out;
+  --animate-shimmer: shimmer 1.5s infinite;
+}
+
+:root {
+  --navbar-h: 3.5rem;
+  --bottom-nav-h: 4rem;
+  --primary-600: 180 68% 33%; /* = #1B8F8F — used by outline: 2px solid hsl(var(--primary-600)) */
+}
+
+/* ============================================================
+   BASE RESET
+   ============================================================ */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+  font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+}
+
+body {
+  background-color: #EDF5F5;
+  color: #1A1A1A;
+  font-family: var(--font-inter);
+  font-size: 1rem;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  min-height: 100vh;
+  /* Security: CSP, XSS protection headers set server-side in next.config.ts */
+}
+
+/* Global cursor for clickable elements */
+button, 
+a, 
+input[type="button"], 
+input[type="submit"], 
+input[type="checkbox"], 
+input[type="radio"], 
+label,
+[role="button"] {
+  cursor: pointer;
+}
+
+/* Remove default tap highlight on mobile */
+* {
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* ============================================================
+   FORM FIELDS — No box-shadow; teal outline on focus only
+   Overrides Tailwind ring utilities (which use box-shadow).
+   All inputs, textareas, selects get:
+     • No shadow at rest or on focus
+     • 2px solid teal outline inside the border on focus
+   ============================================================ */
+input,
+input[type],
+textarea,
+select {
+  box-shadow: none !important;
+}
+
+input:focus,
+input:focus-visible,
+textarea:focus,
+textarea:focus-visible,
+select:focus,
+select:focus-visible {
+  outline: 2px solid hsl(var(--primary-600)) !important;
+  outline-offset: 0px;
+}
+
+/* Search fields inside pills / toolbars — strip UA searchfield chrome; no teal outline */
+input.roommat-inline-search {
+  -webkit-appearance: none;
+  appearance: none;
+  outline: none;
+  box-shadow: none !important;
+}
+
+input.roommat-inline-search:focus,
+input.roommat-inline-search:focus-visible {
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #c9d8d8;
+  border-radius: 999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #9bb8b8;
+}
+
+/* ============================================================
+   ANIMATIONS (referenced by Tailwind config)
+   ============================================================ */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes fadeOut {
+  from {
+    opacity: 1;
+  }
+
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes slideInRight {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes slideInUp {
+  from {
+    transform: translateY(1rem);
+    opacity: 0;
+  }
+
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes slideOutRight {
+  from {
+    transform: translateX(0);
+    opacity: 1;
+  }
+
+  to {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+}
+
+@keyframes scaleIn {
+  from {
+    transform: scale(0.95);
+    opacity: 0;
+  }
+
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.2s ease-out;
+}
+
+.animate-slide-in-right {
+  animation: slideInRight 0.3s ease-out;
+}
+
+.animate-slide-in-up {
+  animation: slideInUp 0.3s ease-out;
+}
+
+.animate-scale-in {
+  animation: scaleIn 0.2s ease-out;
+}
+
+.animate-shimmer {
+  background: linear-gradient(90deg, transparent 0%, rgba(255, 255, 255, 0.6) 50%, transparent 100%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+}
+
+/* ============================================================
+   UTILITY CLASSES
+   ============================================================ */
+.text-primary-brand {
+  color: hsl(var(--primary-600));
+}
+
+.bg-primary-brand {
+  background-color: hsl(var(--primary-600));
+}
+
+.bg-accent-brand {
+  background-color: hsl(var(--secondary-500));
+}
+
+.text-accent-brand {
+  color: hsl(var(--secondary-500));
+}
+
+.border-primary-brand {
+  border-color: hsl(var(--primary-600));
+}
+
+.bg-app {
+  background-color: #EDF5F5;
+}
+
+/* Card base */
+.card {
+  background: white;
+  border-radius: 1rem;
+  box-shadow: 0 4px 12px rgba(13, 148, 136, 0.08);
+}
+
+/* Line clamp utilities */
+.line-clamp-1 {
+  display: -webkit-box;
+  -webkit-line-clamp: 1;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.line-clamp-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.line-clamp-3 {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* Safe area for mobile bottom nav — only on mobile */
+@media (max-width: 1023px) {
+  .pb-safe {
+    padding-bottom: calc(var(--bottom-nav-h) + env(safe-area-inset-bottom, 0px));
+  }
+}
+
+/* Gradient backgrounds */
+.gradient-teal {
+  background: linear-gradient(135deg, #1B8F8F 0%, #0f6060 100%);
+}
+
+.gradient-orange {
+  background: linear-gradient(135deg, #F57C00 0%, #d46500 100%);
+}
+
+/* ============================================================
+   ROUTE PROGRESS BAR — shimmer glow on the leading edge
+   ============================================================ */
+@keyframes progress-glow {
+  0%, 100% { box-shadow: 0 0 6px 1px rgba(27, 143, 143, 0.5); }
+  50%       { box-shadow: 0 0 12px 3px rgba(27, 143, 143, 0.8); }
+}
+
+.route-progress-bar {
+  animation: progress-glow 1s ease-in-out infinite;
+}
+
+/* Hide scrollbar but keep scroll functionality */
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
