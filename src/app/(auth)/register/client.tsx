@@ -17,12 +17,16 @@ import { authService } from '@/services/modules/auth.service';
 import { useToast } from '@/hooks/useToast';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
+import { Modal } from '@/components/ui/Modal';
+import { TermsDocumentBody } from '@/components/legal/TermsDocumentBody';
+import { PrivacyDocumentBody } from '@/components/legal/PrivacyDocumentBody';
 
 export default function RegisterPageClient() {
   const router = useRouter();
   const { success, error: toastError } = useToast();
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
+  const [legalModal, setLegalModal] = useState<'terms' | 'privacy' | null>(null);
 
   const {
     register,
@@ -227,21 +231,31 @@ export default function RegisterPageClient() {
                 className="text-sm text-gray-600 leading-snug min-w-0 cursor-pointer select-none"
               >
                 I agree to the{' '}
-                <Link
-                  href="/terms"
+                <button
+                  type="button"
                   className="font-semibold hover:underline text-[#1B8F8F] relative z-10"
                   onPointerDown={(e) => e.stopPropagation()}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    setLegalModal('terms');
+                  }}
                 >
                   Terms
-                </Link>{' '}
+                </button>{' '}
                 &amp;{' '}
-                <Link
-                  href="/privacy"
+                <button
+                  type="button"
                   className="font-semibold hover:underline text-[#1B8F8F] relative z-10"
                   onPointerDown={(e) => e.stopPropagation()}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    setLegalModal('privacy');
+                  }}
                 >
                   Privacy Policy
-                </Link>
+                </button>
               </label>
             </div>
             {errors.agreeToTerms && (
@@ -281,6 +295,17 @@ export default function RegisterPageClient() {
           </Link>
         </p>
       </div>
+
+      <Modal
+        isOpen={legalModal !== null}
+        onClose={() => setLegalModal(null)}
+        title={legalModal === 'terms' ? 'Terms and Conditions' : 'Privacy Policy'}
+        size="full"
+        showCloseButton
+      >
+        {legalModal === 'terms' ? <TermsDocumentBody /> : null}
+        {legalModal === 'privacy' ? <PrivacyDocumentBody /> : null}
+      </Modal>
     </div>
   );
 }

@@ -104,13 +104,15 @@ export const ListingDetailModal: React.FC<ListingDetailModalProps> = ({
 
           {/* Carousel */}
           <div
-            className={`relative h-56 lg:h-[460px] w-full overflow-hidden rounded-t-2xl lg:rounded-tr-none lg:rounded-bl-2xl ${typeBgCls}`}
+            className={`relative h-56 lg:h-[380px] w-full overflow-hidden rounded-t-2xl lg:rounded-tr-none lg:rounded-bl-2xl ${typeBgCls}`}
           >
             {hasImages ? (
               <img
                 src={images[currentImage]}
                 alt={`${listing.title} — photo ${currentImage + 1}`}
-                className="w-full h-full object-cover"
+                className="w-full h-full object-cover object-center"
+                loading="eager"
+                decoding="async"
               />
             ) : (
               <div className="flex items-center justify-center h-full">
