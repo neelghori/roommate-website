@@ -138,8 +138,6 @@ export function mapTenantRoommateApiToProfile(raw: unknown): RoommateProfile | n
         ? raw.accountFullName.trim()
         : undefined,
     accountRole: typeof raw.accountRole === 'string' && raw.accountRole.trim() ? raw.accountRole.trim() : undefined,
-    email: typeof raw.email === 'string' && raw.email.trim() ? raw.email.trim() : undefined,
-    mobile: typeof raw.mobile === 'string' && raw.mobile.trim() ? raw.mobile.trim() : undefined,
     createdAt: typeof raw.createdAt === 'string' ? raw.createdAt : undefined,
     updatedAt: typeof raw.updatedAt === 'string' ? raw.updatedAt : undefined,
     professionalType: typeof raw.professionalType === 'string' ? raw.professionalType : undefined,

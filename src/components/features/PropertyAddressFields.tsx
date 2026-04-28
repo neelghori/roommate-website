@@ -41,14 +41,14 @@ export function PropertyAddressFields({ register, errors }: PropertyAddressField
       </div>
 
       <div className="rounded-lg border border-gray-100 bg-gray-50/80 px-3 py-2.5 space-y-3">
-        <p className="text-xs font-medium text-gray-700">Coordinates (optional)</p>
+        <p className="text-xs font-medium text-gray-700">Coordinates *</p>
         <p className="text-[11px] text-gray-500 leading-snug">
-          Paste latitude and longitude from Google Maps (right-click a place → the first number is lat, the second is
-          lng).
+          Required for map and search. Paste from Google Maps (right-click a place → the first number is lat, the second
+          is lng).
         </p>
         <div className="grid grid-cols-2 gap-3">
           <Input
-            label="Latitude"
+            label="Latitude *"
             type="number"
             step="any"
             placeholder="e.g. 23.0225"
@@ -62,7 +62,7 @@ export function PropertyAddressFields({ register, errors }: PropertyAddressField
             })}
           />
           <Input
-            label="Longitude"
+            label="Longitude *"
             type="number"
             step="any"
             placeholder="e.g. 72.5714"

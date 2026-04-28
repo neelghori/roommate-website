@@ -19,6 +19,7 @@ import { POPULAR_AREAS } from '@/lib/staticData';
 import { buildExploreCategoriesFromListings } from '@/lib/exploreCategories';
 import { useFilterStore } from '@/store/filterStore';
 import { Listing } from '@/types';
+import { formatListingTypeLabel } from '@/lib/utils/format';
 import { listingService } from '@/services/modules/listing.service';
 import { useToast } from '@/hooks/useToast';
 
@@ -33,6 +34,8 @@ function listingMatchesExploreSearch(listing: Listing, q: string): boolean {
     listing.addressLine2,
     listing.description,
     listing.type,
+    formatListingTypeLabel(listing.type),
+    listing.amenities.map((c) => c.name).join(' '),
   ]
     .filter(Boolean)
     .join(' ')
@@ -158,11 +161,14 @@ export default function ExplorePageClient() {
           >
             <Search size={16} className="text-gray-400 flex-shrink-0" aria-hidden="true" />
             <input
-              type="search"
+              type="text"
+              inputMode="search"
+              enterKeyHint="search"
+              autoComplete="off"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search by area, type, or keyword…"
-              className="flex-1 py-2.5 text-sm text-gray-800 placeholder-gray-400 bg-transparent focus:outline-none"
+              className="roommat-inline-search flex-1 min-w-0 py-2.5 text-sm text-gray-800 placeholder-gray-400 bg-transparent border-0 shadow-none ring-0 ring-offset-0 focus:outline-none focus-visible:outline-none focus:ring-0 focus-visible:ring-0"
               aria-label="Search listings by area, type, or keyword"
             />
             <button

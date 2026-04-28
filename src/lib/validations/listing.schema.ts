@@ -5,7 +5,16 @@
  */
 import { z } from 'zod';
 
-const LISTING_TYPES = ['PG', 'Rent', 'Roommate', 'Studio', 'Bachelor', 'Family'] as const;
+/** `Rent` kept for editing legacy listings (API `room`); new forms use `Flat` / `CoWorkingSpace` instead of For Rent / Studio. */
+const LISTING_TYPES = [
+  'PG',
+  'Rent',
+  'Flat',
+  'Roommate',
+  'CoWorkingSpace',
+  'Bachelor',
+  'Family',
+] as const;
 const GENDER_PREFERENCES = ['Male', 'Female', 'Any'] as const;
 export const listingSchema = z.object({
   title: z
@@ -37,11 +46,16 @@ export const listingSchema = z.object({
   postalCode: z.string().max(20, 'Postal code too long').optional(),
 
   latitude: z
-    .union([z.number().finite(), z.nan(), z.undefined()])
-    .transform((v) => (typeof v === 'number' && Number.isFinite(v) ? v : undefined)),
+    .number({ error: 'Latitude is required' })
+    .finite('Enter a valid latitude')
+    .gte(-90, 'Latitude must be between -90 and 90')
+    .lte(90, 'Latitude must be between -90 and 90'),
+
   longitude: z
-    .union([z.number().finite(), z.nan(), z.undefined()])
-    .transform((v) => (typeof v === 'number' && Number.isFinite(v) ? v : undefined)),
+    .number({ error: 'Longitude is required' })
+    .finite('Enter a valid longitude')
+    .gte(-180, 'Longitude must be between -180 and 180')
+    .lte(180, 'Longitude must be between -180 and 180'),
 
   placeId: z.string().max(256).optional(),
   formattedAddress: z.string().max(500).optional(),
@@ -86,6 +100,8 @@ export const listingWizardStep1Schema = listingSchema.pick({
   state: true,
   country: true,
   postalCode: true,
+  latitude: true,
+  longitude: true,
   genderPreference: true,
 });
 

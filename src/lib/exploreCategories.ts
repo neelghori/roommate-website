@@ -1,11 +1,11 @@
 import type { Category, Listing, ListingType } from '@/types';
 
-/** Explore “Browse by category” — 3×2 grid: PG, Rent, Roommate, Studio, Bachelor, Family. */
+/** Explore “Browse by category” — 3×2 grid: PG, Flat, Roommate, Co-Working Space, Bachelor, Family. */
 const EXPLORE_GRID: { label: ListingType; icon: string; unit: Category['unit'] }[] = [
   { label: 'PG', icon: '🏠', unit: 'listings' },
-  { label: 'Rent', icon: '🔑', unit: 'listings' },
+  { label: 'Flat', icon: '🔑', unit: 'listings' },
   { label: 'Roommate', icon: '👥', unit: 'profiles' },
-  { label: 'Studio', icon: '🏡', unit: 'listings' },
+  { label: 'CoWorkingSpace', icon: '💼', unit: 'listings' },
   { label: 'Bachelor', icon: '👤', unit: 'listings' },
   { label: 'Family', icon: '👨‍👩‍👧', unit: 'listings' },
 ];

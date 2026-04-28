@@ -23,6 +23,8 @@ export const CURRENT_USER: User = {
   avatarInitial: 'GU',
   role: 'TENANT',
   isPhoneVerified: true,
+  emailVerified: true,
+  mobileVerifiedByAdmin: true,
   isAadharVerified: false,
   isCompanyVerified: true,
   identityVerificationStatus: 'none',

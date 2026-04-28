@@ -46,7 +46,7 @@ export const chunk = <T>(array: T[], size: number): T[][] => {
 
 /**
  * Group an array of objects by a key.
- * @example groupBy([{type:'PG',...},{type:'Rent',...}], 'type') → { PG: [...], Rent: [...] }
+ * @example groupBy([{type:'PG',...},{type:'Flat',...}], 'type') → { PG: [...], Flat: [...] }
  */
 export const groupBy = <T extends Record<string, unknown>>(
   array: T[],

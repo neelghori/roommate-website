@@ -19,21 +19,27 @@ import { useFilterStore } from '@/store/filterStore';
 import { POPULAR_AREAS } from '@/lib/staticData';
 import { amenityService, type ApiAmenity } from '@/services/modules/amenity.service';
 import type { GenderPreference } from '@/types';
+import { AmenityIcon, isAmenityIconKey } from '@/lib/amenities/amenity-icon';
 
 /* ─── Static data ─────────────────────────────────────────────────── */
 
-/** Decorative icon by slug/name — master list drives labels; icons are hints only. */
-function amenityIcon(slug: string | undefined, name: string): React.ReactNode {
-  const key = `${slug ?? ''} ${name}`.toLowerCase();
+/** Filter dropdown icon — prefer catalogue `iconKey` (same as admin), else slug/name heuristics. */
+function amenityIconForMaster(row: ApiAmenity): React.ReactNode {
+  const ik = row.iconKey?.trim().toLowerCase();
+  if (ik && isAmenityIconKey(ik)) {
+    return <AmenityIcon name={ik} className="h-4 w-4 shrink-0" />;
+  }
+  const key = `${row.slug ?? ''} ${row.name}`.toLowerCase();
   if (key.includes('wifi')) return <Wifi size={13} aria-hidden />;
   if (key.includes('cctv') || key.includes('camera')) return <Eye size={13} aria-hidden />;
   if (key.includes('power') || key.includes('backup')) return <Zap size={13} aria-hidden />;
   if (key.includes('security')) return <Shield size={13} aria-hidden />;
   if (key.includes('gym')) return <Dumbbell size={13} aria-hidden />;
   if (key.includes('parking')) return <Car size={13} aria-hidden />;
-  if (key.includes('laundry')) return <ShoppingBag size={13} aria-hidden />;
+  if (key.includes('laundry') || key.includes('washing')) return <ShoppingBag size={13} aria-hidden />;
   if (key.includes('kitchen') || key.includes('food')) return <UtensilsCrossed size={13} aria-hidden />;
   if (/\bac\b|air[- ]?con|cooling/i.test(key)) return <Wind size={13} aria-hidden />;
+  if (key.includes('tv')) return <AmenityIcon name="tv" className="h-4 w-4 shrink-0" />;
   return <Sparkles size={13} className="opacity-70" aria-hidden />;
 }
 
@@ -399,7 +405,7 @@ export const FilterPanel: React.FC = () => {
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 max-h-[min(55vh,360px)] overflow-y-auto pr-1">
                   {amenitiesMaster.map((row) => {
                     const active = amenityRowSelected(activeAmenities, row.name);
-                    const icon = amenityIcon(row.slug, row.name);
+                    const icon = amenityIconForMaster(row);
                     return (
                       <button
                         type="button"

@@ -48,14 +48,24 @@ export default function RegisterPageClient() {
 
   const onSubmit = async (data: RegisterFormData) => {
     try {
-      await authService.register({
+      const result = await authService.register({
         name: data.name,
         email: data.email,
         phone: data.phone,
         password: data.password,
         role: data.role,
       });
-      success('Account created!', 'Sign in with your email and password.');
+      if (result.emailVerificationSent) {
+        success(
+          'Account created',
+          'We sent a confirmation email — click the link inside to verify your address.',
+        );
+      } else {
+        success(
+          'Account created',
+          'You can sign in now. If email confirmation is enabled on the server, check your inbox or ask support.',
+        );
+      }
       reset({
         role: 'TENANT',
         agreeToTerms: false,

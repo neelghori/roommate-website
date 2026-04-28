@@ -11,11 +11,13 @@
  */
 'use client';
 
-import React, { useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useAmenityMaster } from '@/hooks/useAmenityMaster';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { listingSchema, ListingFormData } from '@/lib/validations/listing.schema';
+import { getListingTypeSelectOptionsForRole } from '@/lib/listing-type-options';
+import { useAuthStore } from '@/store/authStore';
 import { Modal } from '@/components/ui/Modal';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
@@ -24,15 +26,6 @@ import { Checkbox } from '@/components/ui/Checkbox';
 import { ImageUploader } from '@/components/features/ImageUploader';
 import { PropertyAddressFields } from '@/components/features/PropertyAddressFields';
 import { useToast } from '@/hooks/useToast';
-
-const LISTING_TYPE_OPTIONS = [
-  { label: 'PG', value: 'PG' },
-  { label: 'For Rent', value: 'Rent' },
-  { label: 'Roommate', value: 'Roommate' },
-  { label: 'Studio', value: 'Studio' },
-  { label: 'Bachelor', value: 'Bachelor' },
-  { label: 'Family', value: 'Family' },
-];
 
 const GENDER_OPTIONS = [
   { label: 'Any', value: 'Any' },
@@ -55,6 +48,8 @@ export const AddListingModal: React.FC<AddListingModalProps> = ({
   const [uploadedImages, setUploadedImages] = useState<File[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const toast = useToast();
+  const userRole = useAuthStore((s) => s.user?.role ?? null);
+  const listingTypeOptions = useMemo(() => getListingTypeSelectOptionsForRole(userRole), [userRole]);
   const { items: masterAmenities, loading: amenitiesLoading, error: amenitiesLoadError } = useAmenityMaster();
 
   const {
@@ -62,10 +57,13 @@ export const AddListingModal: React.FC<AddListingModalProps> = ({
     handleSubmit,
     control,
     reset,
+    getValues,
+    setValue,
     formState: { errors },
   } = useForm<ListingFormData>({
     resolver: zodResolver(listingSchema),
     defaultValues: {
+      type: 'PG',
       spotsLeft: 1,
       genderPreference: 'Any',
       amenities: [],
@@ -77,6 +75,15 @@ export const AddListingModal: React.FC<AddListingModalProps> = ({
       postalCode: '',
     },
   });
+
+  useEffect(() => {
+    const allowed = new Set(listingTypeOptions.map((o) => o.value));
+    const cur = getValues('type');
+    if (!allowed.has(cur)) {
+      const next = listingTypeOptions[0]?.value ?? 'PG';
+      setValue('type', next, { shouldValidate: true, shouldDirty: true });
+    }
+  }, [listingTypeOptions, getValues, setValue]);
 
   const handleClose = () => {
     reset();
@@ -126,7 +133,7 @@ export const AddListingModal: React.FC<AddListingModalProps> = ({
               render={({ field }) => (
                 <Select
                   label="Room Type *"
-                  options={LISTING_TYPE_OPTIONS}
+                  options={listingTypeOptions}
                   placeholder="Select type"
                   error={errors.type?.message}
                   {...field}

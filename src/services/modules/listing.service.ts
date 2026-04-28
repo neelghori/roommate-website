@@ -7,15 +7,18 @@ import { isAxiosError } from 'axios';
 import type {
   GenderPreference,
   Listing,
+  ListingAmenityChip,
   ListingFilter,
   ListingResidentSnapshot,
   ListingType,
   ListingVerificationBadge,
 } from '@/types';
+import { isAmenityIconKey } from '@/lib/amenities/amenity-icon';
 import { apiClient } from '@/services/api';
 import { postMultipartForm } from '@/services/uploadForm';
 import { authApiErrorMessage } from '@/services/modules/auth.service';
 import { amenityService } from '@/services/modules/amenity.service';
+import { hasMapCoordinates } from '@/lib/googleMapsEmbed';
 import type { ListingFormData } from '@/lib/validations/listing.schema';
 import {
   EMPTY_LISTING_RESIDENT,
@@ -30,17 +33,19 @@ function apiErr(err: unknown, fallback: string): string {
 const UI_TO_API_LISTING_TYPE: Partial<Record<ListingType | string, string>> = {
   PG: 'pg',
   Rent: 'room',
+  Flat: 'flat',
   Roommate: 'roommate_seeker',
-  Studio: 'flat',
+  CoWorkingSpace: 'coworking_space',
   Bachelor: 'room',
   Family: 'flat',
 };
 
 const API_TO_UI_LISTING_TYPE: Record<string, ListingType> = {
   pg: 'PG',
-  flat: 'Rent',
+  flat: 'Flat',
   room: 'Rent',
   roommate_seeker: 'Roommate',
+  coworking_space: 'CoWorkingSpace',
 };
 
 function mapGenderToApi(pref: GenderPreference | string): string {
@@ -367,18 +372,32 @@ function amenityLabelFromPopulated(o: Record<string, unknown>): string {
   return '';
 }
 
-function mapAmenityDocs(raw: unknown): string[] {
+function pickIconKeyFromAmenityDoc(o: Record<string, unknown>): string | undefined {
+  const candidates = [
+    typeof o.iconKey === 'string' ? o.iconKey : undefined,
+    typeof o.icon === 'string' ? o.icon : undefined,
+  ].filter(Boolean) as string[];
+  for (const c of candidates) {
+    const t = c.trim().toLowerCase();
+    if (isAmenityIconKey(t)) return t;
+  }
+  return undefined;
+}
+
+function mapAmenityDocs(raw: unknown): ListingAmenityChip[] {
   if (!Array.isArray(raw)) return [];
   const seen = new Set<string>();
-  const out: string[] = [];
+  const out: ListingAmenityChip[] = [];
   for (const a of raw) {
     if (!a || typeof a !== 'object') continue;
-    const label = amenityLabelFromPopulated(a as Record<string, unknown>);
+    const rec = a as Record<string, unknown>;
+    const label = amenityLabelFromPopulated(rec);
     if (!label) continue;
     const k = label.toLowerCase();
     if (!seen.has(k)) {
       seen.add(k);
-      out.push(label);
+      const iconKey = pickIconKeyFromAmenityDoc(rec);
+      out.push(iconKey ? { name: label, iconKey } : { name: label });
     }
   }
   return out;
@@ -418,19 +437,27 @@ async function mapApiPropertyToListingWithAmenities(p: Record<string, unknown>):
   try {
     const master = await amenityService.list();
     const byId = new Map(
-      master.map((m) => [String(m._id), typeof m.name === 'string' ? m.name.trim() : '']),
+      master.map((m) => [
+        String(m._id),
+        {
+          name: typeof m.name === 'string' ? m.name.trim() : '',
+          iconKey: typeof m.iconKey === 'string' ? m.iconKey.trim().toLowerCase() : undefined,
+        },
+      ]),
     );
     const seen = new Set<string>();
-    const names: string[] = [];
+    const chips: ListingAmenityChip[] = [];
     for (const id of ids) {
-      const n = byId.get(String(id)) ?? '';
+      const row = byId.get(String(id));
+      const n = row?.name ?? '';
       if (!n) continue;
       const k = n.toLowerCase();
       if (seen.has(k)) continue;
       seen.add(k);
-      names.push(n);
+      const ik = row?.iconKey && isAmenityIconKey(row.iconKey) ? row.iconKey : undefined;
+      chips.push(ik ? { name: n, iconKey: ik } : { name: n });
     }
-    if (names.length) listing = { ...listing, amenities: names };
+    if (chips.length) listing = { ...listing, amenities: chips };
   } catch {
     /* catalogue unavailable — leave amenities empty */
   }
@@ -505,7 +532,7 @@ function listingMatchesAreaFilter(l: Listing, area: string | undefined): boolean
 function listingMatchesAmenityFilters(l: Listing, required: string[]): boolean {
   if (!required.length) return true;
   const norm = (s: string) => s.toLowerCase().replace(/\s+/g, ' ').trim();
-  const have = l.amenities.map(norm);
+  const have = l.amenities.map((c) => norm(c.name));
   return required.some((req) => {
     const r = norm(req);
     return have.some((a) => a === r || a.includes(r) || r.includes(a));
@@ -530,7 +557,7 @@ export function mapApiPropertyToListing(p: Record<string, unknown>): Listing {
   const spots =
     typeof p.availableSpots === 'number' && !Number.isNaN(p.availableSpots) ? p.availableSpots : 1;
   const lt = typeof p.listingType === 'string' ? p.listingType : 'room';
-  const type = API_TO_UI_LISTING_TYPE[lt] ?? 'Rent';
+  const type = API_TO_UI_LISTING_TYPE[lt] ?? 'Flat';
   const createdAt =
     typeof p.createdAt === 'string' ? p.createdAt : new Date().toISOString();
   const geo = p.location as
@@ -603,7 +630,7 @@ function propertyRowId(row: Record<string, unknown>): string {
   return id != null ? String(id) : '';
 }
 
-/** Nearby rows first (preserves `$near` distance order), then remaining rows without duplicates. */
+/** Nearby rows first (server uses `$geoWithin`; order is not strict distance), then remaining rows without duplicates. */
 function mergeNearbyFirstThenRest(
   nearbyOrdered: Record<string, unknown>[],
   rest: Record<string, unknown>[],
@@ -629,13 +656,7 @@ function buildPropertyListQueryParams(filter: ListingFilter | undefined, include
   const params = new URLSearchParams();
   params.set('page', '1');
   params.set('limit', '100');
-  if (
-    includeGeo &&
-    filter?.nearLatitude != null &&
-    filter?.nearLongitude != null &&
-    Number.isFinite(filter.nearLatitude) &&
-    Number.isFinite(filter.nearLongitude)
-  ) {
+  if (includeGeo && hasMapCoordinates(filter?.nearLatitude, filter?.nearLongitude)) {
     params.set('lat', String(filter.nearLatitude));
     params.set('lng', String(filter.nearLongitude));
     if (filter.radiusKm != null && Number.isFinite(filter.radiusKm) && filter.radiusKm > 0) {
@@ -661,8 +682,8 @@ export type CreateListingPayload = {
   state: string;
   country: string;
   postalCode?: string;
-  latitude?: number;
-  longitude?: number;
+  latitude: number;
+  longitude: number;
   placeId?: string;
   formattedAddress?: string;
   spotsLeft: number;
@@ -701,22 +722,15 @@ export function buildPropertyCreateBody(
   };
   const lat = data.latitude;
   const lng = data.longitude;
-  if (
-    typeof lat === 'number' &&
-    typeof lng === 'number' &&
-    Number.isFinite(lat) &&
-    Number.isFinite(lng)
-  ) {
-    const loc: Record<string, unknown> = {
-      type: 'Point',
-      coordinates: [lng, lat],
-    };
-    const pid = (data.placeId ?? '').trim();
-    const fmt = (data.formattedAddress ?? '').trim();
-    if (pid) loc.placeId = pid;
-    if (fmt) loc.formattedAddress = fmt;
-    body.location = loc;
-  }
+  const loc: Record<string, unknown> = {
+    type: 'Point',
+    coordinates: [lng, lat],
+  };
+  const pid = (data.placeId ?? '').trim();
+  const fmt = (data.formattedAddress ?? '').trim();
+  if (pid) loc.placeId = pid;
+  if (fmt) loc.formattedAddress = fmt;
+  body.location = loc;
   const phone = data.phone?.replace(/\D/g, '') ?? '';
   if (phone.length >= 10) body.contactPhone = phone.slice(-10);
   if (imageUrls.length > 0) {
@@ -729,11 +743,7 @@ export function buildPropertyCreateBody(
 export const listingService = {
   getListings: async (filter?: ListingFilter): Promise<Listing[]> => {
     try {
-      const hasGeo =
-        filter?.nearLatitude != null &&
-        filter?.nearLongitude != null &&
-        Number.isFinite(filter.nearLatitude) &&
-        Number.isFinite(filter.nearLongitude);
+      const hasGeo = hasMapCoordinates(filter?.nearLatitude, filter?.nearLongitude);
 
       let items: Record<string, unknown>[];
       if (hasGeo) {

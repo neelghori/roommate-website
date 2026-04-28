@@ -8,7 +8,7 @@ import { SAVED_LISTINGS } from '@/mock/data/users';
 import { MOCK_LISTINGS } from '@/mock/data/listings';
 import { Listing } from '@/types';
 import { useToast } from '@/components/ui/Toast';
-import { formatRupees } from '@/lib/utils/format';
+import { formatRupees, formatListingTypeLabel } from '@/lib/utils/format';
 
 export default function SavedPage() {
   const { toast } = useToast();
@@ -98,7 +98,7 @@ function SavedListingCard({ listing, onRemove }: SavedListingCardProps) {
           className="absolute top-2 left-2 px-2 py-0.5 rounded-full text-xs font-semibold text-white"
           style={{ backgroundColor: '#1B8F8F' }}
         >
-          {listing.type}
+          {formatListingTypeLabel(listing.type)}
         </span>
         {/* Remove button */}
         <button

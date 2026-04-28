@@ -13,7 +13,15 @@ export type ListingVerificationBadge =
   | 'id_verified'
   | 'property_verified'
   | 'premium';
-export type ListingType = 'PG' | 'Rent' | 'Roommate' | 'Studio' | 'Bachelor' | 'Family';
+/** `Rent` = legacy API `room`; not offered on new listing forms. */
+export type ListingType =
+  | 'PG'
+  | 'Rent'
+  | 'Flat'
+  | 'Roommate'
+  | 'CoWorkingSpace'
+  | 'Bachelor'
+  | 'Family';
 export type ListingApprovalStatus = 'PENDING' | 'APPROVED' | 'REJECTED' | 'UNDER_REVIEW';
 
 /** Who lives here — maps to backend `Property.listerSnapshot`. */
@@ -43,6 +51,12 @@ export interface ListingResidentSnapshot {
 /** Known amenity keys for filter icons (filters still accept any string from master). */
 export type Amenity = 'WiFi' | 'AC' | 'Kitchen' | 'Food' | 'Laundry' | 'Parking' | 'Gym' | 'Security' | 'Power Backup' | 'CCTV';
 
+/** One amenity on a listing — `iconKey` matches admin catalogue (`wifi`, `tv`, …). */
+export interface ListingAmenityChip {
+  name: string;
+  iconKey?: string;
+}
+
 export interface Listing {
   id: string;
   title: string;
@@ -62,8 +76,8 @@ export interface Listing {
   /** Staff-set badge from API; show even when `isVerified` is false. */
   verificationBadge?: ListingVerificationBadge;
   spotsLeft: number;
-  /** Amenity display names from master collection (populated `amenityIds`). */
-  amenities: string[];
+  /** Amenity labels + optional `iconKey` from master / populated `amenityIds`. */
+  amenities: ListingAmenityChip[];
   badge: ListingStatus;
   type: ListingType;
   images: string[];

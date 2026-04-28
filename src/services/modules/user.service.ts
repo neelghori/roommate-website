@@ -54,6 +54,8 @@ export type UpdateProfilePayload = {
   moveInDate?: string;
   genderPreference?: string;
   lifestyle?: string[];
+  /** `YYYY-MM-DD`; empty string clears DOB and age on the server. */
+  dateOfBirth?: string;
   phone?: string;
   /** Set after S3 upload via POST /api/v1/upload/users/me/avatar */
   profileImageUrl?: string;
@@ -87,6 +89,9 @@ function buildProfileUpdateBody(payload: UpdateProfilePayload): Record<string, u
   }
   if (payload.lifestyle !== undefined) {
     body.lifestyle = { tags: payload.lifestyle };
+  }
+  if (payload.dateOfBirth !== undefined) {
+    body.dateOfBirth = payload.dateOfBirth === '' ? '' : payload.dateOfBirth;
   }
   if (payload.phone !== undefined) body.mobile = payload.phone;
   if (payload.profileImageUrl !== undefined) body.profileImageUrl = payload.profileImageUrl;

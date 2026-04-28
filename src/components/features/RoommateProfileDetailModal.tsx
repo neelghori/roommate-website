@@ -4,7 +4,7 @@
  * Full roommate / seeker details in a popup (used from ProfileCard sidebar).
  */
 import React from 'react';
-import { MapPin, IndianRupee, Mail, Phone, Calendar, Briefcase } from 'lucide-react';
+import { MapPin, IndianRupee, Calendar, Briefcase } from 'lucide-react';
 import { Modal } from '@/components/ui/Modal';
 import type { RoommateProfile } from '@/types';
 
@@ -24,6 +24,38 @@ export type RoommateProfileDetailModalProps = {
   onClose: () => void;
   isLoading?: boolean;
 };
+
+/** Chip colors aligned with ProfileCard for list/detail consistency. */
+const LIFESTYLE_CHIP_CLASS: Record<string, string> = {
+  WORKING: 'bg-amber-100 text-amber-800 border-amber-200',
+  Working: 'bg-amber-100 text-amber-800 border-amber-200',
+  STUDENT: 'bg-blue-100 text-blue-700 border-blue-200',
+  Student: 'bg-blue-100 text-blue-700 border-blue-200',
+  VEGETARIAN: 'bg-green-100 text-green-700 border-green-200',
+  Vegetarian: 'bg-green-100 text-green-700 border-green-200',
+  'Veg Only': 'bg-green-100 text-green-700 border-green-200',
+  'Non-Smoker': 'bg-gray-100 text-gray-600 border-gray-200',
+  'Non-smoker': 'bg-gray-100 text-gray-600 border-gray-200',
+  NON_SMOKER: 'bg-gray-100 text-gray-600 border-gray-200',
+  Smoker: 'bg-red-100 text-red-600 border-red-200',
+  SMOKER: 'bg-red-100 text-red-600 border-red-200',
+  'Non-Veg': 'bg-orange-100 text-orange-700 border-orange-200',
+  'Non-veg': 'bg-orange-100 text-orange-700 border-orange-200',
+  NON_VEG: 'bg-orange-100 text-orange-700 border-orange-200',
+  'Early Bird': 'bg-yellow-100 text-yellow-700 border-yellow-200',
+  EARLY_BIRD: 'bg-yellow-100 text-yellow-700 border-yellow-200',
+  'Night Owl': 'bg-indigo-100 text-indigo-700 border-indigo-200',
+  NIGHT_OWL: 'bg-indigo-100 text-indigo-700 border-indigo-200',
+  'Pet Friendly': 'bg-purple-100 text-purple-700 border-purple-200',
+  PET_FRIENDLY: 'bg-purple-100 text-purple-700 border-purple-200',
+};
+
+const DEFAULT_LIFESTYLE_CHIP = 'bg-gray-100 text-gray-600 border-gray-200';
+
+function lifestyleTagsForDetail(profile: RoommateProfile): string[] {
+  if (profile.lifestyleTags?.length) return profile.lifestyleTags;
+  return profile.tags;
+}
 
 export function RoommateProfileDetailModal({
   profile,
@@ -105,43 +137,45 @@ export function RoommateProfileDetailModal({
               ) : null}
             </Row>
             <Row label="Bio">{profile.bio}</Row>
-            <Row label="Email">
-              {profile.email ? (
-                <a href={`mailto:${profile.email}`} className="text-primary hover:underline inline-flex items-center gap-1">
-                  <Mail className="w-3.5 h-3.5 shrink-0" />
-                  {profile.email}
-                </a>
-              ) : null}
-            </Row>
-            <Row label="Phone">
-              {profile.mobile ? (
-                <a href={`tel:${profile.mobile}`} className="text-primary hover:underline inline-flex items-center gap-1">
-                  <Phone className="w-3.5 h-3.5 shrink-0" />
-                  {profile.mobile}
-                </a>
-              ) : null}
-            </Row>
             <Row label="Age">{profile.age != null ? String(profile.age) : null}</Row>
             <Row label="Gender">{profile.gender}</Row>
             <Row label="Roommate pref.">{profile.roommateGenderPreference}</Row>
             <Row label="Professional type">{profile.professionalType}</Row>
             <Row label="Account role">{profile.accountRole}</Row>
-            {profile.lifestyleSnippet &&
-              (profile.lifestyleSnippet.diet ||
-                profile.lifestyleSnippet.smoking ||
-                profile.lifestyleSnippet.maritalStatus) && (
+            {(() => {
+              const tagList = lifestyleTagsForDetail(profile);
+              const hasTags = tagList.length > 0;
+              const snip = profile.lifestyleSnippet;
+              const hasSnippet =
+                Boolean(snip) &&
+                Boolean(snip?.diet || snip?.smoking || snip?.maritalStatus);
+              if (!hasTags && !hasSnippet) return null;
+              return (
                 <Row label="Lifestyle">
-                  <div className="space-y-0.5">
-                    {profile.lifestyleSnippet.diet && <div>Diet: {profile.lifestyleSnippet.diet}</div>}
-                    {profile.lifestyleSnippet.smoking && (
-                      <div>Smoking: {profile.lifestyleSnippet.smoking}</div>
-                    )}
-                    {profile.lifestyleSnippet.maritalStatus && (
-                      <div>Marital: {profile.lifestyleSnippet.maritalStatus}</div>
-                    )}
+                  <div className="space-y-2">
+                    {hasTags ? (
+                      <div className="flex flex-wrap gap-1.5">
+                        {tagList.map((tag) => (
+                          <span
+                            key={tag}
+                            className={`text-[11px] font-semibold rounded-full px-2 py-0.5 border ${LIFESTYLE_CHIP_CLASS[tag] ?? DEFAULT_LIFESTYLE_CHIP}`}
+                          >
+                            {tag}
+                          </span>
+                        ))}
+                      </div>
+                    ) : null}
+                    {hasSnippet ? (
+                      <div className="space-y-0.5 text-sm">
+                        {snip?.diet ? <div>Diet: {snip.diet}</div> : null}
+                        {snip?.smoking ? <div>Smoking: {snip.smoking}</div> : null}
+                        {snip?.maritalStatus ? <div>Marital: {snip.maritalStatus}</div> : null}
+                      </div>
+                    ) : null}
                   </div>
                 </Row>
-              )}
+              );
+            })()}
           </dl>
         </div>
       ) : (

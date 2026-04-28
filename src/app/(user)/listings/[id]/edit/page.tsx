@@ -20,7 +20,7 @@ import type { Listing } from '@/types';
 function listingToFormData(listing: Listing): ListingFormData {
   const digits = (listing.ownerPhone ?? '').replace(/\D/g, '');
   const phone = digits.length >= 10 ? digits.slice(-10) : '';
-  const amenities = (listing.amenities?.length ? listing.amenities : []) as ListingFormData['amenities'];
+  const amenities = (listing.amenities?.length ? listing.amenities.map((c) => c.name) : []) as ListingFormData['amenities'];
   const raw = listing.description?.trim() ?? '';
   const description =
     raw.length >= 20
@@ -45,7 +45,7 @@ function listingToFormData(listing: Listing): ListingFormData {
     amenities,
     description,
     phone,
-  };
+  } as ListingFormData;
 }
 
 export default function EditListingPage() {

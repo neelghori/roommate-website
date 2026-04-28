@@ -10,55 +10,27 @@
 
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import {
-  ChevronLeft,
-  ChevronRight,
-  MapPin,
-  Wifi,
-  Wind,
-  UtensilsCrossed,
-  ShoppingBag,
-  Car,
-  Dumbbell,
-  Shield,
-  Zap,
-  Eye,
-  Users,
-  X,
-  Sparkles,
-  MessageCircle,
-} from 'lucide-react';
+import { ChevronLeft, ChevronRight, MapPin, Users, X, MessageCircle } from 'lucide-react';
 import { Listing } from '@/types';
 import { Modal } from '@/components/ui/Modal';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
-import { formatRupees } from '@/lib/utils/format';
+import { formatRupees, formatListingTypeLabel } from '@/lib/utils/format';
 import { ListingVerificationBadge } from '@/components/features/ListingVerificationBadge';
 import { ListingLocationMap } from '@/components/features/ListingLocationMap';
 import { BookVisitModal } from '@/components/features/BookVisitModal';
 import { useAuthStore } from '@/store/authStore';
-
-const AMENITY_ICONS: Record<string, React.ReactNode> = {
-  WiFi:           <Wifi size={14} />,
-  AC:             <Wind size={14} />,
-  Kitchen:        <UtensilsCrossed size={14} />,
-  Food:           <UtensilsCrossed size={14} />,
-  Laundry:        <ShoppingBag size={14} />,
-  Parking:        <Car size={14} />,
-  Gym:            <Dumbbell size={14} />,
-  Security:       <Shield size={14} />,
-  'Power Backup': <Zap size={14} />,
-  CCTV:           <Eye size={14} />,
-};
+import { ListingAmenityIcon } from '@/components/features/ListingAmenityIcon';
 
 /** Tailwind arbitrary-value bg class per listing type — no inline styles needed */
 const TYPE_BG_CLASS: Record<string, string> = {
-  PG:       'bg-[#c8eeee]',
-  Rent:     'bg-[#c8eeee]',
-  Roommate: 'bg-[#cce8cc]',
-  Studio:   'bg-[#e8dcc8]',
-  Bachelor: 'bg-[#d8c8e8]',
-  Family:   'bg-[#c8d8e8]',
+  PG:             'bg-[#c8eeee]',
+  Rent:           'bg-[#c8eeee]',
+  Flat:           'bg-[#c8eeee]',
+  Roommate:       'bg-[#cce8cc]',
+  CoWorkingSpace: 'bg-[#e8dcc8]',
+  Bachelor:       'bg-[#d8c8e8]',
+  Family:         'bg-[#c8d8e8]',
 };
 
 interface ListingDetailModalProps {
@@ -221,7 +193,7 @@ export const ListingDetailModal: React.FC<ListingDetailModalProps> = ({
             <span
               className="text-xs font-bold text-white px-2.5 py-1 rounded-full bg-primary"
             >
-              {listing.type}
+              {formatListingTypeLabel(listing.type)}
             </span>
             <ListingVerificationBadge listing={listing} variant="modalDesktopPill" />
             <span className="ml-auto text-xs text-gray-500">
@@ -298,17 +270,15 @@ export const ListingDetailModal: React.FC<ListingDetailModalProps> = ({
                 <p className="text-sm text-gray-500">No amenities listed for this place.</p>
               ) : (
                 <div className="grid grid-cols-3 lg:grid-cols-4 gap-2">
-                  {listing.amenities.map((amenity) => (
+                  {listing.amenities.map((chip) => (
                     <div
-                      key={amenity}
+                      key={chip.name}
                       className="flex flex-col items-center gap-1.5 bg-gray-50 border border-gray-100 rounded-xl p-2.5 text-center"
                     >
-                      <span className="text-primary">
-                        {AMENITY_ICONS[amenity] ?? (
-                          <Sparkles size={14} className="opacity-70" aria-hidden />
-                        )}
+                      <span className="text-primary inline-flex">
+                        <ListingAmenityIcon chip={chip} size={14} iconClassName="h-4 w-4" />
                       </span>
-                      <span className="text-[11px] text-gray-600 leading-tight">{amenity}</span>
+                      <span className="text-[11px] text-gray-600 leading-tight">{chip.name}</span>
                     </div>
                   ))}
                 </div>

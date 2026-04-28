@@ -447,7 +447,7 @@ export const TopBar: React.FC<TopBarProps> = ({
               value={searchValue}
               onChange={(e) => setSearchValue(e.target.value)}
               placeholder="Search location, area…"
-              className="w-full pl-9 pr-4 py-2 lg:py-2.5 text-sm bg-gray-50 border border-gray-200 rounded-full focus:outline-none focus:border-primary focus:bg-white transition-colors"
+              className="roommat-inline-search w-full pl-9 pr-4 py-2 lg:py-2.5 text-sm bg-gray-50 border border-gray-200 rounded-full shadow-none focus:outline-none focus-visible:outline-none focus:border-primary focus:bg-white transition-colors"
               maxLength={200}
               autoComplete="off"
               aria-label="Search listings"

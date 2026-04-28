@@ -14,7 +14,14 @@
    ───────────────────────────────────────────────────────────────── */
 
 export type ListingStatus = "Hot" | "Limited Offer" | "New" | null;
-export type ListingType   = "PG" | "Rent" | "Roommate" | "Studio" | "Bachelor" | "Family";
+export type ListingType =
+  | "PG"
+  | "Rent"
+  | "Flat"
+  | "Roommate"
+  | "CoWorkingSpace"
+  | "Bachelor"
+  | "Family";
 
 export interface Listing {
   id: string;
@@ -24,7 +31,7 @@ export interface Listing {
   price: number;          // per month in ₹
   isVerified: boolean;    // Aadhar / phone verified
   spotsLeft: number;      // available beds
-  amenities: string[];    // ["WiFi", "AC", "Kitchen", …]
+  amenities: { name: string; iconKey?: string }[];
   badge: ListingStatus;   // label shown on card image
   type: ListingType;
   images: string[];       // placeholder — backend will provide real URLs
@@ -72,9 +79,9 @@ export const LISTINGS: Listing[] = [
     price: 15000,
     isVerified: true,
     spotsLeft: 2,
-    amenities: ["WiFi", "AC", "Kitchen"],
+    amenities: [{ name: "WiFi" }, { name: "AC" }, { name: "Kitchen" }],
     badge: "Hot",
-    type: "Rent",
+    type: "Flat",
     images: [],
     description: "Spacious 2BHK in a gated society. Well connected to SG Highway.",
     mapPlaceholder: true,
@@ -87,7 +94,7 @@ export const LISTINGS: Listing[] = [
     price: 9000,
     isVerified: true,
     spotsLeft: 3,
-    amenities: ["WiFi", "Food", "Laundry"],
+    amenities: [{ name: "WiFi" }, { name: "Food" }, { name: "Laundry" }],
     badge: "Limited Offer",
     type: "PG",
     images: [],
@@ -102,9 +109,9 @@ export const LISTINGS: Listing[] = [
     price: 12000,
     isVerified: false,
     spotsLeft: 1,
-    amenities: ["AC", "WiFi", "Parking"],
+    amenities: [{ name: "AC" }, { name: "WiFi" }, { name: "Parking" }],
     badge: "New",
-    type: "Studio",
+    type: "CoWorkingSpace",
     images: [],
     description: "Brand new studio flat. Ideal for working professionals.",
     mapPlaceholder: true,
@@ -117,9 +124,9 @@ export const LISTINGS: Listing[] = [
     price: 18000,
     isVerified: true,
     spotsLeft: 2,
-    amenities: ["AC", "Kitchen", "Gym"],
+    amenities: [{ name: "AC" }, { name: "Kitchen" }, { name: "Gym" }],
     badge: null,
-    type: "Rent",
+    type: "Flat",
     images: [],
     description: "Premium 3BHK in gated society. Gym, security and parking included.",
     mapPlaceholder: true,
@@ -132,7 +139,7 @@ export const LISTINGS: Listing[] = [
     price: 6500,
     isVerified: false,
     spotsLeft: 4,
-    amenities: ["WiFi", "Kitchen"],
+    amenities: [{ name: "WiFi" }, { name: "Kitchen" }],
     badge: null,
     type: "Bachelor",
     images: [],
@@ -147,7 +154,7 @@ export const LISTINGS: Listing[] = [
     price: 8000,
     isVerified: true,
     spotsLeft: 2,
-    amenities: ["WiFi", "Food", "Laundry"],
+    amenities: [{ name: "WiFi" }, { name: "Food" }, { name: "Laundry" }],
     badge: "Limited Offer",
     type: "PG",
     images: [],
@@ -162,9 +169,9 @@ export const LISTINGS: Listing[] = [
     price: 13500,
     isVerified: true,
     spotsLeft: 1,
-    amenities: ["AC", "WiFi", "Parking"],
+    amenities: [{ name: "AC" }, { name: "WiFi" }, { name: "Parking" }],
     badge: "New",
-    type: "Rent",
+    type: "Flat",
     images: [],
     description: "Fully furnished 1BHK near Vastrapur lake. Ready to move.",
     mapPlaceholder: true,
@@ -177,7 +184,7 @@ export const LISTINGS: Listing[] = [
     price: 7500,
     isVerified: true,
     spotsLeft: 3,
-    amenities: ["WiFi", "Food", "AC"],
+    amenities: [{ name: "WiFi" }, { name: "Food" }, { name: "AC" }],
     badge: "Hot",
     type: "PG",
     images: [],
@@ -192,9 +199,9 @@ export const LISTINGS: Listing[] = [
     price: 16000,
     isVerified: true,
     spotsLeft: 2,
-    amenities: ["AC", "WiFi", "Gym"],
+    amenities: [{ name: "AC" }, { name: "WiFi" }, { name: "Gym" }],
     badge: null,
-    type: "Rent",
+    type: "Flat",
     images: [],
     description: "Modern flat near Thaltej metro station. 2 flatmates required.",
     mapPlaceholder: true,
@@ -207,7 +214,7 @@ export const LISTINGS: Listing[] = [
     price: 5500,
     isVerified: false,
     spotsLeft: 6,
-    amenities: ["WiFi", "Kitchen", "Laundry"],
+    amenities: [{ name: "WiFi" }, { name: "Kitchen" }, { name: "Laundry" }],
     badge: "Limited Offer",
     type: "PG",
     images: [],
@@ -222,9 +229,9 @@ export const LISTINGS: Listing[] = [
     price: 14000,
     isVerified: true,
     spotsLeft: 1,
-    amenities: ["AC", "WiFi", "Security"],
+    amenities: [{ name: "AC" }, { name: "WiFi" }, { name: "Security" }],
     badge: "New",
-    type: "Studio",
+    type: "CoWorkingSpace",
     images: [],
     description: "Premium studio on SG Highway. 24x7 security and power backup.",
     mapPlaceholder: true,
@@ -237,9 +244,9 @@ export const LISTINGS: Listing[] = [
     price: 22000,
     isVerified: true,
     spotsLeft: 3,
-    amenities: ["AC", "WiFi", "Kitchen"],
+    amenities: [{ name: "AC" }, { name: "WiFi" }, { name: "Kitchen" }],
     badge: "Hot",
-    type: "Rent",
+    type: "Flat",
     images: [],
     description: "Premium 3BHK ideal for working professionals. Corporate-ready.",
     mapPlaceholder: true,
@@ -295,9 +302,9 @@ export const ROOMMATE_PROFILES: RoommateProfile[] = [
    ───────────────────────────────────────────────────────────────── */
 export const CATEGORIES: Category[] = [
   { id: "c1", label: "PG", icon: "🏠", count: 0, unit: "listings" },
-  { id: "c2", label: "Rent", icon: "🔑", count: 0, unit: "listings" },
+  { id: "c2", label: "Flat", icon: "🔑", count: 0, unit: "listings" },
   { id: "c3", label: "Roommate", icon: "👥", count: 0, unit: "profiles" },
-  { id: "c4", label: "Studio", icon: "🏡", count: 0, unit: "listings" },
+  { id: "c4", label: "CoWorkingSpace", icon: "💼", count: 0, unit: "listings" },
   { id: "c5", label: "Bachelor", icon: "👤", count: 0, unit: "listings" },
   { id: "c6", label: "Family", icon: "👨‍👩‍👧", count: 0, unit: "listings" },
 ];
@@ -320,7 +327,7 @@ export const NOTIFICATIONS: Notification[] = [
     id: "n2",
     icon: "application",
     title: "Application Sent!",
-    subtitle: "Your application for Studio Flat | Navrangpura has been sent to the owner.",
+    subtitle: "Your application for Co-Working Space | Navrangpura has been sent to the owner.",
     time: "Just now",
     isUnread: false,
   },

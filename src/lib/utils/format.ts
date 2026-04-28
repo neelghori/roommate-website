@@ -3,6 +3,24 @@
  * Formatting utilities for display values.
  */
 
+import type { ListingType } from '@/types/listing.types';
+
+const LISTING_TYPE_LABELS: Record<ListingType, string> = {
+  PG: 'PG',
+  Rent: 'Rent',
+  Flat: 'Flat',
+  Roommate: 'Roommate',
+  CoWorkingSpace: 'Co-Working Space',
+  Bachelor: 'Bachelor',
+  Family: 'Family',
+};
+
+/** Human-readable label for a listing type (e.g. `CoWorkingSpace` → "Co-Working Space"). */
+export function formatListingTypeLabel(t: ListingType | string): string {
+  if (t in LISTING_TYPE_LABELS) return LISTING_TYPE_LABELS[t as ListingType];
+  return String(t);
+}
+
 /** Format a number as Indian Rupee currency */
 export const formatRupees = (amount: number): string => {
   return new Intl.NumberFormat('en-IN', {

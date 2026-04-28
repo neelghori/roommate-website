@@ -4,13 +4,17 @@
  * All fields match the Listing interface exactly.
  */
 
-import { Listing, Category } from '@/types';
+import type { Listing, Category, ListingAmenityChip } from '@/types';
+
+function chips(...names: string[]): ListingAmenityChip[] {
+  return names.map((name) => ({ name }));
+}
 
 export const CATEGORIES: Category[] = [
   { id: 'c1', label: 'PG', icon: '🏠', count: 0, unit: 'listings' },
-  { id: 'c2', label: 'Rent', icon: '🔑', count: 0, unit: 'listings' },
+  { id: 'c2', label: 'Flat', icon: '🔑', count: 0, unit: 'listings' },
   { id: 'c3', label: 'Roommate', icon: '👥', count: 0, unit: 'profiles' },
-  { id: 'c4', label: 'Studio', icon: '🏡', count: 0, unit: 'listings' },
+  { id: 'c4', label: 'CoWorkingSpace', icon: '💼', count: 0, unit: 'listings' },
   { id: 'c5', label: 'Bachelor', icon: '👤', count: 0, unit: 'listings' },
   { id: 'c6', label: 'Family', icon: '👨‍👩‍👧', count: 0, unit: 'listings' },
 ];
@@ -30,7 +34,7 @@ export const MOCK_LISTINGS: Listing[] = [
     price: 8500,
     isVerified: true,
     spotsLeft: 3,
-    amenities: ['WiFi', 'AC', 'Food', 'Laundry', 'Security', 'CCTV'],
+    amenities: chips('WiFi', 'AC', 'Food', 'Laundry', 'Security', 'CCTV'),
     badge: 'Hot',
     type: 'PG',
     images: ['/images/listings/l1.jpg', '/images/listings/l1-2.jpg', '/images/listings/l1-3.jpg'],
@@ -53,9 +57,9 @@ export const MOCK_LISTINGS: Listing[] = [
     price: 14000,
     isVerified: true,
     spotsLeft: 1,
-    amenities: ['WiFi', 'AC', 'Kitchen', 'Parking', 'Power Backup', 'Security'],
+    amenities: chips('WiFi', 'AC', 'Kitchen', 'Parking', 'Power Backup', 'Security'),
     badge: 'Limited Offer',
-    type: 'Studio',
+    type: 'CoWorkingSpace',
     images: ['/images/listings/l2.jpg', '/images/listings/l2-2.jpg'],
     description:
       'Fully furnished studio apartment in prime Navrangpura area. Attached kitchen with all appliances. Covered parking available. Power backup ensures uninterrupted electricity. Ideal for single working professional or student.',
@@ -76,7 +80,7 @@ export const MOCK_LISTINGS: Listing[] = [
     price: 6000,
     isVerified: false,
     spotsLeft: 1,
-    amenities: ['WiFi', 'Kitchen', 'Laundry'],
+    amenities: chips('WiFi', 'Kitchen', 'Laundry'),
     badge: 'New',
     type: 'Roommate',
     images: ['/images/listings/l3.jpg'],
@@ -99,7 +103,7 @@ export const MOCK_LISTINGS: Listing[] = [
     price: 11000,
     isVerified: true,
     spotsLeft: 2,
-    amenities: ['WiFi', 'AC', 'Kitchen', 'Parking', 'Gym', 'Security', 'CCTV'],
+    amenities: chips('WiFi', 'AC', 'Kitchen', 'Parking', 'Gym', 'Security', 'CCTV'),
     badge: null,
     type: 'Bachelor',
     images: ['/images/listings/l4.jpg', '/images/listings/l4-2.jpg'],
@@ -122,7 +126,7 @@ export const MOCK_LISTINGS: Listing[] = [
     price: 9500,
     isVerified: true,
     spotsLeft: 4,
-    amenities: ['WiFi', 'AC', 'Food', 'Laundry', 'Security', 'CCTV', 'Power Backup'],
+    amenities: chips('WiFi', 'AC', 'Food', 'Laundry', 'Security', 'CCTV', 'Power Backup'),
     badge: 'Hot',
     type: 'PG',
     images: ['/images/listings/l5.jpg', '/images/listings/l5-2.jpg', '/images/listings/l5-3.jpg'],
@@ -145,7 +149,7 @@ export const MOCK_LISTINGS: Listing[] = [
     price: 18000,
     isVerified: true,
     spotsLeft: 1,
-    amenities: ['WiFi', 'AC', 'Kitchen', 'Parking', 'Security', 'Power Backup', 'CCTV'],
+    amenities: chips('WiFi', 'AC', 'Kitchen', 'Parking', 'Security', 'Power Backup', 'CCTV'),
     badge: null,
     type: 'Family',
     images: ['/images/listings/l6.jpg', '/images/listings/l6-2.jpg'],
@@ -168,7 +172,7 @@ export const MOCK_LISTINGS: Listing[] = [
     price: 6500,
     isVerified: false,
     spotsLeft: 5,
-    amenities: ['WiFi', 'Food', 'Laundry', 'Security'],
+    amenities: chips('WiFi', 'Food', 'Laundry', 'Security'),
     badge: 'New',
     type: 'PG',
     images: ['/images/listings/l7.jpg'],
@@ -191,9 +195,9 @@ export const MOCK_LISTINGS: Listing[] = [
     price: 12000,
     isVerified: true,
     spotsLeft: 1,
-    amenities: ['WiFi', 'AC', 'Kitchen', 'Parking', 'Security'],
+    amenities: chips('WiFi', 'AC', 'Kitchen', 'Parking', 'Security'),
     badge: 'Limited Offer',
-    type: 'Rent',
+    type: 'Flat',
     images: ['/images/listings/l8.jpg', '/images/listings/l8-2.jpg'],
     description:
       'Fully furnished 1BHK flat available on rent in Maninagar. Conveniently located near Maninagar railway station and commercial hubs. All furniture included — sofa, bed, wardrobe. Ideal for couples or single occupant.',
@@ -214,9 +218,9 @@ export const MOCK_LISTINGS: Listing[] = [
     price: 13500,
     isVerified: true,
     spotsLeft: 1,
-    amenities: ['WiFi', 'AC', 'Kitchen', 'Gym', 'Security', 'Power Backup', 'CCTV'],
+    amenities: chips('WiFi', 'AC', 'Kitchen', 'Gym', 'Security', 'Power Backup', 'CCTV'),
     badge: null,
-    type: 'Studio',
+    type: 'CoWorkingSpace',
     images: ['/images/listings/l9.jpg', '/images/listings/l9-2.jpg'],
     description:
       'Modern studio flat in the rapidly developing Sola area near Science City. Compact yet fully equipped — minibar kitchen, study desk, and wardrobe. Society has gym and 24/7 power backup. Excellent connectivity to IT corridors.',
@@ -237,7 +241,7 @@ export const MOCK_LISTINGS: Listing[] = [
     price: 10000,
     isVerified: true,
     spotsLeft: 2,
-    amenities: ['WiFi', 'AC', 'Food', 'Laundry', 'Gym', 'Security', 'CCTV', 'Parking'],
+    amenities: chips('WiFi', 'AC', 'Food', 'Laundry', 'Gym', 'Security', 'CCTV', 'Parking'),
     badge: 'Hot',
     type: 'PG',
     images: ['/images/listings/l10.jpg', '/images/listings/l10-2.jpg', '/images/listings/l10-3.jpg'],
@@ -260,7 +264,7 @@ export const MOCK_LISTINGS: Listing[] = [
     price: 7000,
     isVerified: false,
     spotsLeft: 2,
-    amenities: ['WiFi', 'AC', 'Kitchen', 'Parking', 'Laundry'],
+    amenities: chips('WiFi', 'AC', 'Kitchen', 'Parking', 'Laundry'),
     badge: 'New',
     type: 'Roommate',
     images: ['/images/listings/l11.jpg'],
@@ -283,7 +287,7 @@ export const MOCK_LISTINGS: Listing[] = [
     price: 16000,
     isVerified: true,
     spotsLeft: 1,
-    amenities: ['WiFi', 'AC', 'Food', 'Laundry', 'Gym', 'Security', 'Power Backup', 'CCTV', 'Parking', 'Kitchen'],
+    amenities: chips('WiFi', 'AC', 'Food', 'Laundry', 'Gym', 'Security', 'Power Backup', 'CCTV', 'Parking', 'Kitchen'),
     badge: 'Limited Offer',
     type: 'PG',
     images: ['/images/listings/l12.jpg', '/images/listings/l12-2.jpg', '/images/listings/l12-3.jpg'],

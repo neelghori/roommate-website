@@ -3,6 +3,7 @@
  * Zod v4 validation schemas for user profile update forms.
  */
 import { z } from 'zod';
+import { computeAgeFromDateOfBirthYmd } from '@/lib/dateOfBirthAge';
 
 const GENDER_PREFERENCES = ['Male', 'Female', 'Any'] as const;
 const LIFESTYLE_TAGS = [
@@ -33,20 +34,22 @@ export const profileSchema = z.object({
     .max(200000, 'Maximum budget is ₹2,00,000')
     .optional(),
 
-  moveInDate: z
-    .string()
-    .regex(/^\d{4}-\d{2}-\d{2}$/, 'Enter a valid date (YYYY-MM-DD)')
-    .refine(
-      (date) => {
-        const parsed = new Date(date);
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
-        return parsed >= today;
-      },
-      { message: 'Move-in date must be today or in the future' },
-    )
-    .optional()
-    .or(z.literal('')),
+  /** Empty when roommate role hides the field; otherwise YYYY-MM-DD today or future. */
+  moveInDate: z.union([
+    z.literal(''),
+    z
+      .string()
+      .regex(/^\d{4}-\d{2}-\d{2}$/, 'Enter a valid date (YYYY-MM-DD)')
+      .refine(
+        (date) => {
+          const parsed = new Date(date);
+          const today = new Date();
+          today.setHours(0, 0, 0, 0);
+          return parsed >= today;
+        },
+        { message: 'Move-in date must be today or in the future' },
+      ),
+  ]),
 
   genderPreference: z
     .enum(GENDER_PREFERENCES, { message: 'Select a valid gender preference' })
@@ -55,6 +58,20 @@ export const profileSchema = z.object({
   lifestyle: z
     .array(z.enum(LIFESTYLE_TAGS))
     .max(9, 'Cannot select more than 9 lifestyle tags')
+    .optional(),
+
+  /** Empty = not set; otherwise YYYY-MM-DD and age must be 16–120. */
+  dateOfBirth: z
+    .union([
+      z.literal(''),
+      z
+        .string()
+        .regex(/^\d{4}-\d{2}-\d{2}$/, 'Enter date of birth as YYYY-MM-DD')
+        .refine((s) => {
+          const a = computeAgeFromDateOfBirthYmd(s);
+          return a != null && a >= 16 && a <= 120;
+        }, 'You must be between 16 and 120 years old'),
+    ])
     .optional(),
 });
 

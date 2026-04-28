@@ -7,41 +7,26 @@
 
 import React, { useState, useEffect } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
-import {
-  Heart, MapPin,
-  Wifi, Wind, UtensilsCrossed, ShoppingBag,
-  Car, Dumbbell, Shield, Zap, Eye,
-} from 'lucide-react';
+import { Heart, MapPin } from 'lucide-react';
 import { Listing } from '@/types';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
 import { useToast } from '@/hooks/useToast';
-import { formatRupees } from '@/lib/utils/format';
+import { formatRupees, formatListingTypeLabel } from '@/lib/utils/format';
 import { ListingVerificationBadge } from '@/components/features/ListingVerificationBadge';
 import { BookVisitModal } from '@/components/features/BookVisitModal';
 import { useAuthStore } from '@/store/authStore';
 import { listingService } from '@/services/modules/listing.service';
-
-const AMENITY_ICONS: Record<string, React.ReactNode> = {
-  WiFi:          <Wifi size={11} />,
-  AC:            <Wind size={11} />,
-  Kitchen:       <UtensilsCrossed size={11} />,
-  Food:          <UtensilsCrossed size={11} />,
-  Laundry:       <ShoppingBag size={11} />,
-  Parking:       <Car size={11} />,
-  Gym:           <Dumbbell size={11} />,
-  Security:      <Shield size={11} />,
-  'Power Backup': <Zap size={11} />,
-  CCTV:          <Eye size={11} />,
-};
+import { ListingAmenityIcon } from '@/components/features/ListingAmenityIcon';
 
 const TYPE_COLORS: Record<string, string> = {
-  PG:       '#c8eeee',
-  Rent:     '#c8eeee',
-  Roommate: '#cce8cc',
-  Studio:   '#e8dcc8',
-  Bachelor: '#d8c8e8',
-  Family:   '#c8d8e8',
+  PG:             '#c8eeee',
+  Rent:           '#c8eeee',
+  Flat:           '#c8eeee',
+  Roommate:       '#cce8cc',
+  CoWorkingSpace: '#e8dcc8',
+  Bachelor:       '#d8c8e8',
+  Family:         '#c8d8e8',
 };
 
 const BADGE_VARIANT_MAP: Record<string, 'hot' | 'limited' | 'new'> = {
@@ -156,7 +141,7 @@ export const ListingCard: React.FC<ListingCardProps> = ({ listing, onViewDetail,
           className="absolute bottom-2 left-2 text-[10px] font-bold text-white px-2 py-0.5 rounded-full"
           style={{ backgroundColor: 'rgba(0,0,0,0.45)' }}
         >
-          {listing.type}
+          {formatListingTypeLabel(listing.type)}
         </span>
 
         {/* Badge */}
@@ -204,10 +189,12 @@ export const ListingCard: React.FC<ListingCardProps> = ({ listing, onViewDetail,
 
         {/* Amenities */}
         <div className="flex flex-wrap gap-1.5 mb-2">
-          {listing.amenities.slice(0, 4).map((amenity) => (
-            <div key={amenity} className="flex items-center gap-0.5 text-gray-500 text-[11px]">
-              {AMENITY_ICONS[amenity]}
-              <span>{amenity}</span>
+          {listing.amenities.slice(0, 4).map((chip) => (
+            <div key={chip.name} className="flex items-center gap-0.5 text-gray-500 text-[11px]">
+              <span className="text-primary shrink-0 inline-flex">
+                <ListingAmenityIcon chip={chip} size={11} iconClassName="h-3 w-3" />
+              </span>
+              <span>{chip.name}</span>
             </div>
           ))}
           {listing.amenities.length > 4 && (

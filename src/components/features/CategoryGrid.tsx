@@ -13,6 +13,7 @@ import React from 'react';
 import { Category, ListingType } from '@/types';
 import { useFilterStore } from '@/store/filterStore';
 import { CATEGORIES } from '@/mock/data';
+import { formatListingTypeLabel } from '@/lib/utils/format';
 
 interface CategoryGridProps {
   categories?: Category[];
@@ -74,7 +75,7 @@ export const CategoryGrid: React.FC<CategoryGridProps> = ({
               ].join(' ')}
               style={isActive ? { color: '#1B8F8F' } : undefined}
             >
-              {category.label}
+              {formatListingTypeLabel(category.label)}
             </span>
 
             {/* Count badge */}

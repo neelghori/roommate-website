@@ -5,9 +5,9 @@
  * Step advances use per-step Zod picks — full-form `trigger()` fails for `amenities` / partial steps.
  */
 
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useAmenityMaster } from '@/hooks/useAmenityMaster';
-import { useForm, Controller } from 'react-hook-form';
+import { useForm, Controller, type DefaultValues } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Check, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
@@ -21,16 +21,9 @@ import {
   validateListingWizardStep,
   type ListingFormData,
 } from '@/lib/validations/listing.schema';
+import { getListingTypeSelectOptionsForRole } from '@/lib/listing-type-options';
+import { useAuthStore } from '@/store/authStore';
 import { useToast } from '@/hooks/useToast';
-
-const LISTING_TYPE_OPTIONS = [
-  { label: 'PG', value: 'PG' },
-  { label: 'For Rent', value: 'Rent' },
-  { label: 'Roommate', value: 'Roommate' },
-  { label: 'Studio', value: 'Studio' },
-  { label: 'Bachelor', value: 'Bachelor' },
-  { label: 'Family', value: 'Family' },
-];
 
 const GENDER_OPTIONS = [
   { label: 'Any', value: 'Any' },
@@ -44,7 +37,7 @@ const STEPS = [
   { label: 'Photos & Contact', description: 'Upload photos & phone' },
 ];
 
-const WIZARD_DEFAULTS: ListingFormData = {
+const WIZARD_DEFAULTS: DefaultValues<ListingFormData> = {
   title: '',
   type: 'PG',
   price: 5000,
@@ -55,8 +48,6 @@ const WIZARD_DEFAULTS: ListingFormData = {
   state: '',
   country: 'India',
   postalCode: '',
-  latitude: undefined,
-  longitude: undefined,
   genderPreference: 'Any',
   amenities: [],
   description: '',
@@ -94,6 +85,8 @@ export function PropertyListingFormWizard({
   onFinish,
 }: PropertyListingFormWizardProps) {
   const toast = useToast();
+  const userRole = useAuthStore((s) => s.user?.role ?? null);
+  const listingTypeOptions = useMemo(() => getListingTypeSelectOptionsForRole(userRole), [userRole]);
   const { items: masterAmenities, loading: amenitiesLoading, error: amenitiesLoadError } = useAmenityMaster();
   const [step, setStep] = useState(0);
   const [uploadedImages, setUploadedImages] = useState<File[]>([]);
@@ -108,6 +101,7 @@ export function PropertyListingFormWizard({
     handleSubmit,
     control,
     getValues,
+    setValue,
     setError,
     clearErrors,
     formState: { errors },
@@ -116,6 +110,15 @@ export function PropertyListingFormWizard({
     defaultValues,
     mode: 'onTouched',
   });
+
+  useEffect(() => {
+    const allowed = new Set(listingTypeOptions.map((o) => o.value));
+    const cur = getValues('type');
+    if (!allowed.has(cur)) {
+      const next = listingTypeOptions[0]?.value ?? 'PG';
+      setValue('type', next, { shouldValidate: true, shouldDirty: true });
+    }
+  }, [listingTypeOptions, getValues, setValue]);
 
   const handleNext = () => {
     if (step !== 0 && step !== 1) return;
@@ -230,7 +233,7 @@ export function PropertyListingFormWizard({
                 render={({ field }) => (
                   <Select
                     label="Room Type *"
-                    options={LISTING_TYPE_OPTIONS}
+                    options={listingTypeOptions}
                     placeholder="Select type"
                     error={errors.type?.message}
                     {...field}

@@ -15,7 +15,7 @@ import { CURRENT_USER } from '@/mock/data/users';
 import {
   Pencil, Settings, Home, BadgeCheck,
   HelpCircle, LogOut, ChevronRight, Phone, Building2,
-  Star, Heart, UserCheck, KeyRound, CalendarDays,
+  Star, Heart, UserCheck, KeyRound, CalendarDays, Mail,
 } from 'lucide-react';
 
 export default function ProfilePage() {
@@ -46,6 +46,7 @@ export default function ProfilePage() {
   const [openFaq, setOpenFaq] = useState<number | null>(null);
   const [faqItems, setFaqItems] = useState<FaqItem[]>([]);
   const [faqLoading, setFaqLoading] = useState(false);
+  const [resendEmailBusy, setResendEmailBusy] = useState(false);
 
   useEffect(() => {
     if (!showHelp) return;
@@ -67,6 +68,19 @@ export default function ProfilePage() {
       cancelled = true;
     };
   }, [showHelp]);
+
+  const handleResendVerification = async () => {
+    if (!profile.email?.trim()) return;
+    setResendEmailBusy(true);
+    try {
+      const { message } = await authService.resendSignupVerificationEmail(profile.email);
+      toast.success('Check your inbox', message);
+    } catch (e) {
+      toast.error('Could not send email', e instanceof Error ? e.message : 'Try again later.');
+    } finally {
+      setResendEmailBusy(false);
+    }
+  };
 
   const handleLogout = async () => {
     await authService.logout();
@@ -142,6 +156,7 @@ export default function ProfilePage() {
                         ? 'Looking for a roommate'
                         : 'Looking for a home'}{' '}
                     • {profile.location || 'Ahmedabad'}
+                    {profile.age != null && Number.isFinite(profile.age) ? ` • ${profile.age} years old` : ''}
                   </p>
                 </div>
                 
@@ -172,7 +187,40 @@ export default function ProfilePage() {
                       <Building2 size={16} className="shrink-0" /> Company
                     </span>
                   )}
+                  {profile.role !== 'ADMIN' && profile.emailVerified && (
+                    <span className="flex items-center gap-1.5 text-[11px] lg:text-sm font-bold text-teal-800 bg-teal-50 px-3.5 py-1.5 lg:px-5 lg:py-2.5 rounded-full border border-teal-100">
+                      <Mail size={16} className="shrink-0" /> Email verified
+                    </span>
+                  )}
+                  {profile.role !== 'ADMIN' && profile.mobileVerifiedByAdmin && (
+                    <span className="flex items-center gap-1.5 text-[11px] lg:text-sm font-bold text-sky-800 bg-sky-50 px-3.5 py-1.5 lg:px-5 lg:py-2.5 rounded-full border border-sky-100">
+                      <Phone size={16} className="shrink-0" /> Mobile verified
+                    </span>
+                  )}
                 </div>
+                {profile.role !== 'ADMIN' && !profile.emailVerified && (
+                  <div className="mt-4 rounded-2xl border border-amber-200 bg-amber-50/90 px-4 py-3 text-sm text-amber-950">
+                    <p className="font-semibold">Confirm your email</p>
+                    <p className="mt-1 text-amber-900/90">
+                      We sent a link to <span className="font-medium">{profile.email}</span>. Open it to verify your
+                      account.
+                    </p>
+                    <button
+                      type="button"
+                      disabled={resendEmailBusy}
+                      onClick={() => void handleResendVerification()}
+                      className="mt-3 text-sm font-bold text-teal-800 underline decoration-teal-600/40 hover:decoration-teal-700 disabled:opacity-50"
+                    >
+                      {resendEmailBusy ? 'Sending…' : 'Resend confirmation email'}
+                    </button>
+                  </div>
+                )}
+                {profile.role !== 'ADMIN' && !profile.mobileVerifiedByAdmin && (
+                  <p className="mt-2 text-xs text-gray-500">
+                    Your phone number is shown on your profile. A super admin can mark it as verified after they
+                    confirm it with you.
+                  </p>
+                )}
               </div>
 
               {/* Actions (Desktop Only) */}

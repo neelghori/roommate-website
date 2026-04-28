@@ -16,14 +16,6 @@ import {
   Clock,
   XCircle,
   MapPin,
-  Wifi,
-  Wind,
-  UtensilsCrossed,
-  ShoppingBag,
-  Car,
-  Dumbbell,
-  Shield,
-  Zap,
   Eye,
 } from 'lucide-react';
 import { UserLayout } from '@/components/shared/UserLayout';
@@ -32,9 +24,10 @@ import { Button } from '@/components/ui/Button';
 import { Modal } from '@/components/ui/Modal';
 import { EmptyState } from '@/components/shared/EmptyState';
 import { useToast } from '@/hooks/useToast';
-import { formatRupees } from '@/lib/utils/format';
+import { formatRupees, formatListingTypeLabel } from '@/lib/utils/format';
 import { Listing } from '@/types';
 import { listingService } from '@/services/modules/listing.service';
+import { ListingAmenityIcon } from '@/components/features/ListingAmenityIcon';
 
 type MyListing = Listing & { myStatus: 'Active' | 'Pending' | 'Rejected' };
 
@@ -47,23 +40,11 @@ function approvalToMyStatus(l: Listing): 'Active' | 'Pending' | 'Rejected' {
 const TYPE_COLORS: Record<string, string> = {
   PG: '#c8eeee',
   Rent: '#c8eeee',
+  Flat: '#c8eeee',
   Roommate: '#cce8cc',
-  Studio: '#e8dcc8',
+  CoWorkingSpace: '#e8dcc8',
   Bachelor: '#d8c8e8',
   Family: '#c8d8e8',
-};
-
-const AMENITY_ICONS: Record<string, React.ReactNode> = {
-  WiFi: <Wifi size={12} />,
-  AC: <Wind size={12} />,
-  Kitchen: <UtensilsCrossed size={12} />,
-  Food: <UtensilsCrossed size={12} />,
-  Laundry: <ShoppingBag size={12} />,
-  Parking: <Car size={12} />,
-  Gym: <Dumbbell size={12} />,
-  Security: <Shield size={12} />,
-  'Power Backup': <Zap size={12} />,
-  CCTV: <Eye size={12} />,
 };
 
 function StatusBadge({ status }: { status: 'Active' | 'Pending' | 'Rejected' }) {
@@ -227,7 +208,7 @@ export default function MyListingsPage() {
                           className="text-[10px] font-bold text-white px-2 py-0.5 rounded-full"
                           style={{ backgroundColor: 'rgba(0,0,0,0.45)' }}
                         >
-                          {listing.type}
+                          {formatListingTypeLabel(listing.type)}
                         </span>
                       </div>
                     </div>
@@ -266,13 +247,15 @@ export default function MyListingsPage() {
 
                       {/* Amenities */}
                       <div className="flex flex-wrap gap-2 mb-3">
-                        {listing.amenities.slice(0, 4).map((a) => (
+                        {listing.amenities.slice(0, 4).map((chip) => (
                           <span
-                            key={a}
+                            key={chip.name}
                             className="inline-flex items-center gap-0.5 text-gray-500 text-[11px]"
                           >
-                            {AMENITY_ICONS[a]}
-                            {a}
+                            <span className="text-primary shrink-0 inline-flex">
+                              <ListingAmenityIcon chip={chip} size={11} iconClassName="h-3 w-3" />
+                            </span>
+                            {chip.name}
                           </span>
                         ))}
                         {listing.amenities.length > 4 && (

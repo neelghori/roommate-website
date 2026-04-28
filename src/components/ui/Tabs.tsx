@@ -3,7 +3,7 @@
  * Tab components for Roommat app.
  *
  * - Tabs: Pill/chip style tabs ("Student | Working | Veg Only")
- * - SegmentedTabs: Top navigation tabs ("All | Rent | PG | Roommates | Nearby")
+ * - SegmentedTabs: Top navigation tabs ("All | Flat | PG | Roommates | Nearby")
  */
 'use client';
 

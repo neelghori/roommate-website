@@ -19,6 +19,10 @@ export interface User {
   avatarInitial: string;
   role: UserRole;
   isPhoneVerified: boolean;
+  /** Email confirmed via link (or admin override). */
+  emailVerified?: boolean;
+  /** Super admin marked mobile as verified (manual). */
+  mobileVerifiedByAdmin?: boolean;
   isAadharVerified: boolean;
   isCompanyVerified: boolean;
   identityVerificationStatus?: IdentityVerificationStatus;
@@ -36,6 +40,10 @@ export interface User {
   moveInDate?: string;
   genderPreference?: GenderPreference;
   lifestyle: LifestyleTag[];
+  /** Full years, usually synced from `dateOfBirth` on the server. */
+  age?: number;
+  /** Calendar date from API (`YYYY-MM-DD`). */
+  dateOfBirth?: string;
   createdAt: string;
 }
 
@@ -63,11 +71,9 @@ export interface RoommateProfile {
   bio?: string;
   age?: number;
   occupation?: string;
-  /** Linked account (User) — public list API includes these. */
+  /** Linked account (User) — public list API may include these (not email/phone). */
   accountFullName?: string;
   accountRole?: string;
-  email?: string;
-  mobile?: string;
   createdAt?: string;
   updatedAt?: string;
   /** From `User.professionalType` (e.g. `student`, `work_professional`). */

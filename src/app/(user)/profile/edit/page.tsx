@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import { useForm, Controller } from 'react-hook-form';
+import { useForm, Controller, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { profileSchema, type ProfileFormData } from '@/lib/validations/profile.schema';
 import { UserLayout } from '@/components/shared/UserLayout';
@@ -13,6 +13,7 @@ import { useToast } from '@/hooks/useToast';
 import { userService } from '@/services/modules/user.service';
 import type { User } from '@/types';
 import { CURRENT_USER } from '@/mock/data/users';
+import { computeAgeFromDateOfBirthYmd, dateOfBirthYmdFromApi } from '@/lib/dateOfBirthAge';
 import { Camera, ArrowLeft, Loader2 } from 'lucide-react';
 import Link from 'next/link';
 
@@ -49,6 +50,7 @@ function userToFormValues(u: User): ProfileFormData {
     moveInDate: moveInDateForInput(u.moveInDate),
     lifestyle: (u.lifestyle as ProfileFormData['lifestyle']) ?? [],
     genderPreference: (u.genderPreference as ProfileFormData['genderPreference']) ?? 'Any',
+    dateOfBirth: dateOfBirthYmdFromApi(u.dateOfBirth),
   };
 }
 
@@ -57,6 +59,7 @@ export default function EditProfilePage() {
   const toast = useToast();
   const { user, setUser } = useAuthStore();
   const profile = user ?? CURRENT_USER;
+  const isRoommate = profile.role === 'ROOMMATE';
 
   const [isSaving, setIsSaving] = useState(false);
   const [isLoadingProfile, setIsLoadingProfile] = useState(true);
@@ -73,6 +76,12 @@ export default function EditProfilePage() {
     resolver: zodResolver(profileSchema),
     defaultValues: userToFormValues(profile),
   });
+
+  const dateOfBirthWatch = useWatch({ control, name: 'dateOfBirth' });
+  const previewAge =
+    dateOfBirthWatch && /^\d{4}-\d{2}-\d{2}$/.test(dateOfBirthWatch)
+      ? computeAgeFromDateOfBirthYmd(dateOfBirthWatch)
+      : null;
 
   useEffect(() => {
     let cancelled = false;
@@ -137,9 +146,10 @@ export default function EditProfilePage() {
         bio: data.bio,
         location: data.location,
         budget: data.budget,
-        moveInDate: data.moveInDate || undefined,
+        ...(isRoommate ? {} : { moveInDate: data.moveInDate || undefined }),
         genderPreference: data.genderPreference,
         lifestyle: data.lifestyle,
+        dateOfBirth: data.dateOfBirth ?? '',
       });
       setUser(updated);
       reset(userToFormValues(updated));
@@ -246,6 +256,21 @@ export default function EditProfilePage() {
               error={errors.location?.message}
               {...register('location')}
             />
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1.5">Date of birth</label>
+              <input
+                type="date"
+                className="w-full rounded-xl border border-gray-200 bg-white text-sm text-gray-900 px-3 py-2.5 focus:outline-none focus:border-teal-400 transition-all"
+                {...register('dateOfBirth')}
+              />
+              {errors.dateOfBirth && (
+                <p className="text-xs text-red-500 mt-1">{errors.dateOfBirth.message as string}</p>
+              )}
+              {previewAge != null && previewAge >= 16 && previewAge <= 120 && (
+                <p className="text-xs text-gray-500 mt-1">Your profile will save as age {previewAge}.</p>
+              )}
+            </div>
           </div>
 
           {/* Preferences card */}
@@ -265,15 +290,17 @@ export default function EditProfilePage() {
               {errors.budget && <p className="text-xs text-red-500 mt-1">{errors.budget.message}</p>}
             </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">Move-in Date</label>
-              <input
-                type="date"
-                className="w-full rounded-xl border border-gray-200 bg-white text-sm text-gray-900 px-3 py-2.5 focus:outline-none focus:border-teal-400 transition-all"
-                {...register('moveInDate')}
-              />
-              {errors.moveInDate && <p className="text-xs text-red-500 mt-1">{errors.moveInDate.message}</p>}
-            </div>
+            {!isRoommate ? (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">Move-in Date</label>
+                <input
+                  type="date"
+                  className="w-full rounded-xl border border-gray-200 bg-white text-sm text-gray-900 px-3 py-2.5 focus:outline-none focus:border-teal-400 transition-all"
+                  {...register('moveInDate')}
+                />
+                {errors.moveInDate && <p className="text-xs text-red-500 mt-1">{errors.moveInDate.message}</p>}
+              </div>
+            ) : null}
 
             {/* Gender preference toggle */}
             <div>

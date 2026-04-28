@@ -23,15 +23,16 @@ import { listingService } from '@/services/modules/listing.service';
 import { useToast } from '@/hooks/useToast';
 import { useAuthStore } from '@/store/authStore';
 import { geocodePlaceName } from '@/lib/geocodeLocation';
+import { hasMapCoordinates } from '@/lib/googleMapsEmbed';
 
-/** Server `$near` radius when browsing by profile location (geocoded city/area). */
+/** Server geo radius (meters via `$geoWithin` / `$centerSphere`) when browsing by profile location (geocoded city/area). */
 const PROFILE_NEAR_RADIUS_KM = 45;
 /** Tighter radius when the Nearby tab uses GPS or profile fallback. */
 const NEARBY_RADIUS_KM = 25;
 
 const CATEGORY_TABS = [
   { label: 'All', value: 'All' },
-  { label: 'Rent', value: 'Rent' },
+  { label: 'Flat', value: 'Flat' },
   { label: 'PG', value: 'PG' },
   { label: 'Roommate', value: 'Roommate' },
   { label: 'Nearby', value: 'Nearby' },
@@ -59,7 +60,9 @@ export default function HomePageClient() {
     }
     let cancelled = false;
     void geocodePlaceName(loc).then((coords) => {
-      if (!cancelled) setProfileGeoCoords(coords);
+      if (cancelled) return;
+      if (coords && hasMapCoordinates(coords.lat, coords.lng)) setProfileGeoCoords(coords);
+      else setProfileGeoCoords(null);
     });
     return () => {
       cancelled = true;
@@ -118,14 +121,16 @@ export default function HomePageClient() {
     }
     navigator.geolocation.getCurrentPosition(
       (pos) => {
-        setNearCoords({ lat: pos.coords.latitude, lng: pos.coords.longitude });
+        const lat = pos.coords.latitude;
+        const lng = pos.coords.longitude;
+        setNearCoords(hasMapCoordinates(lat, lng) ? { lat, lng } : null);
       },
       () => setNearCoords(null),
       { enableHighAccuracy: false, maximumAge: 300_000, timeout: 12_000 },
     );
   }, [activeTab]);
 
-  /** Nearby: server `$near` when GPS or geocoded profile location exists; else listings that have map pins only. */
+  /** Nearby: server geo filter when GPS or geocoded profile location exists; else listings that have map pins only. */
   const filteredListings = useMemo(() => {
     if (activeTab !== 'Nearby') {
       return listings;

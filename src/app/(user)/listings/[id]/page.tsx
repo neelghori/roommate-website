@@ -10,10 +10,15 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import {
-  ChevronLeft, ChevronRight, MapPin,
-  Wifi, Wind, UtensilsCrossed, ShoppingBag,
-  Car, Dumbbell, Shield, Zap, Eye,
-  Pencil, Trash2, UserPlus, Users, Sparkles, MessageCircle,
+  ChevronLeft,
+  ChevronRight,
+  MapPin,
+  Eye,
+  Pencil,
+  Trash2,
+  UserPlus,
+  Users,
+  MessageCircle,
 } from 'lucide-react';
 import { UserLayout } from '@/components/shared/UserLayout';
 import { ListingCard } from '@/components/features/ListingCard';
@@ -31,27 +36,20 @@ import { listingService, MAX_LISTING_RESIDENTS } from '@/services/modules/listin
 import { formatRupees } from '@/lib/utils/format';
 import { Listing, type ListingResidentSnapshot } from '@/types';
 import { useAuthStore } from '@/store/authStore';
-
-const AMENITY_ICONS: Record<string, React.ReactNode> = {
-  WiFi:           <Wifi size={15} />,
-  AC:             <Wind size={15} />,
-  Kitchen:        <UtensilsCrossed size={15} />,
-  Food:           <UtensilsCrossed size={15} />,
-  Laundry:        <ShoppingBag size={15} />,
-  Parking:        <Car size={15} />,
-  Gym:            <Dumbbell size={15} />,
-  Security:       <Shield size={15} />,
-  'Power Backup': <Zap size={15} />,
-  CCTV:           <Eye size={15} />,
-};
+import { ListingAmenityIcon } from '@/components/features/ListingAmenityIcon';
 
 const BADGE_VARIANT_MAP: Record<string, 'hot' | 'limited' | 'new'> = {
   Hot: 'hot', 'Limited Offer': 'limited', New: 'new',
 };
 
 const TYPE_COLORS: Record<string, string> = {
-  PG: '#c8eeee', Rent: '#c8eeee', Roommate: '#cce8cc',
-  Studio: '#e8dcc8', Bachelor: '#d8c8e8', Family: '#c8d8e8',
+  PG: '#c8eeee',
+  Rent: '#c8eeee',
+  Flat: '#c8eeee',
+  Roommate: '#cce8cc',
+  CoWorkingSpace: '#e8dcc8',
+  Bachelor: '#d8c8e8',
+  Family: '#c8d8e8',
 };
 
 function maskPhone(phone: string): string {
@@ -372,17 +370,15 @@ export default function ListingDetailPage() {
                   <p className="text-sm text-gray-500">No amenities listed for this place.</p>
                 ) : (
                   <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-5 gap-2">
-                    {listing.amenities.map((amenity) => (
+                    {listing.amenities.map((chip) => (
                       <div
-                        key={amenity}
+                        key={chip.name}
                         className="flex flex-col items-center gap-1.5 bg-white rounded-xl p-3 text-center shadow-sm border border-gray-100"
                       >
-                        <span style={{ color: '#1B8F8F' }}>
-                          {AMENITY_ICONS[amenity] ?? (
-                            <Sparkles size={15} className="opacity-70" aria-hidden />
-                          )}
+                        <span className="inline-flex" style={{ color: '#1B8F8F' }}>
+                          <ListingAmenityIcon chip={chip} size={15} iconClassName="h-4 w-4" />
                         </span>
-                        <span className="text-xs text-gray-600 leading-tight">{amenity}</span>
+                        <span className="text-xs text-gray-600 leading-tight">{chip.name}</span>
                       </div>
                     ))}
                   </div>

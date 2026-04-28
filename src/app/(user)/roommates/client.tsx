@@ -70,7 +70,7 @@ export default function RoommatesPageClient() {
           placeholder="Name, location, occupation…"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="w-full pl-9 pr-4 py-2.5 text-sm bg-white border border-gray-200 rounded-xl focus:outline-none focus:border-teal-500 transition-colors"
+          className="roommat-inline-search w-full pl-9 pr-4 py-2.5 text-sm bg-white border border-gray-200 rounded-xl shadow-none focus:outline-none focus-visible:outline-none focus:border-teal-500 transition-colors"
         />
       </div>
 
@@ -162,7 +162,7 @@ export default function RoommatesPageClient() {
             placeholder="Search by name, location, or occupation…"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full pl-9 pr-4 py-2.5 text-sm bg-white border border-gray-200 rounded-xl focus:outline-none focus:border-teal-500 transition-colors"
+            className="roommat-inline-search w-full pl-9 pr-4 py-2.5 text-sm bg-white border border-gray-200 rounded-xl shadow-none focus:outline-none focus-visible:outline-none focus:border-teal-500 transition-colors"
           />
         </div>
 

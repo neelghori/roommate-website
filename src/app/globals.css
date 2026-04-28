@@ -127,6 +127,20 @@ select:focus-visible {
   outline-offset: 0px;
 }
 
+/* Search fields inside pills / toolbars — strip UA searchfield chrome; no teal outline */
+input.roommat-inline-search {
+  -webkit-appearance: none;
+  appearance: none;
+  outline: none;
+  box-shadow: none !important;
+}
+
+input.roommat-inline-search:focus,
+input.roommat-inline-search:focus-visible {
+  outline: none !important;
+  box-shadow: none !important;
+}
+
 /* Scrollbar styling */
 ::-webkit-scrollbar {
   width: 6px;

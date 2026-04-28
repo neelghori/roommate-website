@@ -4,6 +4,8 @@ export type ApiAmenity = {
   _id: string;
   name: string;
   slug?: string;
+  /** Same catalogue key as admin (`wifi`, `tv`, …). */
+  iconKey?: string;
 };
 
 let cachedList: ApiAmenity[] | null = null;
