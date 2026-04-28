@@ -58,6 +58,11 @@ const FOOTER_LINKS = {
   ],
 };
 
+const SUPPORT_EMAIL = process.env.NEXT_PUBLIC_SUPPORT_EMAIL ?? 'support@roommat.in';
+const SUPPORT_PHONE = process.env.NEXT_PUBLIC_SUPPORT_PHONE ?? '8866566752';
+const SUPPORT_PHONE_DIGITS = SUPPORT_PHONE.replace(/\D/g, '');
+const SUPPORT_PHONE_HREF = SUPPORT_PHONE_DIGITS.length === 10 ? `+91${SUPPORT_PHONE_DIGITS}` : SUPPORT_PHONE;
+
 export const Footer: React.FC = () => {
   return (
     <footer className="bg-white border-t border-gray-100 pt-8 pb-8 lg:pt-10 lg:pb-10">
@@ -147,14 +152,20 @@ export const Footer: React.FC = () => {
         {/* Bottom Contact + Copyright */}
         <div className="pt-8 border-t border-gray-50 flex flex-col md:flex-row items-center justify-between gap-6">
           <div className="flex flex-wrap items-center justify-center md:justify-start gap-6">
-            <div className="flex items-center gap-2 text-gray-500 text-sm">
+            <a
+              href={`mailto:${SUPPORT_EMAIL}`}
+              className="flex items-center gap-2 text-gray-500 text-sm hover:text-primary transition-colors"
+            >
               <Mail size={16} className="text-primary" />
-              <span>support@roommat.in</span>
-            </div>
-            <div className="flex items-center gap-2 text-gray-500 text-sm">
+              <span>{SUPPORT_EMAIL}</span>
+            </a>
+            <a
+              href={`tel:${SUPPORT_PHONE_HREF}`}
+              className="flex items-center gap-2 text-gray-500 text-sm hover:text-primary transition-colors"
+            >
               <Phone size={16} className="text-primary" />
-              <span>+91 98765 43210</span>
-            </div>
+              <span>{SUPPORT_PHONE}</span>
+            </a>
           </div>
           <p className="text-gray-400 text-xs">
             © {new Date().getFullYear()} Roommat. All rights reserved.

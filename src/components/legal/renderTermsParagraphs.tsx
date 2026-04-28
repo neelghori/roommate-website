@@ -11,6 +11,39 @@ function isSubCodeOnly(p: string): boolean {
   return SUB_CODE.test(p.trim());
 }
 
+function renderContactLine(line: string, idx: number): React.ReactNode {
+  const trimmed = line.trim();
+  if (!trimmed) return null;
+  if (/^website\s*:/i.test(trimmed)) return null;
+
+  if (/^email\s*:/i.test(trimmed)) {
+    const value = trimmed.replace(/^email\s*:/i, '').trim();
+    return (
+      <p key={idx}>
+        Email:{' '}
+        <a href={`mailto:${value}`} className="underline hover:text-primary transition-colors">
+          {value}
+        </a>
+      </p>
+    );
+  }
+
+  if (/^phone\s*:/i.test(trimmed)) {
+    const value = trimmed.replace(/^phone\s*:/i, '').trim();
+    const tel = value.replace(/[^\d+]/g, '');
+    return (
+      <p key={idx}>
+        Phone:{' '}
+        <a href={`tel:${tel}`} className="underline hover:text-primary transition-colors">
+          {value}
+        </a>
+      </p>
+    );
+  }
+
+  return <p key={idx}>{trimmed}</p>;
+}
+
 /**
  * Renders flat paragraphs extracted from the Roommat Living Terms DOCX
  * (see `terms-plain-paragraphs.json`).
@@ -91,9 +124,7 @@ export function renderTermsParagraphs(paras: string[]): React.ReactNode[] {
         <section key={nextKey()} className="mt-12 border-t border-gray-200 pt-10">
           <h2 className="text-xl font-bold text-gray-900">{block[0]}</h2>
           <div className="mt-4 space-y-2 text-sm text-gray-700">
-            {block.slice(1).map((line, idx) => (
-              <p key={idx}>{line.trim()}</p>
-            ))}
+            {block.slice(1).map((line, idx) => renderContactLine(line, idx))}
           </div>
         </section>,
       );

@@ -19,6 +19,7 @@ import {
   UserPlus,
   Users,
   MessageCircle,
+  BellRing,
 } from 'lucide-react';
 import { UserLayout } from '@/components/shared/UserLayout';
 import { ListingCard } from '@/components/features/ListingCard';
@@ -66,6 +67,14 @@ const RESIDENT_PRO_LABEL: Record<string, string> = {
   business: 'Business',
   other: 'Other',
 };
+
+function buildReminderPhone(raw: string | undefined): string | null {
+  const digits = (raw ?? '').replace(/\D/g, '');
+  if (!digits) return null;
+  if (digits.length === 10) return `91${digits}`;
+  if (digits.length === 12 && digits.startsWith('91')) return digits;
+  return digits.length >= 10 ? digits : null;
+}
 
 export default function ListingDetailPage() {
   const params   = useParams();
@@ -221,6 +230,24 @@ export default function ListingDetailPage() {
     setVisitModalOpen(true);
   };
   const residents = listing.residentSnapshots ?? [];
+
+  const handleSendPaymentReminder = (resident: ListingResidentSnapshot) => {
+    const to = buildReminderPhone(resident.phone);
+    if (!to) {
+      toast.error('Phone missing', 'Add a valid resident phone number first to send a payment reminder.');
+      return;
+    }
+    const monthLabel = new Intl.DateTimeFormat('en-IN', { month: 'long', year: 'numeric' }).format(new Date());
+    const residentName = resident.fullName?.trim() || 'there';
+    const rentPart =
+      typeof resident.monthlyRent === 'number' && Number.isFinite(resident.monthlyRent)
+        ? ` Your monthly rent is ₹${resident.monthlyRent}.`
+        : '';
+    const msg = `Hi ${residentName}, this is a reminder for your ${monthLabel} rent payment for "${listing.title}".${rentPart} Please clear it at the earliest. Thank you.`;
+    const url = `https://wa.me/${to}?text=${encodeURIComponent(msg)}`;
+    window.open(url, '_blank', 'noopener,noreferrer');
+    toast.success('Reminder opened', 'WhatsApp opened with a pre-filled monthly payment reminder.');
+  };
 
   return (
     <UserLayout pageSuffix="Listing Detail" showSearch={false} showFab={false}>
@@ -443,6 +470,17 @@ export default function ListingDetailPage() {
                             </p>
                           </div>
                           <div className="flex items-center gap-1 shrink-0">
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              className="!px-2"
+                              aria-label={`Send payment reminder to ${r.fullName?.trim() || 'resident'}`}
+                              title="Send monthly payment reminder"
+                              onClick={() => handleSendPaymentReminder(r)}
+                            >
+                              <BellRing size={14} aria-hidden />
+                            </Button>
                             <Button
                               type="button"
                               variant="outline"

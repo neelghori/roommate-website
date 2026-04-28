@@ -23,6 +23,8 @@ const inter = Inter({
 });
 
 const BASE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://roommat.in';
+const SUPPORT_EMAIL = process.env.NEXT_PUBLIC_SUPPORT_EMAIL ?? 'support@roommat.in';
+const SUPPORT_PHONE = process.env.NEXT_PUBLIC_SUPPORT_PHONE ?? '8866566752';
 
 export const metadata: Metadata = {
   // ── Title ─────────────────────────────────────────────────────────────────
@@ -167,7 +169,8 @@ const jsonLd = {
       contactPoint: {
         '@type': 'ContactPoint',
         contactType: 'customer support',
-        email: 'support@roommat.in',
+        email: SUPPORT_EMAIL,
+        telephone: SUPPORT_PHONE,
         availableLanguage: ['English', 'Hindi', 'Gujarati'],
       },
     },
@@ -221,7 +224,7 @@ const jsonLd = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en-IN" className={inter.variable}>
+    <html lang="en-IN" className={`${inter.variable} scroll-smooth`}>
       <head>
         {/* JSON-LD Structured Data */}
         <script

@@ -7,10 +7,11 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Eye, EyeOff, Home } from 'lucide-react';
+import { Eye, EyeOff } from 'lucide-react';
 import { loginSchema, type LoginFormData } from '@/lib/validations/auth.schema';
 import { authService } from '@/services/modules/auth.service';
 import { useAuthStore } from '@/store/authStore';
@@ -66,16 +67,8 @@ export default function LoginPageClient() {
 
         {/* Logo */}
         <div className="flex flex-col items-center gap-1">
-          <div
-            className="flex items-center justify-center w-12 h-12 rounded-xl mb-1"
-            style={{ backgroundColor: '#EDF5F5' }}
-          >
-            <Home size={24} style={{ color: '#1B8F8F' }} />
-          </div>
-          <span className="text-2xl font-bold tracking-tight" style={{ color: '#1B8F8F' }}>
-            Roommat
-          </span>
-          <p className="text-xs text-gray-400 tracking-wide uppercase">Find your perfect match</p>
+          <Image src="/logo.png" alt="Roommat logo" width={180} height={56} className="h-12 w-auto object-contain" />
+          <p className="text-xs text-gray-400 tracking-wide uppercase">Find Room,Find People,Feel Home</p>
         </div>
 
         {/* Heading */}
