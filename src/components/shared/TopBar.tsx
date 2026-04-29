@@ -96,7 +96,7 @@ const AvatarDropdown: React.FC = () => {
         aria-expanded={open}
         aria-label="Account menu"
       >
-        {/* Avatar — photo when available (stays in sync with profile edit via useAuthStore) */}
+        {/* Avatar photo when available (stays in sync with profile edit via useAuthStore) */}
         {user?.avatarUrl ? (
           // eslint-disable-next-line @next/next/no-img-element -- S3/CDN URL from API; keeps TopBar in sync without remotePatterns edge cases
           <img
@@ -408,7 +408,7 @@ export const TopBar: React.FC<TopBarProps> = ({
           )}
         </Link>
 
-        {/* ── Desktop horizontal nav — ALWAYS visible ── */}
+        {/* ── Desktop horizontal nav ALWAYS visible ── */}
         <nav className="hidden lg:flex items-center gap-0.5 flex-shrink-0" aria-label="Main navigation">
           {DESKTOP_NAV.map(({ label, href }) => {
             const active = isNavActive(href);
@@ -460,7 +460,7 @@ export const TopBar: React.FC<TopBarProps> = ({
 
         {/* ── Right actions ── */}
         <div className="flex items-center gap-2 lg:gap-3 flex-shrink-0">
-          {/* "Add Listing" — desktop only in header */}
+          {/* "Add Listing" desktop only in header */}
           <Link
             href="/listings/add"
             className="hidden lg:flex items-center gap-1.5 text-white text-sm font-semibold px-4 py-2 rounded-full transition-opacity hover:opacity-90 whitespace-nowrap bg-secondary"
@@ -478,7 +478,7 @@ export const TopBar: React.FC<TopBarProps> = ({
               <AvatarDropdown />
             </>
           ) : (
-            /* Unauthenticated — Login + Register */
+            /* Unauthenticated Login + Register */
             <div className="flex items-center gap-1.5">
               <Link
                 href="/login"

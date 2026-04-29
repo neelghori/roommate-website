@@ -39,7 +39,7 @@ export const MOCK_LISTINGS: Listing[] = [
     type: 'PG',
     images: ['/images/listings/l1.jpg', '/images/listings/l1-2.jpg', '/images/listings/l1-3.jpg'],
     description:
-      'Well-maintained PG accommodation near SG Highway with all modern amenities. Ideal for working professionals. Meals are included — breakfast and dinner. 24/7 security with CCTV coverage. Walking distance to metro station.',
+      'Well-maintained PG accommodation near SG Highway with all modern amenities. Ideal for working professionals. Meals are included breakfast and dinner. 24/7 security with CCTV coverage. Walking distance to metro station.',
     mapPlaceholder: true,
     genderPreference: 'Male',
     ownerId: 'o1',
@@ -74,7 +74,7 @@ export const MOCK_LISTINGS: Listing[] = [
   },
   {
     id: 'l3',
-    title: 'Shared Room for Roommate — Vastrapur',
+    title: 'Shared Room for Roommate Vastrapur',
     location: 'Vastrapur, Ahmedabad',
     city: 'Ahmedabad',
     price: 6000,
@@ -120,7 +120,7 @@ export const MOCK_LISTINGS: Listing[] = [
   },
   {
     id: 'l5',
-    title: 'Premium PG for Ladies — Bodakdev',
+    title: 'Premium PG for Ladies Bodakdev',
     location: 'Bodakdev, Ahmedabad',
     city: 'Ahmedabad',
     price: 9500,
@@ -131,7 +131,7 @@ export const MOCK_LISTINGS: Listing[] = [
     type: 'PG',
     images: ['/images/listings/l5.jpg', '/images/listings/l5-2.jpg', '/images/listings/l5-3.jpg'],
     description:
-      'Exclusively for women — safe, comfortable, and well-managed PG in Bodakdev. All 3 meals included. Round-the-clock security with female warden. CCTV in all common areas. Close to Corporate Road and Pakwan Junction.',
+      'Exclusively for women safe, comfortable, and well-managed PG in Bodakdev. All 3 meals included. Round-the-clock security with female warden. CCTV in all common areas. Close to Corporate Road and Pakwan Junction.',
     mapPlaceholder: true,
     genderPreference: 'Female',
     ownerId: 'o5',
@@ -166,7 +166,7 @@ export const MOCK_LISTINGS: Listing[] = [
   },
   {
     id: 'l7',
-    title: 'Affordable PG Near PDPU — Gandhinagar',
+    title: 'Affordable PG Near PDPU Gandhinagar',
     location: 'Sector 9, Gandhinagar',
     city: 'Gandhinagar',
     price: 6500,
@@ -189,7 +189,7 @@ export const MOCK_LISTINGS: Listing[] = [
   },
   {
     id: 'l8',
-    title: 'Furnished Rent Flat — Maninagar',
+    title: 'Furnished Rent Flat Maninagar',
     location: 'Maninagar, Ahmedabad',
     city: 'Ahmedabad',
     price: 12000,
@@ -200,7 +200,7 @@ export const MOCK_LISTINGS: Listing[] = [
     type: 'Flat',
     images: ['/images/listings/l8.jpg', '/images/listings/l8-2.jpg'],
     description:
-      'Fully furnished 1BHK flat available on rent in Maninagar. Conveniently located near Maninagar railway station and commercial hubs. All furniture included — sofa, bed, wardrobe. Ideal for couples or single occupant.',
+      'Fully furnished 1BHK flat available on rent in Maninagar. Conveniently located near Maninagar railway station and commercial hubs. All furniture included sofa, bed, wardrobe. Ideal for couples or single occupant.',
     mapPlaceholder: true,
     genderPreference: 'Any',
     ownerId: 'o8',
@@ -223,7 +223,7 @@ export const MOCK_LISTINGS: Listing[] = [
     type: 'CoWorkingSpace',
     images: ['/images/listings/l9.jpg', '/images/listings/l9-2.jpg'],
     description:
-      'Modern studio flat in the rapidly developing Sola area near Science City. Compact yet fully equipped — minibar kitchen, study desk, and wardrobe. Society has gym and 24/7 power backup. Excellent connectivity to IT corridors.',
+      'Modern studio flat in the rapidly developing Sola area near Science City. Compact yet fully equipped minibar kitchen, study desk, and wardrobe. Society has gym and 24/7 power backup. Excellent connectivity to IT corridors.',
     mapPlaceholder: true,
     genderPreference: 'Any',
     ownerId: 'o9',
@@ -235,7 +235,7 @@ export const MOCK_LISTINGS: Listing[] = [
   },
   {
     id: 'l10',
-    title: 'PG for Working Professionals — Prahlad Nagar',
+    title: 'PG for Working Professionals Prahlad Nagar',
     location: 'Prahlad Nagar, Ahmedabad',
     city: 'Ahmedabad',
     price: 10000,
@@ -258,7 +258,7 @@ export const MOCK_LISTINGS: Listing[] = [
   },
   {
     id: 'l11',
-    title: 'Roommate Wanted — Thaltej 3BHK',
+    title: 'Roommate Wanted Thaltej 3BHK',
     location: 'Thaltej, Ahmedabad',
     city: 'Ahmedabad',
     price: 7000,
@@ -269,7 +269,7 @@ export const MOCK_LISTINGS: Listing[] = [
     type: 'Roommate',
     images: ['/images/listings/l11.jpg'],
     description:
-      'Two flatmates needed for a 3BHK in Thaltej near Zydus Hospital. Currently two professionals living — one engineer, one teacher. Non-smoker, vegetarian preferred. Rent ₹7,000 per person. Society with parking and 24/7 water.',
+      'Two flatmates needed for a 3BHK in Thaltej near Zydus Hospital. Currently two professionals living one engineer, one teacher. Non-smoker, vegetarian preferred. Rent ₹7,000 per person. Society with parking and 24/7 water.',
     mapPlaceholder: true,
     genderPreference: 'Male',
     ownerId: 'u1',
@@ -281,7 +281,7 @@ export const MOCK_LISTINGS: Listing[] = [
   },
   {
     id: 'l12',
-    title: 'Luxury PG — Ambawadi with All Amenities',
+    title: 'Luxury PG Ambawadi with All Amenities',
     location: 'Ambawadi, Ahmedabad',
     city: 'Ahmedabad',
     price: 16000,
@@ -292,7 +292,7 @@ export const MOCK_LISTINGS: Listing[] = [
     type: 'PG',
     images: ['/images/listings/l12.jpg', '/images/listings/l12-2.jpg', '/images/listings/l12-3.jpg'],
     description:
-      'The finest PG experience in Ahmedabad — all 10 amenities included. Attached bathroom, AC room, gourmet meals (3 times), gymnasium, and covered parking. Located minutes from Ambawadi circle. Perfect for executives and senior professionals.',
+      'The finest PG experience in Ahmedabad all 10 amenities included. Attached bathroom, AC room, gourmet meals (3 times), gymnasium, and covered parking. Located minutes from Ambawadi circle. Perfect for executives and senior professionals.',
     mapPlaceholder: true,
     genderPreference: 'Any',
     ownerId: 'o11',

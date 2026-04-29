@@ -16,7 +16,7 @@ import { formatRelativeTime } from '@/lib/utils/format';
 
 interface ChatBubbleProps {
   message: ChatMessage;
-  /** ID of the current logged-in user — used to determine sent vs received */
+  /** ID of the current logged-in user used to determine sent vs received */
   currentUserId: string;
 }
 
@@ -54,7 +54,7 @@ export const ChatBubble: React.FC<ChatBubbleProps> = ({ message, currentUserId }
           {formatRelativeTime(message.timestamp)}
         </span>
 
-        {/* Read receipt — only for sent messages */}
+        {/* Read receipt only for sent messages */}
         {isSent && (
           <span
             className={[

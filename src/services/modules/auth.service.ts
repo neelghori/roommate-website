@@ -30,7 +30,7 @@ import { extractAccessTokenFromUnknown } from '@/lib/extractAccessToken';
 // Mock delay to simulate network latency
 const delay = (ms = 800) => new Promise((resolve) => setTimeout(resolve, ms));
 
-/** Backend register DTO — enums are lowercase strings (see API validation). */
+/** Backend register DTO enums are lowercase strings (see API validation). */
 export type RegisterApiRole = 'tenant' | 'owner' | 'roommate';
 export type RegisterApiProfessionalType =
   | 'student'
@@ -92,7 +92,7 @@ export type RegisterPayload = {
   phone: string;
   password: string;
   role: 'TENANT' | 'OWNER' | 'ROOMMATE';
-  /** Optional — used when callers supply full profile data; otherwise defaults below are sent. */
+  /** Optional used when callers supply full profile data; otherwise defaults below are sent. */
   professionalType?: RegisterApiProfessionalType;
   /** API expects a JSON object; arrays are wrapped as `{ tags: [...] }`. */
   lifestyle?: Record<string, unknown> | string[];
@@ -279,7 +279,7 @@ export function mapApiUserToUser(
     moveInDate = s.length >= 10 ? s.slice(0, 10) : s || undefined;
   }
 
-  /** Roommate search preference (Any/Male/Female) — not the same as account `gender` (male/female/other). */
+  /** Roommate search preference (Any/Male/Female) not the same as account `gender` (male/female/other). */
   const genderPreference = mapGenderFromApi(
     raw.roommateGenderPreference ?? raw.genderPreference ?? raw.gender_preference,
   );
@@ -299,9 +299,9 @@ export function mapApiUserToUser(
   const idStatusRaw = raw.identityVerificationStatus;
   const idStatus =
     idStatusRaw === 'none' ||
-    idStatusRaw === 'pending' ||
-    idStatusRaw === 'verified' ||
-    idStatusRaw === 'rejected'
+      idStatusRaw === 'pending' ||
+      idStatusRaw === 'verified' ||
+      idStatusRaw === 'rejected'
       ? idStatusRaw
       : undefined;
 
@@ -529,7 +529,7 @@ export const authService = {
   },
 
   /**
-   * Logout user — clears client token; optional server invalidation.
+   * Logout user clears client token; optional server invalidation.
    * BACKEND: POST /api/v1/auth/logout
    */
   logout: async (): Promise<void> => {

@@ -43,7 +43,7 @@ export default function ChatListPage() {
 
         {/* Two-panel area below TopBar */}
         <div className="flex flex-1 overflow-hidden pt-16">
-          {/* Left sidebar — fixed width, scrollable */}
+          {/* Left sidebar fixed width, scrollable */}
           <div className="w-[340px] xl:w-[380px] flex-shrink-0 h-full">
             <ChatSidebar />
           </div>

@@ -34,7 +34,7 @@ export interface Listing {
   amenities: { name: string; iconKey?: string }[];
   badge: ListingStatus;   // label shown on card image
   type: ListingType;
-  images: string[];       // placeholder — backend will provide real URLs
+  images: string[];       // placeholder backend will provide real URLs
   description: string;
   mapPlaceholder: boolean; // true → render map skeleton
 }
@@ -388,8 +388,8 @@ export const GUEST_USER = {
    BACKEND: db.faq.findMany({ where:{ isActive:true } })
    ───────────────────────────────────────────────────────────────── */
 export const FAQS = [
-  { id: "f1", question: "How do I post a listing?",       answer: "Go to Profile → + Add Listing and fill in the property details. Your listing will be reviewed within 24 hours." },
-  { id: "f2", question: "Is Roommat free to use?",         answer: "Basic browsing and profile creation are free. Premium features like priority listings and unlimited chats require a subscription." },
+  { id: "f1", question: "How do I post a listing?", answer: "Go to Profile → + Add Listing and fill in the property details. Your listing will be reviewed within 24 hours." },
+  { id: "f2", question: "Is Roommat free to use?", answer: "Basic browsing and profile creation are free. Premium features like priority listings and unlimited chats require a subscription." },
   { id: "f3", question: "How does roommate matching work?", answer: "Our algorithm matches you based on lifestyle tags, budget, location, and move-in date preferences." },
-  { id: "f4", question: "How do I verify my identity?",    answer: "Go to Profile → Verify Identity and upload your Aadhar card. Verification is completed within 2 business days." },
+  { id: "f4", question: "How do I verify my identity?", answer: "Go to Profile → Verify Identity and upload your Aadhar card. Verification is completed within 2 business days." },
 ];

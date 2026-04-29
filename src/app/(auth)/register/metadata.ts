@@ -6,7 +6,7 @@ import type { Metadata } from 'next';
 const BASE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://roommat.in';
 
 export const metadata: Metadata = {
-  title: 'Create Your Free Roommat Account — Find Roommates & PG',
+  title: 'Create Your Free Roommat Account Find Roommates & PG',
   description:
     'Sign up for free on Roommat to find verified PG rooms, shared flats, and compatible roommates in Ahmedabad & Gandhinagar. Takes less than 2 minutes!',
   keywords: [

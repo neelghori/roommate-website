@@ -6,7 +6,7 @@
  * Triggers on every route change (pathname change) for 600ms.
  *
  * Works with Next.js App Router by watching usePathname().
- * No external deps required — pure CSS animation.
+ * No external deps required pure CSS animation.
  */
 
 import React, { useEffect, useRef, useState } from 'react';

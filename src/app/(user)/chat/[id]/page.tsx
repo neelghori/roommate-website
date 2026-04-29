@@ -173,7 +173,7 @@ export default function ChatThreadPage() {
         const confirmed = await chatService.sendMessage(chatId, content);
         confirmMessage(chatId, tempId, confirmed);
       } catch {
-        // 3. Rollback — show retry UI
+        // 3. Rollback show retry UI
         failMessage(chatId, tempId);
       }
     },

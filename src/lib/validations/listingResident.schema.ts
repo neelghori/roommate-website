@@ -1,5 +1,5 @@
 /**
- * Optional "who lives here" fields — persisted as `listerSnapshot` on the property API.
+ * Optional "who lives here" fields persisted as `listerSnapshot` on the property API.
  */
 import { z } from 'zod';
 

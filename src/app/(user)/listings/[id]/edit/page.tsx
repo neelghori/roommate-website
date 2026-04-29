@@ -1,7 +1,7 @@
 'use client';
 
 /**
- * Edit Listing — API load/save + confirm modal; shared PropertyListingFormWizard.
+ * Edit Listing API load/save + confirm modal; shared PropertyListingFormWizard.
  */
 
 import React, { useState, useEffect, useMemo } from 'react';

@@ -23,7 +23,7 @@ import { AmenityIcon, isAmenityIconKey } from '@/lib/amenities/amenity-icon';
 
 /* ─── Static data ─────────────────────────────────────────────────── */
 
-/** Filter dropdown icon — prefer catalogue `iconKey` (same as admin), else slug/name heuristics. */
+/** Filter dropdown icon prefer catalogue `iconKey` (same as admin), else slug/name heuristics. */
 function amenityIconForMaster(row: ApiAmenity): React.ReactNode {
   const ik = row.iconKey?.trim().toLowerCase();
   if (ik && isAmenityIconKey(ik)) {
@@ -375,7 +375,7 @@ export const FilterPanel: React.FC = () => {
             </div>
           )}
 
-          {/* Amenities panel — options from GET /api/v1/amenities (same names as listing amenityIds). */}
+          {/* Amenities panel options from GET /api/v1/amenities (same names as listing amenityIds). */}
           {openDropdown === 'amenities' && (
             <div>
               <div className="flex items-center justify-between mb-3">

@@ -1,5 +1,5 @@
 /**
- * "Who lives here" — maps `Listing.residentSnapshot` (API `listerSnapshot`).
+ * "Who lives here" maps `Listing.residentSnapshot` (API `listerSnapshot`).
  */
 'use client';
 

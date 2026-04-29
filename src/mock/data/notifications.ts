@@ -55,7 +55,7 @@ export const MOCK_NOTIFICATIONS: Notification[] = [
     id: 'notif6',
     icon: 'listing',
     title: 'Listing Approved',
-    subtitle: 'Your listing "Roommate Wanted — Thaltej 3BHK" is now live.',
+    subtitle: 'Your listing "Roommate Wanted Thaltej 3BHK" is now live.',
     time: '2026-04-12T10:00:00Z',
     isUnread: false,
     linkUrl: '/listings/l11',

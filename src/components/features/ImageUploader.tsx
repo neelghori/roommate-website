@@ -1,6 +1,6 @@
 /**
  * ImageUploader.tsx
- * Image upload UI — collects `File[]`; parent uploads via API (e.g. S3).
+ * Image upload UI collects `File[]`; parent uploads via API (e.g. S3).
  *
  * Features:
  * - Dashed border upload area with camera icon

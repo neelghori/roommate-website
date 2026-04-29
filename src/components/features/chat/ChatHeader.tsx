@@ -65,7 +65,7 @@ export const ChatHeader: React.FC<ChatHeaderProps> = React.memo(
           <button
             className="p-2 rounded-full hover:bg-gray-100 transition-colors"
             aria-label="Voice call"
-            onClick={() => alert('Voice call — backend integration required')}
+            onClick={() => alert('Voice call backend integration required')}
           >
             <Phone className="w-4.5 h-4.5 text-gray-500" />
           </button>

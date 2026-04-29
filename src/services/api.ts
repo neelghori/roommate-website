@@ -8,7 +8,7 @@
  * 2. Avoid NEXT_PUBLIC_API_URL=/api together with request paths that already start with /api/... (double /api).
  *
  * Security:
- * - Tokens stored in httpOnly cookies (set by backend) — NOT localStorage
+ * - Tokens stored in httpOnly cookies (set by backend) NOT localStorage
  * - CSRF token attached via X-CSRF-Token header (future)
  * - All requests over HTTPS in production
  */
@@ -28,7 +28,7 @@ export const apiClient = axios.create({
   withCredentials: true, // Send httpOnly cookies with requests
 });
 
-// Request interceptor — Bearer JWT from login/register + cookies (withCredentials)
+// Request interceptor Bearer JWT from login/register + cookies (withCredentials)
 apiClient.interceptors.request.use(
   (config) => {
     const token = getAccessToken();
@@ -40,15 +40,15 @@ apiClient.interceptors.request.use(
   (error) => Promise.reject(error),
 );
 
-// Response interceptor — handle global errors
+// Response interceptor handle global errors
 apiClient.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
       const url = String(error.config?.url ?? '');
       // Don’t redirect for:
-      // - failed login (wrong password) — avoid reload loop on /login
-      // - /auth/me — used to load profile; 401 must be handled in-page (toast / re-auth), not a hard redirect
+      // - failed login (wrong password) avoid reload loop on /login
+      // - /auth/me used to load profile; 401 must be handled in-page (toast / re-auth), not a hard redirect
       const pathOnly = url.split('?')[0];
       const isPublicRoommateRead =
         pathOnly.includes('/tenant-roommate-profiles') &&

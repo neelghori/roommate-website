@@ -1,5 +1,5 @@
 /**
- * In-app notifications — GET /api/v1/notifications, PATCH .../:id/read
+ * In-app notifications GET /api/v1/notifications, PATCH .../:id/read
  */
 import { isAxiosError } from 'axios';
 import { apiClient } from '@/services/api';

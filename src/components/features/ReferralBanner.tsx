@@ -25,7 +25,7 @@ interface BannerSlide {
   textColor: string;
 }
 
-// Multiple slides for carousel — extend as needed
+// Multiple slides for carousel extend as needed
 const SLIDES: BannerSlide[] = [
   {
     tag: 'EXCLUSIVE DEAL',
@@ -45,7 +45,7 @@ const SLIDES: BannerSlide[] = [
   },
   {
     tag: 'NEW FEATURE',
-    heading: 'Verified Badge — build trust instantly',
+    heading: 'Verified Badge build trust instantly',
     subtext: 'Complete Aadhar verification and get a verified badge.',
     buttonLabel: 'Get Verified',
     accentColor: 'bg-green-600',

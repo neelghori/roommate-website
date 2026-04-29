@@ -2,7 +2,7 @@
 
 /**
  * Shared 3-step property listing form (create + edit).
- * Step advances use per-step Zod picks — full-form `trigger()` fails for `amenities` / partial steps.
+ * Step advances use per-step Zod picks full-form `trigger()` fails for `amenities` / partial steps.
  */
 
 import React, { useEffect, useMemo, useState } from 'react';
@@ -55,7 +55,7 @@ const WIZARD_DEFAULTS: DefaultValues<ListingFormData> = {
 };
 
 export type PropertyListingFormWizardProps = {
-  /** e.g. edit page back link — rendered above the title */
+  /** e.g. edit page back link rendered above the title */
   topSlot?: React.ReactNode;
   title: string;
   subtitle?: string;
@@ -362,7 +362,7 @@ export function PropertyListingFormWizard({
               label="Contact Number"
               type="tel"
               placeholder="9876543210"
-              hint="Optional — 10-digit Indian mobile number"
+              hint="Optional 10-digit Indian mobile number"
               error={errors.phone?.message}
               leftIcon={<span className="text-gray-500 text-sm">+91</span>}
               {...register('phone')}

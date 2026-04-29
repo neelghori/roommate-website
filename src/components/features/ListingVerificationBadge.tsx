@@ -1,7 +1,7 @@
 'use client';
 
 /**
- * Listing trust UI — staff-approved listings show a profile-style “Company verified” pill
+ * Listing trust UI staff-approved listings show a profile-style “Company verified” pill
  * (Building2 + orange); ID/property/premium badges and `isVerified` use the default pill.
  */
 import { BadgeCheck, Building2, CheckCircle } from 'lucide-react';
@@ -17,13 +17,13 @@ export type ListingVerificationPick = Pick<Listing, 'isVerified' | 'verification
 export type ListingVerificationBadgeProps = {
   listing: ListingVerificationPick;
 } & (
-  | { variant: 'card' }
-  | { variant: 'heroOverlay' }
-  | { variant: 'inlinePill' }
-  | { variant: 'ownerIconOnly' }
-  | { variant: 'modalDesktopPill' }
-  | { variant: 'modalMobilePill' }
-);
+    | { variant: 'card' }
+    | { variant: 'heroOverlay' }
+    | { variant: 'inlinePill' }
+    | { variant: 'ownerIconOnly' }
+    | { variant: 'modalDesktopPill' }
+    | { variant: 'modalMobilePill' }
+  );
 
 export function ListingVerificationBadge(props: ListingVerificationBadgeProps) {
   const { listing, variant } = props;

@@ -4,7 +4,7 @@
  */
 
 /**
- * Merge class names — filters out falsy values.
+ * Merge class names filters out falsy values.
  * Use instead of a full classnames library for simple cases.
  */
 export const cn = (...classes: (string | undefined | null | false)[]): string => {
@@ -13,7 +13,7 @@ export const cn = (...classes: (string | undefined | null | false)[]): string =>
 
 /**
  * Generate a random alphanumeric ID string.
- * Not cryptographically secure — use for UI keys and mock IDs only.
+ * Not cryptographically secure use for UI keys and mock IDs only.
  */
 export const generateId = (length = 8): string => {
   const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';

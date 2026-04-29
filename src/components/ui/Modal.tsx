@@ -70,8 +70,8 @@ export const Modal: React.FC<ModalProps> = ({
       aria-modal="true"
       aria-labelledby={title ? 'modal-title' : undefined}
     >
-      {/* Backdrop */}
-      <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" />
+      {/* Backdrop — clicking it closes the modal */}
+      <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose} />
 
       {/* Content */}
       <div
@@ -82,7 +82,7 @@ export const Modal: React.FC<ModalProps> = ({
         ].join(' ')}
       >
         {(title || showCloseButton) && (
-          <div className="flex items-center justify-between p-4 border-b border-gray-100">
+          <div className="sticky top-0 z-10 flex items-center justify-between p-4 border-b border-gray-100 bg-white rounded-t-2xl">
             {title && (
               <h2 id="modal-title" className="text-lg font-bold text-gray-900">
                 {title}

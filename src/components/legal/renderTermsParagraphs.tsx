@@ -113,7 +113,7 @@ export function renderTermsParagraphs(paras: string[]): React.ReactNode[] {
   while (i < paras.length) {
     const p = paras[i];
 
-    if (p === 'ROOMMAT LIVING — CONTACT INFORMATION') {
+    if (p === 'ROOMMAT LIVING CONTACT INFORMATION') {
       const block: string[] = [p];
       i += 1;
       while (i < paras.length && !paras[i].startsWith('By using Roommat Living')) {

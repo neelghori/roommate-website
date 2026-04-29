@@ -172,7 +172,7 @@ export const ADMIN_LISTINGS: AdminListing[] = [
   },
   {
     id: 'l3',
-    title: 'Shared Room for Roommate — Vastrapur',
+    title: 'Shared Room for Roommate Vastrapur',
     ownerName: 'Priya Mehta',
     ownerEmail: 'priya.mehta@example.com',
     type: 'Roommate',
@@ -196,7 +196,7 @@ export const ADMIN_LISTINGS: AdminListing[] = [
   },
   {
     id: 'l5',
-    title: 'Premium PG for Ladies — Bodakdev',
+    title: 'Premium PG for Ladies Bodakdev',
     ownerName: 'Anita Trivedi',
     ownerEmail: 'anita.trivedi@example.com',
     type: 'PG',
@@ -220,7 +220,7 @@ export const ADMIN_LISTINGS: AdminListing[] = [
   },
   {
     id: 'l7',
-    title: 'Affordable PG Near PDPU — Gandhinagar',
+    title: 'Affordable PG Near PDPU Gandhinagar',
     ownerName: 'Kiran Bhatt',
     ownerEmail: 'kiran.bhatt@example.com',
     type: 'PG',
@@ -232,7 +232,7 @@ export const ADMIN_LISTINGS: AdminListing[] = [
   },
   {
     id: 'l8',
-    title: 'Furnished Rent Flat — Maninagar',
+    title: 'Furnished Rent Flat Maninagar',
     ownerName: 'Dhruv Rana',
     ownerEmail: 'dhruv.rana@example.com',
     type: 'Flat',
@@ -256,7 +256,7 @@ export const ADMIN_LISTINGS: AdminListing[] = [
   },
   {
     id: 'l10',
-    title: 'PG for Working Professionals — Prahlad Nagar',
+    title: 'PG for Working Professionals Prahlad Nagar',
     ownerName: 'Rohit Soni',
     ownerEmail: 'rohit.soni@example.com',
     type: 'PG',
@@ -268,7 +268,7 @@ export const ADMIN_LISTINGS: AdminListing[] = [
   },
   {
     id: 'l11',
-    title: 'Roommate Wanted — Thaltej 3BHK',
+    title: 'Roommate Wanted Thaltej 3BHK',
     ownerName: 'Guest User',
     ownerEmail: 'guest@roommat.in',
     type: 'Roommate',
@@ -280,7 +280,7 @@ export const ADMIN_LISTINGS: AdminListing[] = [
   },
   {
     id: 'l12',
-    title: 'Luxury PG — Ambawadi with All Amenities',
+    title: 'Luxury PG Ambawadi with All Amenities',
     ownerName: 'Hetal Modi',
     ownerEmail: 'hetal.modi@example.com',
     type: 'PG',
@@ -301,7 +301,7 @@ export const REPORTS: Report[] = [
     reporterEmail: 'arjun.sharma@example.com',
     targetType: 'LISTING',
     targetId: 'l12',
-    targetName: 'Luxury PG — Ambawadi with All Amenities',
+    targetName: 'Luxury PG Ambawadi with All Amenities',
     reason: 'FAKE_LISTING',
     description:
       'The images shown do not match the actual property. I visited and it was completely different. This listing appears to be fraudulent.',
@@ -330,7 +330,7 @@ export const REPORTS: Report[] = [
     targetName: '2BHK Family Apartment in Gota',
     reason: 'FRAUD',
     description:
-      'Owner asked for advance payment before showing the property. Looks like a scam — owner not responding after payment.',
+      'Owner asked for advance payment before showing the property. Looks like a scam owner not responding after payment.',
     status: 'IN_REVIEW',
     createdAt: '2026-03-20T11:00:00Z',
   },
@@ -340,7 +340,7 @@ export const REPORTS: Report[] = [
     reporterEmail: 'pooja.desai@example.com',
     targetType: 'LISTING',
     targetId: 'l3',
-    targetName: 'Shared Room for Roommate — Vastrapur',
+    targetName: 'Shared Room for Roommate Vastrapur',
     reason: 'SPAM',
     description: 'This listing has been reposted multiple times in the same week with different prices.',
     status: 'RESOLVED',
@@ -364,7 +364,7 @@ export const REPORTS: Report[] = [
     reporterEmail: 'simran.kaur@example.com',
     targetType: 'LISTING',
     targetId: 'l12',
-    targetName: 'Luxury PG — Ambawadi with All Amenities',
+    targetName: 'Luxury PG Ambawadi with All Amenities',
     reason: 'FAKE_LISTING',
     description: 'Amenities listed do not exist at the property. No gym on site.',
     status: 'OPEN',
@@ -389,7 +389,7 @@ export const REPORTS: Report[] = [
     reporterEmail: 'guest@roommat.in',
     targetType: 'LISTING',
     targetId: 'l12',
-    targetName: 'Luxury PG — Ambawadi with All Amenities',
+    targetName: 'Luxury PG Ambawadi with All Amenities',
     reason: 'FRAUD',
     description: 'Owner demanded cash before showing property. Likely scam targeting new users.',
     status: 'OPEN',
@@ -409,7 +409,7 @@ export const CMS_PAGES: CmsPage[] = [
 Roommat is India's most trusted platform for finding roommates and rental accommodations. Founded in 2023, we connect tenants, PG seekers, and property owners across major Indian cities.
 
 ## Our Mission
-To make finding your next home as easy and safe as possible — with verified listings, smart matching, and a trusted community.
+To make finding your next home as easy and safe as possible with verified listings, smart matching, and a trusted community.
 
 ## Why Roommat?
 - **Verified Listings**: Every listing is reviewed before going live.
@@ -538,7 +538,7 @@ We would love to hear from you!
 ## Headquarters
 Roommat Technologies Pvt. Ltd.
 4th Floor, GIFT City, Gandhinagar,
-Gujarat — 382355, India
+Gujarat 382355, India
 
 ## Report an Issue
 For urgent safety concerns, email safety@roommat.in

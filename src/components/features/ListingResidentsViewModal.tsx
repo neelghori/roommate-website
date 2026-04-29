@@ -1,7 +1,7 @@
 'use client';
 
 /**
- * Read-only popup for “Who lives here” — keeps listing pages compact until the user chooses View.
+ * Read-only popup for “Who lives here” keeps listing pages compact until the user chooses View.
  */
 import { Modal } from '@/components/ui/Modal';
 import { ListingResidentDetails } from '@/components/features/ListingResidentDetails';

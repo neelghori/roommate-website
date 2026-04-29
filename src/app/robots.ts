@@ -1,5 +1,5 @@
 /**
- * robots.ts — robots.txt for Roommat
+ * robots.ts robots.txt for Roommat
  * Next.js App Router MetadataRoute.Robots
  * Served at /robots.txt
  *

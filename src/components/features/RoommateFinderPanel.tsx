@@ -2,7 +2,7 @@
  * RoommateFinderPanel.tsx
  * "Find Roommate" sidebar panel shown on the homepage right side.
  *
- * Loads profiles from GET /api/v1/tenant-roommate-profiles — full list, not narrowed by viewer profile.
+ * Loads profiles from GET /api/v1/tenant-roommate-profiles full list, not narrowed by viewer profile.
  * Role tabs filter by display role (Student / Working / Veg Only).
  */
 'use client';

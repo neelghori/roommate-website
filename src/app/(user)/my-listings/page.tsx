@@ -1,7 +1,7 @@
 'use client';
 
 /**
- * My Listings page — src/app/(user)/my-listings/page.tsx
+ * My Listings page src/app/(user)/my-listings/page.tsx
  * Shows the current user's listings with edit/delete actions.
  */
 
@@ -305,7 +305,7 @@ export default function MyListingsPage() {
           </div>
         )}
 
-        {/* FAB — mobile only (desktop uses header button) */}
+        {/* FAB mobile only (desktop uses header button) */}
         <Link
           href="/listings/add"
           className="lg:hidden fixed bottom-20 right-4 z-30 flex items-center gap-1.5 text-white font-semibold px-4 py-2.5 rounded-full shadow-lg active:opacity-90 transition-opacity"

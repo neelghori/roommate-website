@@ -22,7 +22,7 @@ export const amenityService = {
   /**
    * Master amenity catalogue. Deduplicates concurrent callers and repeats across the app
    * (FilterPanel, useAmenityMaster, resolveAmenityIdsFromLabels) so `/amenities` is not
-   * hammered on load — including React Strict Mode double-mount in dev.
+   * hammered on load including React Strict Mode double-mount in dev.
    */
   list: async (): Promise<ApiAmenity[]> => {
     if (cachedList) return cachedList;

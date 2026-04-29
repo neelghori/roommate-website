@@ -61,7 +61,7 @@ export default function SavedListingsPage() {
         </Link>
         <h1 className="text-2xl font-black text-gray-900 tracking-tight mb-1">Saved listings</h1>
         <p className="text-sm text-gray-500 mb-8">
-          Properties you saved — tap the heart on any card to remove from here.
+          Properties you saved tap the heart on any card to remove from here.
         </p>
 
         {loading && (

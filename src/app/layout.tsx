@@ -1,5 +1,5 @@
 /**
- * Root layout — wraps entire application.
+ * Root layout wraps entire application.
  * Sets up fonts, metadata, global providers.
  *
  * Security:
@@ -29,7 +29,7 @@ const SUPPORT_PHONE = process.env.NEXT_PUBLIC_SUPPORT_PHONE ?? '8866566752';
 export const metadata: Metadata = {
   // ── Title ─────────────────────────────────────────────────────────────────
   title: {
-    default: 'Roommat — Find Your Perfect Roommate & PG in Ahmedabad',
+    default: 'Roommat Find Your Perfect Roommate & PG in Ahmedabad',
     template: '%s | Roommat',
   },
 
@@ -81,7 +81,7 @@ export const metadata: Metadata = {
 
   // ── Open Graph ────────────────────────────────────────────────────────────
   openGraph: {
-    title: 'Roommat — Find Your Perfect Roommate & PG in Ahmedabad',
+    title: 'Roommat Find Your Perfect Roommate & PG in Ahmedabad',
     description:
       'Browse 500+ verified PG, shared flat, and roommate listings in Ahmedabad & Gandhinagar. Instant chat, smart matching, free to use.',
     url: BASE_URL,
@@ -93,7 +93,7 @@ export const metadata: Metadata = {
         url: '/og-image.png',
         width: 1200,
         height: 630,
-        alt: 'Roommat — Find Your Perfect Roommate & PG in Ahmedabad',
+        alt: 'Roommat Find Your Perfect Roommate & PG in Ahmedabad',
         type: 'image/png',
       },
     ],
@@ -102,7 +102,7 @@ export const metadata: Metadata = {
   // ── Twitter Card ──────────────────────────────────────────────────────────
   twitter: {
     card: 'summary_large_image',
-    title: 'Roommat — Find Your Perfect Roommate & PG in Ahmedabad',
+    title: 'Roommat Find Your Perfect Roommate & PG in Ahmedabad',
     description:
       'Browse 500+ verified PG and shared flat listings in Ahmedabad. Start for free!',
     images: ['/og-image.png'],

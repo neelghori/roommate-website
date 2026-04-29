@@ -1,6 +1,6 @@
 /**
  * Routes guests may open without signing in. All other (user) app paths require auth.
- * Used by UserAuthGate — guests hitting a protected URL are sent to /#browse.
+ * Used by UserAuthGate guests hitting a protected URL are sent to /#browse.
  */
 export function isPublicGuestRoute(pathname: string): boolean {
   const p = pathname.replace(/\/$/, '') || '/';

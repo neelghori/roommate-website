@@ -1,5 +1,5 @@
 /**
- * Amenity catalogue icons — same keys as roommate-admin `lib/amenities/amenity-icon.tsx`
+ * Amenity catalogue icons same keys as roommate-admin `lib/amenities/amenity-icon.tsx`
  * so listing UI matches icons chosen in the admin panel.
  */
 import type { ReactNode, SVGProps } from 'react';

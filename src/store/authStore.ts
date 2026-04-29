@@ -1,6 +1,6 @@
 /**
  * authStore.ts
- * Auth state — in-memory only. Session is defined by JWT in sessionStorage + GET /auth/me.
+ * Auth state in-memory only. Session is defined by JWT in sessionStorage + GET /auth/me.
  * (Persisted partial user was removed to avoid “logged in” UI without a valid token.)
  */
 import { create } from 'zustand';
@@ -12,7 +12,7 @@ interface AuthState {
   isAuthenticated: boolean;
   isLoading: boolean;
   isAdmin: boolean;
-  /** True after we’ve decided session from token (or lack of it) — used for route guards */
+  /** True after we’ve decided session from token (or lack of it) used for route guards */
   sessionReady: boolean;
   setUser: (user: User | null) => void;
   setLoading: (isLoading: boolean) => void;

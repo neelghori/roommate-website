@@ -1,5 +1,5 @@
 /**
- * Property visit bookings — POST /api/v1/bookings, GET /api/v1/bookings/me (auth required).
+ * Property visit bookings POST /api/v1/bookings, GET /api/v1/bookings/me (auth required).
  */
 
 import { apiClient } from '@/services/api';
