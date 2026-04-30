@@ -54,12 +54,13 @@ export default function ForgotPasswordPage() {
                 Account recovery
               </p>
             </div>
-            <h2 className="text-4xl xl:text-[2.75rem] font-black text-white leading-tight tracking-tight">
-              Reset in<br />
-              <span className="text-amber-500">3 easy steps.</span>
+            <h2 className="text-4xl xl:text-[2.75rem] font-black text-white leading-[1.12] tracking-tight">
+              Back in{' '}
+              <span className="text-amber-500">minutes,</span><br />
+              not hours.
             </h2>
-            <p className="mt-4 text-sm xl:text-base leading-relaxed text-white/60">
-              No worries forgetting passwords happens to everyone. You&apos;ll be back in minutes.
+            <p className="mt-3.5 text-sm xl:text-[0.9rem] leading-relaxed text-white/55">
+              Forgotten passwords happen. We&apos;ll send you a secure one-time link — no fuss, no wait.
             </p>
           </div>
 
@@ -142,8 +143,8 @@ export default function ForgotPasswordPage() {
                   <KeyRound size={20} className="text-primary-600" />
                 </div>
                 <div>
-                  <h1 className="text-2xl font-bold tracking-tight text-gray-900">Reset Password</h1>
-                  <p className="mt-0.5 text-sm text-gray-500">Enter your email to receive a reset link</p>
+                  <h1 className="text-2xl font-bold tracking-tight text-gray-900">Forgot Password?</h1>
+                  <p className="mt-0.5 text-sm text-gray-500">We&apos;ll email you a secure reset link</p>
                 </div>
               </div>
 

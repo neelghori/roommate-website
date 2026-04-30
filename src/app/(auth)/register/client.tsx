@@ -10,6 +10,7 @@ import {
   Eye, EyeOff, ArrowRight,
   User, Building2, Users,
   BadgeCheck, MapPin, Star, Lock,
+  CheckCircle2, ShieldCheck,
 } from 'lucide-react';
 import { registerSchema, type RegisterFormData } from '@/lib/validations/auth.schema';
 import { authService } from '@/services/modules/auth.service';
@@ -106,9 +107,10 @@ export default function RegisterPageClient() {
 
       {/* ── Aurora brand panel ────────────────────────────────── */}
       <AuthBrandPanel>
-        <div className="flex flex-col gap-8 h-full">
-          {/* Headline + feature list */}
-          <div className="space-y-8">
+        <div className="flex flex-col gap-7 h-full">
+
+          {/* Headline block */}
+          <div className="space-y-5">
             <div>
               <div className="mb-3 flex items-center gap-2">
                 <span className="auth-overline-dash h-px w-5 rounded-full" />
@@ -116,21 +118,76 @@ export default function RegisterPageClient() {
                   Get started free
                 </p>
               </div>
-              <h2 className="text-4xl xl:text-[2.75rem] font-black text-white leading-tight tracking-tight">
-                Start your<br />search{' '}
-                <span className="text-amber-500">today.</span>
+              <h2 className="text-4xl xl:text-[2.75rem] font-black text-white leading-[1.12] tracking-tight">
+                Find your room.<br />
+                Find your{' '}
+                <span className="text-amber-500">people.</span>
               </h2>
-              <p className="mt-4 text-sm xl:text-base leading-relaxed text-white/60">
-                Join thousands of tenants, roommates and owners finding their perfect match in Ahmedabad & Gandhinagar.
+              <p className="mt-3.5 text-sm xl:text-[0.9rem] leading-relaxed text-white/55">
+                Ahmedabad & Gandhinagar&apos;s trusted platform for tenants,
+                roommates, and owners — no brokerage, no spam, no cost.
               </p>
+            </div>
+
+            {/* Social proof pill */}
+            <div className="auth-social-pill inline-flex items-center gap-2.5 px-3.5 py-2">
+              {/* Avatar stack */}
+              <div className="flex -space-x-1.5">
+                {[
+                  { bg: '#2caaaa', label: 'R' },
+                  { bg: '#188888', label: 'P' },
+                  { bg: '#3bc4c4', label: 'M' },
+                  { bg: '#0f7272', label: 'A' },
+                ].map(({ bg, label }, i) => (
+                  <span
+                    key={i}
+                    className="auth-avatar"
+                    style={{ background: bg, zIndex: 10 - i }}
+                  >
+                    {label}
+                  </span>
+                ))}
+              </div>
+              <span className="text-[11px] text-white/60 leading-snug">
+                <span className="font-semibold text-white">Thousands</span> of people found their match here
+              </span>
             </div>
 
             {/* Timeline feature list */}
             <PanelFeatureList items={BENEFITS} />
           </div>
 
-          {/* Metrics — pinned to bottom */}
-          <div className="mt-auto">
+          {/* Floating listing preview card + metrics — pinned to bottom */}
+          <div className="mt-auto space-y-4">
+
+            {/* Floating listing card */}
+            <div className="auth-float">
+              <div className="auth-listing-card px-4 py-3.5">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="text-[10px] font-bold uppercase tracking-widest text-white/35 mb-1">
+                      Sample listing
+                    </p>
+                    <p className="text-sm font-bold text-white leading-snug truncate">
+                      2 BHK Furnished Room
+                    </p>
+                    <p className="mt-0.5 flex items-center gap-1 text-[11px] text-white/45">
+                      <MapPin size={9} />
+                      Maninagar, Ahmedabad
+                    </p>
+                  </div>
+                  <span className="auth-listing-badge shrink-0">₹8,000/mo</span>
+                </div>
+                <div className="mt-3 flex items-center justify-between">
+                  <div className="flex items-center gap-1.5">
+                    <span className="auth-pulse h-1.5 w-1.5 rounded-full bg-emerald-400 inline-block" />
+                    <span className="auth-verified-badge">Verified</span>
+                  </div>
+                  <span className="text-[10px] text-white/30">Just listed</span>
+                </div>
+              </div>
+            </div>
+
             <AuthActivityFeed />
           </div>
         </div>
@@ -165,7 +222,7 @@ export default function RegisterPageClient() {
               <div className="flex items-start justify-between mb-7">
                 <div>
                   <h1 className="text-2xl font-bold tracking-tight text-gray-900">Create your account</h1>
-                  <p className="mt-1.5 text-sm text-gray-500">Free forever · takes less than 2 minutes</p>
+                  <p className="mt-1.5 text-sm text-gray-500">Free forever · ready in under 2 minutes</p>
                 </div>
                 <p className="hidden sm:block text-sm text-gray-400 pt-1 whitespace-nowrap">
                   Have an account?{' '}
@@ -177,9 +234,12 @@ export default function RegisterPageClient() {
 
               {/* Role selector */}
               <div className="mb-7">
-                <p className="mb-3 text-[11px] font-bold uppercase tracking-[0.14em] text-gray-400">
-                  I am a…
-                </p>
+                <div className="mb-3 flex items-center justify-between">
+                  <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-gray-400">
+                    What brings you here?
+                  </p>
+                  <span className="text-[10px] text-gray-300">Pick one</span>
+                </div>
                 <div className="grid grid-cols-3 gap-3">
                   {ROLES.map(({ value, label, Icon, desc }) => {
                     const active = selectedRole === value;
@@ -189,8 +249,15 @@ export default function RegisterPageClient() {
                         type="button"
                         aria-pressed={active}
                         onClick={() => setValue('role', value, { shouldValidate: true })}
-                        className={`flex flex-col items-start gap-2.5 rounded-xl p-4 text-left transition-all duration-200 focus-visible:outline-none ${active ? 'auth-role-active-card' : 'auth-role-idle-card'}`}
+                        className={`relative flex flex-col items-start gap-2.5 rounded-xl p-4 text-left transition-all duration-200 focus-visible:outline-none ${active ? 'auth-role-active-card' : 'auth-role-idle-card'}`}
                       >
+                        {/* Check indicator */}
+                        <span
+                          className={`absolute top-2.5 right-2.5 auth-role-check transition-opacity duration-200 ${active ? 'opacity-100' : 'opacity-0'}`}
+                        >
+                          <CheckCircle2 size={13} className="text-white" />
+                        </span>
+
                         <span className={`flex h-9 w-9 items-center justify-center rounded-lg ${active ? 'auth-role-icon-active' : 'auth-role-icon-idle'}`}>
                           <Icon size={17} className={active ? 'text-white' : 'text-primary-600'} />
                         </span>
@@ -343,11 +410,25 @@ export default function RegisterPageClient() {
                     </>
                   ) : (
                     <>
-                      Create Account
+                      Create Free Account
                       <ArrowRight size={16} />
                     </>
                   )}
                 </button>
+
+                {/* Trust micro-row */}
+                <div className="auth-trust-row pt-1">
+                  {[
+                    { Icon: ShieldCheck, text: 'No credit card' },
+                    { Icon: Lock, text: 'Private & secure' },
+                    { Icon: BadgeCheck, text: 'Free forever' },
+                  ].map(({ Icon, text }) => (
+                    <span key={text} className="flex items-center gap-1 text-[11px] text-gray-400">
+                      <Icon size={12} className="text-primary-500 shrink-0" />
+                      {text}
+                    </span>
+                  ))}
+                </div>
               </form>
 
               {/* Mobile sign-in */}

@@ -13,6 +13,7 @@ import { Input } from '@/components/ui/Input';
 import {
   CheckCircle2, Eye, EyeOff,
   Lock, ShieldCheck, ArrowLeft, RefreshCw,
+  KeyRound, UserCheck, Hash,
 } from 'lucide-react';
 import { AuthBrandPanel, PanelFeatureList } from '@/components/shared/AuthBrandPanel';
 
@@ -33,10 +34,10 @@ function getStrength(pw: string): { score: number; label: string; colorClass: st
 }
 
 const TIPS = [
-  { Icon: Lock, title: 'Length matters',       desc: 'Use at least 8 characters'                   },
-  { Icon: Lock, title: 'Mix character types',  desc: 'Uppercase, lowercase, and numbers'            },
-  { Icon: Lock, title: 'Stay unique',          desc: "Don't reuse a previous password"              },
-  { Icon: Lock, title: 'Keep it private',      desc: 'Never share your password with anyone'        },
+  { Icon: Hash,       title: 'Length matters',      desc: 'Use at least 8 characters'            },
+  { Icon: KeyRound,   title: 'Mix character types', desc: 'Uppercase, lowercase, and numbers'     },
+  { Icon: UserCheck,  title: 'Stay unique',         desc: "Don't reuse a previous password"       },
+  { Icon: Lock,       title: 'Keep it private',     desc: 'Never share your password with anyone' },
 ] as const;
 
 /* ── Inner form ────────────────────────────────────────────────── */
@@ -131,12 +132,12 @@ function ResetPasswordForm() {
                 Almost there
               </p>
             </div>
-            <h2 className="text-4xl xl:text-[2.75rem] font-black text-white leading-tight tracking-tight">
+            <h2 className="text-4xl xl:text-[2.75rem] font-black text-white leading-[1.12] tracking-tight">
               Secure your<br />
               <span className="text-amber-500">account.</span>
             </h2>
-            <p className="mt-4 text-sm xl:text-base leading-relaxed text-white/60">
-              Choose a strong password to protect your Roommat account and keep your data safe.
+            <p className="mt-3.5 text-sm xl:text-[0.9rem] leading-relaxed text-white/55">
+              Choose a strong, unique password to keep your Roommat account and personal data safe.
             </p>
           </div>
 

@@ -6,7 +6,7 @@ import Image from 'next/image';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Eye, EyeOff, Sparkles, ShieldCheck, Users } from 'lucide-react';
+import { Eye, EyeOff, Sparkles, ShieldCheck, Users, MapPin, Lock, BadgeCheck } from 'lucide-react';
 import { loginSchema, type LoginFormData } from '@/lib/validations/auth.schema';
 import { authService } from '@/services/modules/auth.service';
 import { useAuthStore } from '@/store/authStore';
@@ -65,10 +65,9 @@ export default function LoginPageClient() {
 
       {/* ── Left Aurora brand panel ───────────────────────────── */}
       <AuthBrandPanel>
-        <div className="flex flex-col gap-8 h-full">
-          {/* Headline + feature list */}
-          <div className="space-y-8">
-            {/* Overline + headline */}
+        <div className="flex flex-col gap-7 h-full">
+
+          <div className="space-y-5">
             <div>
               <div className="mb-3 flex items-center gap-2">
                 <span className="auth-overline-dash h-px w-5 rounded-full" />
@@ -76,20 +75,62 @@ export default function LoginPageClient() {
                   Welcome back
                 </p>
               </div>
-              <h2 className="text-4xl xl:text-[2.75rem] font-black text-white leading-tight tracking-tight">
-                Your home<br />awaits you.
+              <h2 className="text-4xl xl:text-[2.75rem] font-black text-white leading-[1.12] tracking-tight">
+                Your home<br />
+                <span className="text-amber-500">awaits you.</span>
               </h2>
-              <p className="mt-4 text-sm xl:text-base leading-relaxed text-white/60">
-                Sign in to access your saved listings, roommate matches, and messages.
+              <p className="mt-3.5 text-sm xl:text-[0.9rem] leading-relaxed text-white/55">
+                Sign in to access your saved listings, roommate matches, and messages — all in one place.
               </p>
             </div>
 
-            {/* Timeline feature list */}
+            {/* Social proof pill */}
+            <div className="auth-social-pill inline-flex items-center gap-2.5 px-3.5 py-2">
+              <div className="flex -space-x-1.5">
+                {[
+                  { bg: '#2caaaa', label: 'S' },
+                  { bg: '#188888', label: 'N' },
+                  { bg: '#3bc4c4', label: 'K' },
+                  { bg: '#0f7272', label: 'D' },
+                ].map(({ bg, label }, i) => (
+                  <span key={i} className="auth-avatar" style={{ background: bg, zIndex: 10 - i }}>
+                    {label}
+                  </span>
+                ))}
+              </div>
+              <span className="text-[11px] text-white/60 leading-snug">
+                <span className="font-semibold text-white">Active community</span> across Ahmedabad & Gandhinagar
+              </span>
+            </div>
+
             <PanelFeatureList items={FEATURES} />
           </div>
 
-          {/* Metrics — pinned to bottom */}
-          <div className="mt-auto">
+          <div className="mt-auto space-y-4">
+            {/* Floating listing card */}
+            <div className="auth-float">
+              <div className="auth-listing-card px-4 py-3.5">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="text-[10px] font-bold uppercase tracking-widest text-white/35 mb-1">Sample listing</p>
+                    <p className="text-sm font-bold text-white leading-snug truncate">1 BHK Private Room</p>
+                    <p className="mt-0.5 flex items-center gap-1 text-[11px] text-white/45">
+                      <MapPin size={9} />
+                      Bopal, Ahmedabad
+                    </p>
+                  </div>
+                  <span className="auth-listing-badge shrink-0">₹6,500/mo</span>
+                </div>
+                <div className="mt-3 flex items-center justify-between">
+                  <div className="flex items-center gap-1.5">
+                    <span className="auth-pulse h-1.5 w-1.5 rounded-full bg-emerald-400 inline-block" />
+                    <span className="auth-verified-badge">Verified</span>
+                  </div>
+                  <span className="text-[10px] text-white/30">2 hrs ago</span>
+                </div>
+              </div>
+            </div>
+
             <AuthActivityFeed />
           </div>
         </div>
@@ -123,6 +164,14 @@ export default function LoginPageClient() {
                 <Link href="/register" className="font-semibold text-primary-600 hover:underline">
                   Create one free →
                 </Link>
+              </p>
+            </div>
+
+            {/* Welcome-back trust row */}
+            <div className="mb-5 flex items-center gap-2 rounded-xl bg-primary-50 border border-primary-100 px-3.5 py-2.5">
+              <ShieldCheck size={14} className="text-primary-600 shrink-0" />
+              <p className="text-xs text-primary-700 leading-snug">
+                Your data is private & never shared with third parties
               </p>
             </div>
 
@@ -171,6 +220,20 @@ export default function LoginPageClient() {
                   'Sign In'
                 )}
               </button>
+
+              {/* Trust micro-row */}
+              <div className="auth-trust-row pt-1">
+                {[
+                  { Icon: Lock,       text: 'Encrypted' },
+                  { Icon: BadgeCheck, text: 'No spam' },
+                  { Icon: ShieldCheck, text: 'Private' },
+                ].map(({ Icon, text }) => (
+                  <span key={text} className="flex items-center gap-1 text-[11px] text-gray-400">
+                    <Icon size={12} className="text-primary-500 shrink-0" />
+                    {text}
+                  </span>
+                ))}
+              </div>
             </form>
 
             {/* Divider */}

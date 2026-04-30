@@ -539,3 +539,107 @@ input.roommat-inline-search:focus-visible {
   border: 1px solid rgba(255, 255, 255, 0.09);
   border-left: 3px solid rgba(255, 179, 0, 0.55);
 }
+
+/* ── Modern additions ────────────────────────────────────────────── */
+
+/* Gentle float for decorative listing card */
+@keyframes authFloat {
+  0%, 100% { transform: translateY(0px) rotate(-0.5deg); }
+  50%       { transform: translateY(-7px) rotate(0.5deg); }
+}
+.auth-float {
+  animation: authFloat 5s ease-in-out infinite;
+}
+
+/* Frosted listing preview card inside left panel */
+.auth-listing-card {
+  background: rgba(255, 255, 255, 0.09);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border-radius: 16px;
+}
+
+/* Social proof pill above feature list */
+.auth-social-pill {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 999px;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+/* Avatar ring — used in social proof stack */
+.auth-avatar {
+  border: 2px solid rgba(13, 107, 107, 0.9);
+  border-radius: 50%;
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 700;
+  color: #fff;
+  flex-shrink: 0;
+}
+
+/* Online pulse dot */
+@keyframes authPulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50%       { opacity: 0.5; transform: scale(0.85); }
+}
+.auth-pulse {
+  animation: authPulse 2s ease-in-out infinite;
+}
+
+/* Idle role card hover state (was missing) */
+.auth-role-idle-card:hover {
+  border-color: rgba(27, 143, 143, 0.42);
+  background: #edf7f7;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 14px rgba(27, 143, 143, 0.1);
+}
+
+/* Check indicator shown on active role card */
+.auth-role-check {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.22);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+/* Trust micro-row below CTA button */
+.auth-trust-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+/* Listing badge inside listing card */
+.auth-listing-badge {
+  background: rgba(255, 179, 0, 0.18);
+  border: 1px solid rgba(255, 179, 0, 0.25);
+  border-radius: 8px;
+  padding: 4px 10px;
+  font-size: 11px;
+  font-weight: 700;
+  color: #FFB300;
+}
+
+/* Verified badge inside listing card */
+.auth-verified-badge {
+  background: rgba(52, 211, 153, 0.15);
+  border: 1px solid rgba(52, 211, 153, 0.25);
+  border-radius: 999px;
+  padding: 2px 8px;
+  font-size: 10px;
+  font-weight: 600;
+  color: #34d399;
+}
