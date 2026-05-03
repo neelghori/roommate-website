@@ -13,6 +13,7 @@ import { Plus } from 'lucide-react';
 import Link from 'next/link';
 
 import { Footer } from './Footer';
+import { useAuthStore } from '@/store/authStore';
 
 interface UserLayoutProps {
   children: React.ReactNode;
@@ -27,6 +28,11 @@ export const UserLayout: React.FC<UserLayoutProps> = ({
   showSearch = true,
   showFab = true,
 }) => {
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+  const addListingHref = isAuthenticated
+    ? '/listings/add'
+    : `/login?next=${encodeURIComponent('/listings/add')}`;
+
   return (
     // Mobile: teal app bg. Desktop: clean white.
     <div className="min-h-screen bg-[#EDF5F5] lg:bg-white flex flex-col">
@@ -46,7 +52,7 @@ export const UserLayout: React.FC<UserLayoutProps> = ({
       {/* FAB — mobile only */}
       {showFab && (
         <Link
-          href="/listings/add"
+          href={addListingHref}
           className="lg:hidden fixed bottom-20 right-4 z-30 flex items-center gap-1.5 text-white font-semibold px-4 py-2.5 rounded-full shadow-lg active:opacity-90 transition-opacity bg-secondary"
           aria-label="Add new listing"
         >

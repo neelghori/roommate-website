@@ -373,6 +373,9 @@ export const TopBar: React.FC<TopBarProps> = ({
   const router = useRouter();
   const pathname = usePathname();
   const { isAuthenticated } = useAuthStore();
+  const addListingHref = isAuthenticated
+    ? '/listings/add'
+    : `/login?next=${encodeURIComponent('/listings/add')}`;
   const [searchValue, setSearchValue] = useState('');
 
   const isNavActive = (href: string) =>
@@ -462,7 +465,7 @@ export const TopBar: React.FC<TopBarProps> = ({
         <div className="flex items-center gap-2 lg:gap-3 flex-shrink-0">
           {/* "Add Listing" — desktop only in header */}
           <Link
-            href="/listings/add"
+            href={addListingHref}
             className="hidden lg:flex items-center gap-1.5 text-white text-sm font-semibold px-4 py-2 rounded-full transition-opacity hover:opacity-90 whitespace-nowrap bg-secondary"
           >
             <Plus size={14} />

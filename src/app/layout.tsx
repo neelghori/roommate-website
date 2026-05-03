@@ -163,8 +163,8 @@ const jsonLd = {
       },
       sameAs: [
         'https://twitter.com/roommat_in',
-        'https://www.instagram.com/roommat.in',
-        'https://www.facebook.com/roommat.in',
+        'https://www.instagram.com/roommatliving?igsh=MWRiMDN3YW9sNXZtbw==',
+        'https://www.facebook.com/share/1E79f18HU7/?mibextid=wwXIfr',
       ],
       contactPoint: {
         '@type': 'ContactPoint',

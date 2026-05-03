@@ -90,8 +90,16 @@ export const Footer: React.FC = () => {
             {/* Social links */}
             <div className="flex items-center gap-3">
               {[
-                { icon: FacebookSVG, label: 'Facebook', href: 'https://facebook.com/roommat.in' },
-                { icon: InstagramSVG, label: 'Instagram', href: 'https://instagram.com/roommat.in' },
+                {
+                  icon: FacebookSVG,
+                  label: 'Facebook',
+                  href: 'https://www.facebook.com/share/1E79f18HU7/?mibextid=wwXIfr',
+                },
+                {
+                  icon: InstagramSVG,
+                  label: 'Instagram',
+                  href: 'https://www.instagram.com/roommatliving?igsh=MWRiMDN3YW9sNXZtbw==',
+                },
               ].map((social) => (
                 <a
                   key={social.label}
