@@ -1,5 +1,5 @@
 /**
- * Tenant roommate seeker profiles — /api/v1/tenant-roommate-profiles
+ * Tenant roommate seeker profiles /api/v1/tenant-roommate-profiles
  */
 
 import { isAxiosError } from 'axios';

@@ -1,5 +1,5 @@
 /**
- * Access token from login/register JSON responses — sent as Bearer on API calls.
+ * Access token from login/register JSON responses sent as Bearer on API calls.
  * Session-scoped (tab); cleared on logout. Prefer httpOnly cookies server-side when available.
  */
 const STORAGE_KEY = 'roommat-access-token';

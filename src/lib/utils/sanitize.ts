@@ -32,7 +32,7 @@ export const escapeHtml = (input: string): string => {
 };
 
 /**
- * Sanitize a search query — only allow alphanumeric, spaces, and common punctuation.
+ * Sanitize a search query only allow alphanumeric, spaces, and common punctuation.
  */
 export const sanitizeSearchQuery = (query: string): string => {
   if (typeof query !== 'string') return '';
@@ -50,7 +50,7 @@ export const sanitizeUrl = (url: string): string => {
 };
 
 /**
- * Sanitize a phone number — keep only digits, +, and spaces.
+ * Sanitize a phone number keep only digits, +, and spaces.
  */
 export const sanitizePhone = (phone: string): string => {
   if (typeof phone !== 'string') return '';

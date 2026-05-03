@@ -1,5 +1,5 @@
 /**
- * listing.service.ts — Property API (/api/v1/properties).
+ * listing.service.ts Property API (/api/v1/properties).
  * New listings are pending until staff approves (isPublished + moderationStatus).
  */
 
@@ -213,7 +213,7 @@ export function listingResidentToFormData(
 }
 
 export type UpdateListingResidentSnapshotOptions = {
-  /** Listing title from the property — stored as `propertyOrPgName` on the snapshot. */
+  /** Listing title from the property stored as `propertyOrPgName` on the snapshot. */
   listingTitle: string;
   /** Persisted profile image URL, or `null` to clear. Omit / `undefined` to leave unchanged. */
   profileImageUrl?: string | null;
@@ -459,12 +459,12 @@ async function mapApiPropertyToListingWithAmenities(p: Record<string, unknown>):
     }
     if (chips.length) listing = { ...listing, amenities: chips };
   } catch {
-    /* catalogue unavailable — leave amenities empty */
+    /* catalogue unavailable leave amenities empty */
   }
   return listing;
 }
 
-/** Legacy UI default that was never shipped in `public/` — treat as empty when real URLs exist. */
+/** Legacy UI default that was never shipped in `public/` treat as empty when real URLs exist. */
 const LEGACY_LISTING_PLACEHOLDER_JPG = '/images/listings/placeholder.jpg';
 const LISTING_IMAGE_PLACEHOLDER = '/images/listings/placeholder.svg';
 
@@ -516,7 +516,7 @@ function listingMatchesCityFilter(l: Listing, city: string | undefined): boolean
   return hay.includes(c);
 }
 
-/** Area / locality — substring on title + location + formatted address. */
+/** Area / locality substring on title + location + formatted address. */
 function listingMatchesAreaFilter(l: Listing, area: string | undefined): boolean {
   if (!area || !String(area).trim()) return true;
   const q = String(area).trim().toLowerCase();
@@ -525,7 +525,7 @@ function listingMatchesAreaFilter(l: Listing, area: string | undefined): boolean
 }
 
 /**
- * Amenity filter — OR semantics: show listings that have **at least one** of the selected amenities.
+ * Amenity filter OR semantics: show listings that have **at least one** of the selected amenities.
  * (AND would hide a TV+AC listing when the user checks TV + Parking because Parking is missing.)
  * Names align with GET /api/v1/amenities; keeps a small fuzzy match for minor label drift.
  */
@@ -839,7 +839,7 @@ export const listingService = {
     }
   },
 
-  /** POST one resident row — server appends to `listerSnapshots` (does not resend existing rows). */
+  /** POST one resident row server appends to `listerSnapshots` (does not resend existing rows). */
   addListingResident: async (propertyId: string, body: Record<string, unknown>): Promise<Listing> => {
     try {
       const { data: res } = await apiClient.post<unknown>(
@@ -907,7 +907,7 @@ export const listingService = {
   },
 
   /**
-   * PATCH /properties/:id — same field shape as create; omits image fields if none uploaded.
+   * PATCH /properties/:id same field shape as create; omits image fields if none uploaded.
    */
   updateListingFromForm: async (
     id: string,

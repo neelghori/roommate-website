@@ -1,5 +1,5 @@
 /**
- * User group layout — session bootstrap + gate: guests browse public routes;
+ * User group layout session bootstrap + gate: guests browse public routes;
  * protected routes redirect to /#browse; signed-in users see all routes.
  */
 import React from 'react';

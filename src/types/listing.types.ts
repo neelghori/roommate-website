@@ -24,7 +24,7 @@ export type ListingType =
   | 'Family';
 export type ListingApprovalStatus = 'PENDING' | 'APPROVED' | 'REJECTED' | 'UNDER_REVIEW';
 
-/** Who lives here — maps to backend `Property.listerSnapshot`. */
+/** Who lives here maps to backend `Property.listerSnapshot`. */
 export interface ListingResidentSnapshot {
   /** Mongo subdocument `_id` when stored in `listerSnapshots` (required for PATCH/DELETE). */
   id?: string;
@@ -51,7 +51,7 @@ export interface ListingResidentSnapshot {
 /** Known amenity keys for filter icons (filters still accept any string from master). */
 export type Amenity = 'WiFi' | 'AC' | 'Kitchen' | 'Food' | 'Laundry' | 'Parking' | 'Gym' | 'Security' | 'Power Backup' | 'CCTV';
 
-/** One amenity on a listing — `iconKey` matches admin catalogue (`wifi`, `tv`, …). */
+/** One amenity on a listing `iconKey` matches admin catalogue (`wifi`, `tv`, …). */
 export interface ListingAmenityChip {
   name: string;
   iconKey?: string;
@@ -84,7 +84,7 @@ export interface Listing {
   description: string;
   /** Current residents / roommates (optional). Prefer this over `residentSnapshot`. */
   residentSnapshots?: ListingResidentSnapshot[];
-  /** First resident only — same as `residentSnapshots?.[0]` when populated from API. */
+  /** First resident only same as `residentSnapshots?.[0]` when populated from API. */
   residentSnapshot?: ListingResidentSnapshot;
   mapPlaceholder: boolean;
   genderPreference: GenderPreference;
@@ -104,9 +104,9 @@ export interface ListingFilter {
   nearLongitude?: number;
   /** Search radius in km (API default 10; capped at 100). */
   radiusKm?: number;
-  /** City name — passed to API and matched loosely on `city` / address text client-side. */
+  /** City name passed to API and matched loosely on `city` / address text client-side. */
   city?: string;
-  /** Locality / area (e.g. Satellite) — substring match on title + location. */
+  /** Locality / area (e.g. Satellite) substring match on title + location. */
   area?: string;
   type?: ListingType | 'All';
   minPrice?: number;

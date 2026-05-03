@@ -74,5 +74,5 @@ export const getInitials = (name: string): string => {
     .slice(0, 2);
 };
 
-/** Alias for formatRelativeTime — used as timeAgo(dateString) */
+/** Alias for formatRelativeTime used as timeAgo(dateString) */
 export const timeAgo = formatRelativeTime;

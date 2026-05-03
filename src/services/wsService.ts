@@ -1,14 +1,14 @@
 /**
- * wsService.ts — realtime layer on top of REST chat.
+ * wsService.ts realtime layer on top of REST chat.
  *
  * **Why WebSockets?** HTTP POST only saves the message; it does not notify the other browser tab.
  * WS lets the server **push** `{ type: 'message:new', payload }` so the other user (and your other tabs)
  * see new lines **without refresh**. REST + optimistic UI still handles your own send.
  *
  * **URL resolution (first match wins):**
- * 1. `NEXT_PUBLIC_WS_URL` — full `ws(s)://…/ws`
- * 2. `NEXT_PUBLIC_API_URL` — same host, path `/ws`
- * 3. `NEXT_PUBLIC_SITE_URL` — if it is `http(s)://…` (some setups point this at the API origin)
+ * 1. `NEXT_PUBLIC_WS_URL` full `ws(s)://…/ws`
+ * 2. `NEXT_PUBLIC_API_URL` same host, path `/ws`
+ * 3. `NEXT_PUBLIC_SITE_URL` if it is `http(s)://…` (some setups point this at the API origin)
  *
  * Supports frames: `{ type: "message:new", payload }` or `{ event, payload }` (Mongo message doc ok).
  */

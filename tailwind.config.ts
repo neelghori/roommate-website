@@ -38,8 +38,8 @@ const config: Config = {
           DEFAULT: "hsl(var(--secondary-500) / <alpha-value>)",
         },
         /**
-         * Accent — Orange CTA (#F57C00)
-         * Primary — Teal (#1B8F8F)
+         * Accent Orange CTA (#F57C00)
+         * Primary Teal (#1B8F8F)
          * Used for: "Book Visit", "Add Listing", referral banner,
          *           any primary call-to-action button in orange.
          * CSS vars defined in globals.css :root

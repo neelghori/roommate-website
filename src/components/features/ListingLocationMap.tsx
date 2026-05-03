@@ -20,7 +20,7 @@ type ListingLocationMapProps = {
 };
 
 /**
- * Embedded Google Map from lat/lng (iframe URL only — no Maps JS API key).
+ * Embedded Google Map from lat/lng (iframe URL only no Maps JS API key).
  * Falls back to a dashed placeholder when coordinates are missing.
  */
 export function ListingLocationMap({

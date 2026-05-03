@@ -1,5 +1,5 @@
 /**
- * FAQ service — GET /api/v1/faqs/
+ * FAQ service GET /api/v1/faqs/
  */
 import { isAxiosError } from 'axios';
 import { apiClient } from '@/services/api';

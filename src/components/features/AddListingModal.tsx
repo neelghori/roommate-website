@@ -125,7 +125,7 @@ export const AddListingModal: React.FC<AddListingModalProps> = ({
             {...register('title')}
           />
 
-          {/* Room Type + Gender — 2-col */}
+          {/* Room Type + Gender 2-col */}
           <div className="grid grid-cols-2 gap-3">
             <Controller
               name="type"
@@ -154,7 +154,7 @@ export const AddListingModal: React.FC<AddListingModalProps> = ({
             />
           </div>
 
-          {/* Rent + Spots — 2-col */}
+          {/* Rent + Spots 2-col */}
           <div className="grid grid-cols-2 gap-3">
             <Input
               label="Rent Per Month ₹ *"
@@ -248,7 +248,7 @@ export const AddListingModal: React.FC<AddListingModalProps> = ({
             label="Contact Number"
             type="tel"
             placeholder="9876543210"
-            hint="Optional — 10-digit Indian mobile number"
+            hint="Optional 10-digit Indian mobile number"
             error={errors.phone?.message}
             leftIcon={<span className="text-gray-500 text-sm">+91</span>}
             {...register('phone')}

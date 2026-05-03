@@ -612,7 +612,7 @@ export const CHAT_MESSAGES: Record<string, ChatMessage[]> = {
       id: 'msg5-1',
       senderId: 'u1',
       receiverId: 'u5',
-      content: 'Hey Karan! Saw you are a designer. I am a developer — we might be a great match!',
+      content: 'Hey Karan! Saw you are a designer. I am a developer we might be a great match!',
       timestamp: '2026-04-10T18:00:00Z',
       isRead: true,
       type: 'text',
@@ -731,7 +731,7 @@ export const ROOMMATE_REQUESTS_SENT: RoommateRequest[] = [
     receiverName: 'Amit Joshi',
     receiverAvatar: 'AJ',
     status: 'PENDING',
-    message: 'Hello Amit! Saw your profile — we have very similar lifestyle preferences.',
+    message: 'Hello Amit! Saw your profile we have very similar lifestyle preferences.',
     createdAt: '2026-04-12T14:00:00Z',
   },
 ];

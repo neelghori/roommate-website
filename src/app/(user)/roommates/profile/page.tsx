@@ -1,7 +1,7 @@
 'use client';
 
 /**
- * Tenant roommate seeker profile — create/edit (API: PUT /api/v1/tenant-roommate-profiles/me).
+ * Tenant roommate seeker profile create/edit (API: PUT /api/v1/tenant-roommate-profiles/me).
  */
 
 import React, { useEffect, useState } from 'react';

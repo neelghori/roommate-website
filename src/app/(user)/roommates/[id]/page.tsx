@@ -235,7 +235,7 @@ export default function RoommateDetailPage() {
             </div>
           </div>
           <p className="text-xs text-gray-400 italic">
-            Reviews are available after connecting — backend integration required.
+            Reviews are available after connecting backend integration required.
           </p>
         </div>
 
@@ -243,9 +243,8 @@ export default function RoommateDetailPage() {
           <button
             type="button"
             onClick={handleSave}
-            className={`flex items-center gap-2 px-4 py-3 rounded-xl border font-medium text-sm transition-colors ${
-              isSaved ? 'border-red-300 text-red-500 bg-red-50' : 'border-gray-200 text-gray-600 bg-white'
-            }`}
+            className={`flex items-center gap-2 px-4 py-3 rounded-xl border font-medium text-sm transition-colors ${isSaved ? 'border-red-300 text-red-500 bg-red-50' : 'border-gray-200 text-gray-600 bg-white'
+              }`}
           >
             <Heart className={`w-4 h-4 ${isSaved ? 'fill-red-500' : ''}`} />
             {isSaved ? 'Saved' : 'Save'}

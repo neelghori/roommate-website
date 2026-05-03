@@ -1,5 +1,5 @@
 /**
- * notifications/page.tsx — loads from GET /api/v1/notifications
+ * notifications/page.tsx loads from GET /api/v1/notifications
  */
 'use client';
 

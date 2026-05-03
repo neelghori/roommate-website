@@ -1,7 +1,7 @@
 'use client';
 
 /**
- * Homepage Client component — src/app/(user)/client.tsx
+ * Homepage Client component src/app/(user)/client.tsx
  * Main landing page with listings, filters, category tabs, sidebar panels.
  * Metadata is exported from page.tsx (server component).
  */
@@ -263,7 +263,7 @@ export default function HomePageClient() {
           <FilterPanel />
         </div>
 
-        {/* ── Main content + sidebar (single roommate panel — was duplicated for lg/mobile) ── */}
+        {/* ── Main content + sidebar (single roommate panel was duplicated for lg/mobile) ── */}
         <div className="grid grid-cols-1 lg:grid-cols-[1fr_300px] xl:grid-cols-[1fr_320px] gap-6 items-start">
 
           {/* Left: listing grid */}

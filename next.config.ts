@@ -36,10 +36,10 @@ function buildContentSecurityPolicy(): string {
     "script-src 'self' 'unsafe-eval' 'unsafe-inline'",
     "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
     "font-src 'self' https://fonts.gstatic.com",
-    // `https:` — listing/resident photos from S3, CloudFront, or any HTTPS CDN (URLs are server-controlled).
+    // `https:` listing/resident photos from S3, CloudFront, or any HTTPS CDN (URLs are server-controlled).
     "img-src 'self' data: blob: https: https://res.cloudinary.com https://avatars.githubusercontent.com",
     buildConnectSrcDirective(),
-    /** Google Maps iframe embed — nested frames may use other *.google.com hosts */
+    /** Google Maps iframe embed nested frames may use other *.google.com hosts */
     "frame-src 'self' https://*.google.com https://*.gstatic.com",
     "frame-ancestors 'none'",
   ].join("; ");

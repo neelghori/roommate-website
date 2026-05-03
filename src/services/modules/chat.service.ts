@@ -1,5 +1,5 @@
 /**
- * chat.service.ts — REST chat API (/api/v1/chat/*).
+ * chat.service.ts REST chat API (/api/v1/chat/*).
  */
 
 import type { ChatConversation, ChatMessage } from '@/types';
@@ -65,10 +65,10 @@ export const chatService = {
       const partner =
         p && typeof p.id === 'string' && typeof p.fullName === 'string'
           ? {
-              id: p.id,
-              fullName: p.fullName,
-              profileImageUrl: typeof p.profileImageUrl === 'string' ? p.profileImageUrl : undefined,
-            }
+            id: p.id,
+            fullName: p.fullName,
+            profileImageUrl: typeof p.profileImageUrl === 'string' ? p.profileImageUrl : undefined,
+          }
           : null;
       return { messages, partner };
     } catch (err) {

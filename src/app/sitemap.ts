@@ -1,5 +1,5 @@
 /**
- * sitemap.ts — Auto-generated XML sitemap for Roommat
+ * sitemap.ts Auto-generated XML sitemap for Roommat
  * Next.js App Router Metadata API (returns MetadataRoute.Sitemap)
  * Google crawls this at /sitemap.xml
  *
@@ -36,7 +36,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
       priority: 0.9,
     },
 
-    // ── Auth pages (lower priority — not primary landing) ─────────────────────
+    // ── Auth pages (lower priority not primary landing) ─────────────────────
     {
       url: `${BASE_URL}/login`,
       lastModified: now,
@@ -50,7 +50,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
       priority: 0.6,
     },
 
-    // ── Authenticated app pages (lower priority — behind login) ───────────────
+    // ── Authenticated app pages (lower priority behind login) ───────────────
     {
       url: `${BASE_URL}/chat`,
       lastModified: now,

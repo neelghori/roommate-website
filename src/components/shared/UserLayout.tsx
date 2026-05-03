@@ -49,7 +49,7 @@ export const UserLayout: React.FC<UserLayoutProps> = ({
         <Footer />
       </div>
 
-      {/* FAB — mobile only */}
+      {/* FAB mobile only */}
       {showFab && (
         <Link
           href={addListingHref}

@@ -1,10 +1,10 @@
 /**
  * admin.service.ts
- * Admin service module — all admin-scoped operations.
+ * Admin service module all admin-scoped operations.
  *
  * MOCK MODE: Returns mock data with artificial delay.
  * BACKEND INTEGRATION: Replace mock functions with apiClient calls.
- * All endpoints require ADMIN role — enforced by backend middleware.
+ * All endpoints require ADMIN role enforced by backend middleware.
  *
  * Expected endpoints:
  *   GET    /admin/stats                      → AdminStats

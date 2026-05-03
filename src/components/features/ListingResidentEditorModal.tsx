@@ -57,7 +57,7 @@ export type ListingResidentEditorModalProps = {
   isOpen: boolean;
   onClose: () => void;
   propertyId: string;
-  /** Listing title — sent as `propertyOrPgName` on each snapshot (not editable here). */
+  /** Listing title sent as `propertyOrPgName` on each snapshot (not editable here). */
   listingTitle: string;
   /** Current residents on this listing (full list; modal writes merged array). */
   residents: ListingResidentSnapshot[];
@@ -305,7 +305,7 @@ export function ListingResidentEditorModal({
           <textarea
             id="resident-desc-modal"
             rows={4}
-            placeholder="Short description — routine, hobbies, etc."
+            placeholder="Short description routine, hobbies, etc."
             className={[
               'w-full rounded-xl border bg-white text-sm text-gray-900 placeholder-gray-400 px-3 py-2.5 resize-none focus:outline-none',
               errors.description ? 'border-red-400' : 'border-gray-200',

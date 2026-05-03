@@ -2,7 +2,7 @@
 
 /**
  * onboarding/page.tsx
- * 3-step onboarding flow — purpose, preferences, lifestyle.
+ * 3-step onboarding flow purpose, preferences, lifestyle.
  * Controlled state only (no React Hook Form).
  */
 
@@ -89,8 +89,8 @@ function StepIndicator({ current, total }: { current: number; total: number }) {
                   active
                     ? { backgroundColor: '#1B8F8F' }
                     : done
-                    ? { backgroundColor: '#1B8F8F', opacity: 0.6 }
-                    : undefined
+                      ? { backgroundColor: '#1B8F8F', opacity: 0.6 }
+                      : undefined
                 }
               >
                 {done ? <CheckCircle2 size={14} /> : step}
@@ -151,7 +151,7 @@ function Step1({ purpose, setPurpose }: Step1Props) {
               </div>
               <div>
                 <p className={['font-semibold text-sm', active ? '' : 'text-gray-700'].join(' ')}
-                   style={active ? { color: '#1B8F8F' } : undefined}>
+                  style={active ? { color: '#1B8F8F' } : undefined}>
                   {label}
                 </p>
                 <p className="text-xs text-gray-500 mt-0.5 leading-relaxed">{desc}</p>
@@ -436,7 +436,7 @@ export default function OnboardingPage() {
         <div className="w-full max-w-md">
           {/* Step label */}
           <p className="text-center text-xs font-medium uppercase tracking-widest text-gray-400 mb-4">
-            Step {step} of {TOTAL_STEPS} — {stepLabels[step - 1]}
+            Step {step} of {TOTAL_STEPS} {stepLabels[step - 1]}
           </p>
 
           {/* Progress indicator */}

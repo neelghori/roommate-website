@@ -1,6 +1,6 @@
 /**
  * RequestCard.tsx
- * Card showing a roommate request — both sent and received.
+ * Card showing a roommate request both sent and received.
  *
  * - Received + PENDING: shows Accept (teal) and Reject (danger outline) buttons
  * - Sent: shows status indicator only
@@ -22,7 +22,7 @@ import { formatRelativeTime } from '@/lib/utils/format';
 
 interface RequestCardProps {
   request: RoommateRequest;
-  /** 'received' — current user is the receiver; 'sent' — current user is the sender */
+  /** 'received' current user is the receiver; 'sent' current user is the sender */
   direction: 'received' | 'sent';
   onStatusChange?: (id: string, status: 'ACCEPTED' | 'REJECTED') => void;
 }
@@ -106,7 +106,7 @@ export const RequestCard: React.FC<RequestCardProps> = ({
             </p>
           )}
 
-          {/* Action buttons — only for received + pending */}
+          {/* Action buttons only for received + pending */}
           {direction === 'received' && status === 'PENDING' && (
             <div className="flex gap-2 mt-2">
               <Button

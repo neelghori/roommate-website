@@ -51,7 +51,7 @@ export interface RoommateProfile {
   id: string;
   /** `tenant_profile` = seeker form; `user_account` = main User only (no seeker doc yet). */
   listingSource?: 'tenant_profile' | 'user_account';
-  /** Same as `id` — tenant roommate profile document id. */
+  /** Same as `id` tenant roommate profile document id. */
   profileId?: string;
   userId: string;
   name: string;
@@ -71,7 +71,7 @@ export interface RoommateProfile {
   bio?: string;
   age?: number;
   occupation?: string;
-  /** Linked account (User) — public list API may include these (not email/phone). */
+  /** Linked account (User) public list API may include these (not email/phone). */
   accountFullName?: string;
   accountRole?: string;
   createdAt?: string;
@@ -120,7 +120,7 @@ export interface ChatMessage {
   timestamp: string;
   isRead: boolean;
   type: 'text' | 'image';
-  /** Optimistic-send failure flag — set by chatStore.failMessage() */
+  /** Optimistic-send failure flag set by chatStore.failMessage() */
   failed?: boolean;
 }
 

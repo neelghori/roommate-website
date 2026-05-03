@@ -17,7 +17,7 @@ export function PageSkeleton({ variant = 'generic' }: PageSkeletonProps) {
       <div className="fixed top-0 left-0 right-0 h-14 lg:h-16 bg-white border-b border-gray-100 z-50 flex items-center px-4 gap-4">
         {/* Logo shimmer */}
         <div className="h-8 w-28 bg-gray-200 rounded-lg animate-pulse" />
-        {/* Nav shimmer — desktop */}
+        {/* Nav shimmer desktop */}
         <div className="hidden lg:flex gap-2 ml-4">
           {[64, 72, 88, 52, 56].map((w, i) => (
             <div key={i} className="h-8 rounded-lg bg-gray-100 animate-pulse" style={{ width: w }} />
@@ -38,7 +38,7 @@ export function PageSkeleton({ variant = 'generic' }: PageSkeletonProps) {
         {variant === 'generic' && <GenericVariant />}
       </div>
 
-      {/* Bottom nav placeholder — mobile */}
+      {/* Bottom nav placeholder mobile */}
       <div className="lg:hidden fixed bottom-0 left-0 right-0 h-16 bg-white border-t border-gray-100 flex items-center justify-around px-4">
         {Array.from({ length: 5 }).map((_, i) => (
           <div key={i} className="flex flex-col items-center gap-1">

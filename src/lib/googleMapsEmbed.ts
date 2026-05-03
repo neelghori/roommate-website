@@ -13,7 +13,7 @@ export function hasMapCoordinates(lat: unknown, lng: unknown): lat is number {
   );
 }
 
-/** `maps.google.com` embed used by <iframe src="…"> — no API key. */
+/** `maps.google.com` embed used by <iframe src="…"> no API key. */
 export function googleMapsIframeEmbedUrl(lat: number, lng: number, zoom = 15): string {
   const q = `${lat},${lng}`;
   return `https://maps.google.com/maps?q=${encodeURIComponent(q)}&z=${zoom}&output=embed&hl=en`;

@@ -1,11 +1,11 @@
 'use client';
 
 /**
- * Explore page client component — src/app/(user)/explore/client.tsx
+ * Explore page client component src/app/(user)/explore/client.tsx
  * Browse by category, popular areas, and full listing grid.
  * Metadata is exported from page.tsx (server component).
  *
- * Query: `/explore?q=shiv+pg` — initial search text from `q` (shareable / deep link).
+ * Query: `/explore?q=shiv+pg` initial search text from `q` (shareable / deep link).
  */
 
 import React, { useState, useMemo, useEffect, useCallback } from 'react';

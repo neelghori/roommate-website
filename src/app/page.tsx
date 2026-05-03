@@ -5,7 +5,7 @@ import HomePageClient from './(user)/client';
 const BASE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://roommat.in';
 
 export const metadata: Metadata = {
-  title: 'Verified PG & Shared Flats in Ahmedabad — Roommat',
+  title: 'Verified PG & Shared Flats in Ahmedabad Roommat',
   description:
     'Browse 500+ verified PG rooms, shared flats, and studio apartments in Ahmedabad & Gandhinagar. Compare prices, photos, and amenities. Find your perfect space today!',
   keywords: [
@@ -24,7 +24,7 @@ export const metadata: Metadata = {
     canonical: '/',
   },
   openGraph: {
-    title: 'Verified PG & Shared Flats in Ahmedabad — Roommat',
+    title: 'Verified PG & Shared Flats in Ahmedabad Roommat',
     description:
       'Browse 500+ verified PG rooms and shared flats in Ahmedabad & Gandhinagar. Photos, prices, and instant chat included.',
     url: BASE_URL,
@@ -32,7 +32,7 @@ export const metadata: Metadata = {
   },
 };
 
-/** Root `/` — lives outside `(user)` so Next always resolves the homepage route. */
+/** Root `/` lives outside `(user)` so Next always resolves the homepage route. */
 export default function HomePage() {
   return (
     <UserAuthGate>

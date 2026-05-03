@@ -99,7 +99,7 @@ export default function AdminCmsPage() {
 
         {/* Preview note */}
         <p className="text-xs text-gray-400 mb-4 bg-amber-50 border border-amber-100 rounded-xl px-3 py-2">
-          ⚠️ Preview renderer not included in frontend demo — Markdown will be parsed by the backend.
+          ⚠️ Preview renderer not included in frontend demo Markdown will be parsed by the backend.
         </p>
 
         {/* Actions */}
@@ -155,11 +155,10 @@ export default function AdminCmsPage() {
                 {/* Publish toggle */}
                 <button
                   onClick={() => togglePublished(page.id)}
-                  className={`flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium border transition-colors ${
-                    page.isPublished
+                  className={`flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium border transition-colors ${page.isPublished
                       ? 'bg-green-50 text-green-600 border-green-100'
                       : 'bg-gray-50 text-gray-500 border-gray-200'
-                  }`}
+                    }`}
                   title={page.isPublished ? 'Unpublish' : 'Publish'}
                 >
                   {page.isPublished ? (

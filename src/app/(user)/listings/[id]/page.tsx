@@ -1,7 +1,7 @@
 'use client';
 
 /**
- * Listing detail page — src/app/(user)/listings/[id]/page.tsx
+ * Listing detail page src/app/(user)/listings/[id]/page.tsx
  * Mobile  : single-column scroll
  * Desktop : left column (image, amenities, description, map, similar) +
  *           sticky right column (price, owner, CTAs)
@@ -77,9 +77,9 @@ function buildReminderPhone(raw: string | undefined): string | null {
 }
 
 export default function ListingDetailPage() {
-  const params   = useParams();
-  const router   = useRouter();
-  const toast    = useToast();
+  const params = useParams();
+  const router = useRouter();
+  const toast = useToast();
   const user = useAuthStore((s) => s.user);
   const [visitModalOpen, setVisitModalOpen] = useState(false);
   const [previewListing, setPreviewListing] = useState<Listing | null>(null);
@@ -91,7 +91,7 @@ export default function ListingDetailPage() {
   const [removingResidentIndex, setRemovingResidentIndex] = useState<number | null>(null);
   const [showResidentsViewModal, setShowResidentsViewModal] = useState(false);
   const [residentsForViewModal, setResidentsForViewModal] = useState<ListingResidentSnapshot[]>([]);
-  /** Gallery hero index — reset when navigating to another listing or image count shrinks. */
+  /** Gallery hero index reset when navigating to another listing or image count shrinks. */
   const [photoIndex, setPhotoIndex] = useState(0);
 
   const id = params?.id as string;
@@ -282,7 +282,7 @@ export default function ListingDetailPage() {
 
           {/* ── LEFT: Image + Details ── */}
           <div>
-            {/* Photo gallery — hero + thumbnails (all listing.images) */}
+            {/* Photo gallery hero + thumbnails (all listing.images) */}
             <div className="space-y-2">
               <div
                 className="relative w-full h-56 md:h-72 lg:h-[22rem] lg:rounded-2xl overflow-hidden bg-gray-100"
@@ -291,7 +291,7 @@ export default function ListingDetailPage() {
                 {mainPhotoSrc ? (
                   <img
                     src={mainPhotoSrc}
-                    alt={`${listing.title} — photo ${activePhotoIdx + 1} of ${galleryCount}`}
+                    alt={`${listing.title} photo ${activePhotoIdx + 1} of ${galleryCount}`}
                     className="h-full w-full object-cover object-center"
                     decoding="async"
                     fetchPriority={activePhotoIdx === 0 ? 'high' : 'auto'}
@@ -380,7 +380,7 @@ export default function ListingDetailPage() {
             {/* Details */}
             <div className="px-4 lg:px-0 space-y-5 mt-4">
 
-              {/* Title + location — shown on mobile only (desktop is in right col) */}
+              {/* Title + location shown on mobile only (desktop is in right col) */}
               <div className="lg:hidden">
                 <h1 className="text-xl font-bold text-gray-900 leading-tight mb-1">{listing.title}</h1>
                 <div className="flex items-center gap-2 text-sm text-gray-500">
@@ -551,7 +551,7 @@ export default function ListingDetailPage() {
                 </div>
               )}
 
-              {/* Map — Google embed iframe from lat/lng (no API key) */}
+              {/* Map Google embed iframe from lat/lng (no API key) */}
               <div>
                 <h2 className="text-sm font-bold text-gray-700 mb-2">Location</h2>
                 <ListingLocationMap
@@ -578,7 +578,7 @@ export default function ListingDetailPage() {
           {/* ── RIGHT: Sticky price + owner + CTAs ── */}
           <div className="px-4 lg:px-0 lg:sticky lg:top-20 space-y-4 mt-4 lg:mt-0">
 
-            {/* Title + location — desktop only */}
+            {/* Title + location desktop only */}
             <div className="hidden lg:block">
               <h1 className="text-xl font-bold text-gray-900 leading-tight mb-1">{listing.title}</h1>
               <div className="flex items-center gap-2 text-sm text-gray-500">
