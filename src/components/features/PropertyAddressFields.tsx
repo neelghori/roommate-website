@@ -35,11 +35,43 @@ type PlaceDetails = {
   address_components?: AddressComponent[];
 };
 
+type AutocompletePredictionLike = {
+  description: string;
+  place_id: string;
+};
+
+type AutocompleteServiceLike = {
+  getPlacePredictions: (
+    request: { input: string; componentRestrictions?: { country: string } },
+    callback: (result: AutocompletePredictionLike[] | null, status: string) => void,
+  ) => void;
+};
+
+type PlacesServiceLike = {
+  getDetails: (
+    request: { placeId: string; fields: string[] },
+    callback: (place: PlaceDetails | null, status: string) => void,
+  ) => void;
+};
+
+type GoogleMapsLike = {
+  maps?: {
+    places?: {
+      AutocompleteService: new () => AutocompleteServiceLike;
+      PlacesService: new (container: Element) => PlacesServiceLike;
+    };
+  };
+};
+
 let placesScriptPromise: Promise<void> | null = null;
+
+function getGoogleMaps(): GoogleMapsLike | undefined {
+  return (window as unknown as { google?: GoogleMapsLike }).google;
+}
 
 function loadGooglePlacesScript(): Promise<void> {
   if (typeof window === 'undefined') return Promise.resolve();
-  if ((window as { google?: unknown }).google) return Promise.resolve();
+  if (getGoogleMaps()) return Promise.resolve();
   if (placesScriptPromise) return placesScriptPromise;
 
   const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
@@ -142,8 +174,8 @@ export function PropertyAddressFields({ register, errors, setValue }: PropertyAd
   const [placesError, setPlacesError] = React.useState<string | null>(null);
   const [showSuggestions, setShowSuggestions] = React.useState(false);
 
-  const autocompleteSvcRef = React.useRef<google.maps.places.AutocompleteService | null>(null);
-  const placesSvcRef = React.useRef<google.maps.places.PlacesService | null>(null);
+  const autocompleteSvcRef = React.useRef<AutocompleteServiceLike | null>(null);
+  const placesSvcRef = React.useRef<PlacesServiceLike | null>(null);
   const debounceRef = React.useRef<number | null>(null);
 
   const addressLine1Field = register('addressLine1');
@@ -153,7 +185,7 @@ export function PropertyAddressFields({ register, errors, setValue }: PropertyAd
     void loadGooglePlacesScript()
       .then(() => {
         if (!active) return;
-        const maps = window.google?.maps;
+        const maps = getGoogleMaps()?.maps;
         if (!maps?.places) {
           setPlacesError('Google Places library is unavailable.');
           return;
@@ -189,7 +221,7 @@ export function PropertyAddressFields({ register, errors, setValue }: PropertyAd
       },
       (result, status) => {
         setIsLoadingPredictions(false);
-        if (status !== google.maps.places.PlacesServiceStatus.OK || !result) {
+        if (status !== 'OK' || !result) {
           setPredictions([]);
           return;
         }
@@ -222,7 +254,7 @@ export function PropertyAddressFields({ register, errors, setValue }: PropertyAd
           fields: ['name', 'formatted_address', 'geometry.location', 'address_components', 'place_id'],
         },
         (place, status) => {
-          if (status !== google.maps.places.PlacesServiceStatus.OK || !place) return;
+          if (status !== 'OK' || !place) return;
           const details = place as PlaceDetails;
           const lat = details.geometry?.location?.lat();
           const lng = details.geometry?.location?.lng();
@@ -265,7 +297,7 @@ export function PropertyAddressFields({ register, errors, setValue }: PropertyAd
           {...addressLine1Field}
           onChange={handleAddressInputChange}
           onFocus={(e) => {
-            addressLine1Field.onFocus?.(e);
+            void e;
             setShowSuggestions(true);
           }}
         />
