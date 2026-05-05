@@ -399,6 +399,10 @@ export const authService = {
       });
       const { raw, token } = parseAuthResponse(data);
       const user = mapApiUserToUser(raw, { email: payload.email.trim() });
+      if (user.role !== 'ADMIN' && user.emailVerified !== true) {
+        clearAccessToken();
+        throw new Error('Please verify your email before logging in.');
+      }
       const accessToken = token ?? '';
       if (accessToken) setAccessToken(accessToken);
       else setAccessToken(null);

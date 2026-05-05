@@ -174,7 +174,7 @@ export const AddListingModal: React.FC<AddListingModalProps> = ({
             />
           </div>
 
-          <PropertyAddressFields register={register} errors={errors} />
+          <PropertyAddressFields register={register} errors={errors} setValue={setValue} />
 
           {/* Amenities */}
           <div>

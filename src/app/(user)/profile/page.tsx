@@ -15,7 +15,7 @@ import { CURRENT_USER } from '@/mock/data/users';
 import {
   Pencil, Settings, Home, BadgeCheck,
   HelpCircle, LogOut, ChevronRight, Phone, Building2,
-  Star, Heart, UserCheck, KeyRound, CalendarDays, Mail,
+  Star, Heart, UserCheck, KeyRound, CalendarDays, Mail, MessageCircle,
 } from 'lucide-react';
 
 export default function ProfilePage() {
@@ -397,34 +397,79 @@ export default function ProfilePage() {
         </Modal>
 
         <Modal isOpen={showHelp} onClose={() => setShowHelp(false)} title="❓ Help & Support" size="md">
-          <div className="space-y-2">
-            {faqLoading && (
-              <p className="text-sm text-gray-500 text-center py-4">Loading FAQs…</p>
-            )}
-            {!faqLoading && faqItems.length === 0 && (
-              <p className="text-sm text-gray-500 text-center py-8">No FAQ found.</p>
-            )}
-            {!faqLoading &&
-              faqItems.map((faq, i) => (
-                <div key={faq.id} className="border border-gray-100 rounded-xl overflow-hidden">
-                  <button
-                    type="button"
-                    onClick={() => setOpenFaq(openFaq === i ? null : i)}
-                    className="w-full flex items-center justify-between px-4 py-3 text-left text-sm font-medium text-gray-900 hover:bg-gray-50"
-                  >
-                    {faq.question}
-                    <ChevronRight
-                      size={16}
-                      className={`text-gray-400 shrink-0 transition-transform ${openFaq === i ? 'rotate-90' : ''}`}
-                    />
-                  </button>
-                  {openFaq === i && (
-                    <div className="px-4 pb-3 text-sm text-gray-600">{faq.answer}</div>
-                  )}
+          <div className="space-y-4">
+            <div
+              className="rounded-2xl p-4 border border-[#35B7A7]/40 shadow-[0_8px_24px_rgba(8,92,86,0.22)]"
+              style={{ background: 'linear-gradient(135deg, #158f85 0%, #0f746d 100%)' }}
+            >
+              <p className="text-sm font-bold text-white">Contact Us</p>
+              <div className="mt-3 space-y-2">
+                <a
+                  href="https://roommat.in"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center justify-between rounded-xl bg-white/12 border border-white/10 px-3 py-2 text-sm text-white/90 hover:bg-white/15"
+                >
+                  <span>Website: roommat.in</span>
+                  <span className="rounded-full bg-white/20 px-3 py-0.5 text-xs font-semibold text-white">Visit ↗</span>
+                </a>
+                <div className="flex items-center justify-between rounded-xl bg-white/12 border border-white/10 px-3 py-2 text-sm text-white/90">
+                  <span>Mobile / WhatsApp: +91 88665 66752</span>
+                  <div className="flex items-center gap-2">
+                    <a
+                      href="tel:+918866566752"
+                      className="inline-flex items-center gap-1 rounded-full bg-white/20 px-2.5 py-1 text-xs font-semibold text-white hover:bg-white/30"
+                    >
+                      <Phone size={12} />
+                      Call
+                    </a>
+                    <a
+                      href="https://wa.me/918866566752"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1 rounded-full bg-[#22C55E] px-2.5 py-1 text-xs font-semibold text-white hover:bg-[#16A34A]"
+                    >
+                      <MessageCircle size={12} />
+                      WA
+                    </a>
+                  </div>
                 </div>
-              ))}
-            <div className="pt-2 text-center">
-              <p className="text-xs text-gray-400">Contact us: <a href="mailto:support@roommat.in" className="underline">support@roommat.in</a></p>
+                <a
+                  href="mailto:support@roommat.in"
+                  className="flex items-center justify-between rounded-xl bg-white/12 border border-white/10 px-3 py-2 text-sm text-white/90 hover:bg-white/15"
+                >
+                  <span>Email: support@roommat.in</span>
+                  <span className="rounded-full bg-white/20 px-3 py-0.5 text-xs font-semibold text-white">Send ↗</span>
+                </a>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <p className="text-sm font-semibold text-gray-900">Frequently Asked Questions</p>
+              {faqLoading && faqItems.length === 0 ? (
+                <p className="text-sm text-gray-500 text-center py-4">Loading FAQs…</p>
+              ) : faqItems.length === 0 ? (
+                <p className="text-sm text-gray-500 text-center py-4">No FAQ found.</p>
+              ) : (
+                faqItems.map((faq, i) => (
+                  <div key={faq.id} className="border border-gray-100 rounded-xl overflow-hidden">
+                    <button
+                      type="button"
+                      onClick={() => setOpenFaq(openFaq === i ? null : i)}
+                      className="w-full flex items-center justify-between px-4 py-3 text-left text-sm font-medium text-gray-900 hover:bg-gray-50"
+                    >
+                      {faq.question}
+                      <ChevronRight
+                        size={16}
+                        className={`text-gray-400 shrink-0 transition-transform ${openFaq === i ? 'rotate-90' : ''}`}
+                      />
+                    </button>
+                    {openFaq === i && (
+                      <div className="px-4 pb-3 text-sm text-gray-600">{faq.answer}</div>
+                    )}
+                  </div>
+                ))
+              )}
             </div>
           </div>
         </Modal>

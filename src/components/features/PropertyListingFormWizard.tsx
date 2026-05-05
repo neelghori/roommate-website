@@ -271,7 +271,7 @@ export function PropertyListingFormWizard({
                 {...register('spotsLeft', { valueAsNumber: true })}
               />
             </div>
-            <PropertyAddressFields register={register} errors={errors} />
+            <PropertyAddressFields register={register} errors={errors} setValue={setValue} />
           </div>
         )}
 

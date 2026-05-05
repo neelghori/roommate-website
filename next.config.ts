@@ -27,13 +27,19 @@ function buildConnectSrcDirective(): string {
   addUrlOrigin(process.env.NEXT_PUBLIC_SITE_URL);
   addUrlOrigin(process.env.NEXT_PUBLIC_WS_URL);
 
+  /** Maps JavaScript API + Places (autocomplete, place details use XHR to googleapis/gstatic). */
+  origins.add("https://maps.googleapis.com");
+  origins.add("https://*.googleapis.com");
+  origins.add("https://*.gstatic.com");
+
   return `connect-src ${[...origins].join(" ")}`;
 }
 
 function buildContentSecurityPolicy(): string {
   return [
     "default-src 'self'",
-    "script-src 'self' 'unsafe-eval' 'unsafe-inline'",
+    /** Loader + chunks for Maps JS API / Places library (blocked without these). */
+    "script-src 'self' 'unsafe-eval' 'unsafe-inline' https://maps.googleapis.com https://*.gstatic.com",
     "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
     "font-src 'self' https://fonts.gstatic.com",
     // `https:` listing/resident photos from S3, CloudFront, or any HTTPS CDN (URLs are server-controlled).
@@ -41,6 +47,8 @@ function buildContentSecurityPolicy(): string {
     buildConnectSrcDirective(),
     /** Google Maps iframe embed nested frames may use other *.google.com hosts */
     "frame-src 'self' https://*.google.com https://*.gstatic.com",
+    /** Maps JS API web workers */
+    "worker-src 'self' blob:",
     "frame-ancestors 'none'",
   ].join("; ");
 }
