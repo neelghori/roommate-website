@@ -2,11 +2,12 @@
 
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { CalendarDays, ChevronLeft, Clock, MapPin, Loader2 } from 'lucide-react';
+import { CalendarDays, ChevronLeft, Clock, MapPin, Loader2, MessageSquare } from 'lucide-react';
 import { UserLayout } from '@/components/shared/UserLayout';
 import { bookingService, type MyVisitBooking, type BookingStatus } from '@/services/modules/booking.service';
 import { useToast } from '@/hooks/useToast';
 import { Badge } from '@/components/ui/Badge';
+import { useAuthStore } from '@/store/authStore';
 
 function statusBadgeVariant(s: BookingStatus): 'warning' | 'success' | 'danger' | 'default' {
   if (s === 'confirmed') return 'success';
@@ -34,8 +35,21 @@ function formatVisitDate(iso: string): string {
   });
 }
 
+/** Resolves the other user’s id for `/chat/[id]` (handles missing API `chatWithUserId`). */
+function effectiveChatPartner(b: MyVisitBooking, currentUserId: string): string | null {
+  if (b.chatWithUserId) return b.chatWithUserId;
+  const r = b.requesterUserId;
+  const o = b.propertyOwnerId;
+  const m = currentUserId.trim().toLowerCase();
+  if (!r || !o || !m) return null;
+  if (m === r) return o;
+  if (m === o) return r;
+  return null;
+}
+
 export default function ProfileBookingsPage() {
   const toast = useToast();
+  const currentUserId = useAuthStore((s) => s.user?.id ?? '');
   const [items, setItems] = useState<MyVisitBooking[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -79,7 +93,7 @@ export default function ProfileBookingsPage() {
           <div>
             <h1 className="text-2xl font-black text-gray-900 tracking-tight">Visit bookings</h1>
             <p className="text-sm text-gray-500 mt-1">
-              Properties you requested to visit. The owner may update the status when they respond.
+              Visits you requested and visits others requested on your listings.
             </p>
           </div>
         </div>
@@ -93,7 +107,10 @@ export default function ProfileBookingsPage() {
         {!loading && items.length === 0 && (
           <div className="rounded-2xl border border-gray-100 bg-gray-50/80 px-6 py-12 text-center">
             <p className="text-gray-700 font-medium">No visit bookings yet</p>
-            <p className="text-sm text-gray-500 mt-2 mb-6">Browse listings and tap Book Visit to schedule a time.</p>
+            <p className="text-sm text-gray-500 mt-2 mb-6">
+              Browse listings and tap Book Visit to schedule a time, or wait for guests to book a visit on your
+              properties.
+            </p>
             <Link
               href="/"
               className="inline-flex items-center justify-center rounded-xl bg-primary px-5 py-2.5 text-sm font-semibold text-white hover:opacity-90"
@@ -105,7 +122,14 @@ export default function ProfileBookingsPage() {
 
         {!loading && items.length > 0 && (
           <ul className="space-y-4">
-            {items.map((b) => (
+            {items.map((b) => {
+              const partnerId = effectiveChatPartner(b, currentUserId);
+              const me = currentUserId.trim().toLowerCase();
+              const showChat =
+                partnerId != null &&
+                partnerId.length > 0 &&
+                (me.length === 0 || partnerId.toLowerCase() !== me);
+              return (
               <li
                 key={b.id}
                 className="rounded-2xl border border-gray-100 bg-white overflow-hidden shadow-sm hover:border-primary/20 transition-colors"
@@ -135,6 +159,11 @@ export default function ProfileBookingsPage() {
                         <span className="line-clamp-2">{b.propertyLocationLabel}</span>
                       </p>
                     ) : null}
+                    {b.viewerAsOwner ? (
+                      <p className="text-xs font-semibold text-teal-800 bg-teal-50 border border-teal-100 rounded-lg px-2 py-1.5 w-fit">
+                        Visit request on your listing
+                      </p>
+                    ) : null}
                     <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-gray-600">
                       <span className="inline-flex items-center gap-1">
                         <CalendarDays size={14} className="text-gray-400 shrink-0" aria-hidden />
@@ -148,20 +177,34 @@ export default function ProfileBookingsPage() {
                       ) : null}
                     </div>
                     <p className="text-xs text-gray-400">
-                      Contact on request: {b.contactName} · {b.contactPhone}
+                      {b.viewerAsOwner
+                        ? `Guest: ${b.requesterDisplayName || b.contactName} · ${b.contactPhone}`
+                        : `Your contact: ${b.contactName} · ${b.contactPhone}`}
                     </p>
-                    {b.propertyId ? (
-                      <Link
-                        href={`/listings/${b.propertyId}`}
-                        className="inline-block text-sm font-semibold text-primary hover:underline pt-1"
-                      >
-                        View listing
-                      </Link>
-                    ) : null}
+                    <div className="flex flex-wrap items-center gap-3 pt-1">
+                      {showChat && partnerId ? (
+                        <Link
+                          href={`/chat/${encodeURIComponent(partnerId)}`}
+                          className="inline-flex items-center gap-1.5 rounded-xl border border-primary/25 bg-primary/5 px-3 py-2 text-sm font-semibold text-primary hover:bg-primary/10 transition-colors"
+                        >
+                          <MessageSquare size={16} aria-hidden />
+                          {b.viewerAsOwner ? 'Message guest' : 'Message host'}
+                        </Link>
+                      ) : null}
+                      {b.propertyId ? (
+                        <Link
+                          href={`/listings/${b.propertyId}`}
+                          className="inline-flex text-sm font-semibold text-gray-700 hover:text-primary hover:underline"
+                        >
+                          View listing
+                        </Link>
+                      ) : null}
+                    </div>
                   </div>
                 </div>
               </li>
-            ))}
+              );
+            })}
           </ul>
         )}
       </div>

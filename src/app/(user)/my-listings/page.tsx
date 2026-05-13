@@ -17,6 +17,7 @@ import {
   XCircle,
   MapPin,
   Eye,
+  PauseCircle,
 } from 'lucide-react';
 import { UserLayout } from '@/components/shared/UserLayout';
 import { Button } from '@/components/ui/Button';
@@ -29,11 +30,12 @@ import { Listing } from '@/types';
 import { listingService } from '@/services/modules/listing.service';
 import { ListingAmenityIcon } from '@/components/features/ListingAmenityIcon';
 
-type MyListing = Listing & { myStatus: 'Active' | 'Pending' | 'Rejected' };
+type MyListing = Listing & { myStatus: 'Active' | 'Pending' | 'Rejected' | 'On hold' };
 
-function approvalToMyStatus(l: Listing): 'Active' | 'Pending' | 'Rejected' {
+function approvalToMyStatus(l: Listing): 'Active' | 'Pending' | 'Rejected' | 'On hold' {
   if (l.approvalStatus === 'APPROVED') return 'Active';
   if (l.approvalStatus === 'REJECTED') return 'Rejected';
+  if (l.approvalStatus === 'ON_HOLD') return 'On hold';
   return 'Pending';
 }
 
@@ -43,11 +45,10 @@ const TYPE_COLORS: Record<string, string> = {
   Flat: '#c8eeee',
   Roommate: '#cce8cc',
   CoWorkingSpace: '#e8dcc8',
-  Bachelor: '#d8c8e8',
-  Family: '#c8d8e8',
+  House: '#d8e0c8',
 };
 
-function StatusBadge({ status }: { status: 'Active' | 'Pending' | 'Rejected' }) {
+function StatusBadge({ status }: { status: 'Active' | 'Pending' | 'Rejected' | 'On hold' }) {
   if (status === 'Active') {
     return (
       <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-green-100 text-green-700">
@@ -61,6 +62,14 @@ function StatusBadge({ status }: { status: 'Active' | 'Pending' | 'Rejected' }) 
       <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-100 text-amber-700">
         <Clock size={11} />
         Pending
+      </span>
+    );
+  }
+  if (status === 'On hold') {
+    return (
+      <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-slate-100 text-slate-700">
+        <PauseCircle size={11} />
+        On hold
       </span>
     );
   }

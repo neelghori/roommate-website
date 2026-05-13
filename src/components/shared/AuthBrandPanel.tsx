@@ -1,5 +1,9 @@
 import React from 'react';
 import Image from 'next/image';
+import Link from 'next/link';
+
+/** Shown under the logo on auth screens — keep in sync with marketing copy. */
+export const AUTH_SITE_SLOGAN = 'Find Room · Find People · Feel Home';
 
 interface AuthBrandPanelProps {
   children: React.ReactNode;
@@ -63,17 +67,24 @@ export function AuthBrandPanel({ children, stats }: AuthBrandPanelProps) {
         R
       </div>
 
-      {/* ── Logo ─────────────────────────────────────────────────── */}
-      <div className="relative z-10">
+      {/* ── Logo + slogan (entire block links home) ─────────────── */}
+      <Link
+        href="/"
+        className="relative z-10 inline-block max-w-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/35 focus-visible:ring-offset-2 focus-visible:ring-offset-transparent rounded-sm hover:opacity-95 transition-opacity"
+        aria-label="Roommat — home"
+      >
         <Image
           src="/logo.png"
-          alt="Roommat"
+          alt=""
           width={144}
           height={44}
           className="h-8 w-auto object-contain brightness-0 invert"
           priority
         />
-      </div>
+        <p className="mt-2.5 text-[11px] font-medium uppercase tracking-[0.14em] text-white/50">
+          {AUTH_SITE_SLOGAN}
+        </p>
+      </Link>
 
       {/* ── Main content slot ────────────────────────────────────── */}
       <div className="relative z-10 flex-1 flex flex-col justify-center py-8">

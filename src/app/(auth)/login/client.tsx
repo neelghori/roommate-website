@@ -14,7 +14,7 @@ import { getAccessToken } from '@/lib/authToken';
 import { wsService } from '@/services/wsService';
 import { useToast } from '@/hooks/useToast';
 import { Input } from '@/components/ui/Input';
-import { AuthBrandPanel, PanelFeatureList } from '@/components/shared/AuthBrandPanel';
+import { AuthBrandPanel, AUTH_SITE_SLOGAN, PanelFeatureList } from '@/components/shared/AuthBrandPanel';
 import { AuthActivityFeed } from '@/components/shared/AuthActivityFeed';
 
 function safeNextPath(raw: string | null): string {
@@ -141,14 +141,18 @@ export default function LoginPageClient() {
         {/* Subtle right-panel glow */}
         <div aria-hidden="true" className="auth-panel-glow pointer-events-none absolute inset-0" />
 
-        {/* Mobile logo */}
-        <div className="lg:hidden mb-8 text-center relative z-10">
-          <Image src="/logo.png" alt="Roommat" width={140} height={44}
+        {/* Mobile logo + slogan → home */}
+        <Link
+          href="/"
+          className="lg:hidden mb-8 text-center relative z-10 inline-block mx-auto focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40 rounded-sm"
+          aria-label="Roommat — home"
+        >
+          <Image src="/logo.png" alt="" width={140} height={44}
             className="mx-auto h-9 w-auto object-contain" />
           <p className="mt-2 text-[11px] uppercase tracking-widest text-gray-400">
-            Find Room · Find People · Feel Home
+            {AUTH_SITE_SLOGAN}
           </p>
-        </div>
+        </Link>
 
         {/* Form card */}
         <div className="auth-card relative z-10 w-full max-w-[420px]">

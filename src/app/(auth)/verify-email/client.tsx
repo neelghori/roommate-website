@@ -5,6 +5,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Loader2, CheckCircle2, XCircle, ArrowLeft, MailOpen, RefreshCw } from 'lucide-react';
+import { AUTH_SITE_SLOGAN } from '@/components/shared/AuthBrandPanel';
 import { authService } from '@/services/modules/auth.service';
 import { useAuthStore } from '@/store/authStore';
 
@@ -45,19 +46,23 @@ export default function VerifyEmailClient() {
 
   return (
     <div className="flex min-h-[100dvh] flex-col items-center justify-center px-4 py-12">
-      {/* Logo */}
-      <div className="mb-8 text-center">
+      {/* Logo + slogan → home */}
+      <Link
+        href="/"
+        className="mb-8 text-center inline-block focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40 rounded-sm"
+        aria-label="Roommat — home"
+      >
         <Image
           src="/logo.png"
-          alt="Roommat"
+          alt=""
           width={140}
           height={44}
           className="mx-auto h-9 w-auto object-contain"
         />
         <p className="mt-2 text-[11px] uppercase tracking-widest text-gray-400">
-          Find Room · Find People · Feel Home
+          {AUTH_SITE_SLOGAN}
         </p>
-      </div>
+      </Link>
 
       {/* Card */}
       <div className="auth-card w-full max-w-[420px]">

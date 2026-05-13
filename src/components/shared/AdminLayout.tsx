@@ -67,10 +67,13 @@ const SidebarContent: React.FC<SidebarProps> = ({ onClose }) => {
           <Image
             src="/logo.png"
             alt="Roommat"
-            width={100}
-            height={32}
+            width={200}
+            height={64}
             className="h-7 w-auto object-contain"
             priority
+            quality={100}
+            unoptimized
+            sizes="140px"
           />
           <span className="text-[10px] text-gray-400 font-semibold uppercase tracking-widest border-l border-gray-200 pl-2">
             Admin

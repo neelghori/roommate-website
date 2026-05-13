@@ -25,6 +25,7 @@ import { Select } from '@/components/ui/Select';
 import { Checkbox } from '@/components/ui/Checkbox';
 import { ImageUploader } from '@/components/features/ImageUploader';
 import { PropertyAddressFields } from '@/components/features/PropertyAddressFields';
+import { ListingPeopleTypeCheckboxes } from '@/components/features/ListingPeopleTypeCheckboxes';
 import { useToast } from '@/hooks/useToast';
 
 const GENDER_OPTIONS = [
@@ -66,6 +67,7 @@ export const AddListingModal: React.FC<AddListingModalProps> = ({
       type: 'PG',
       spotsLeft: 1,
       genderPreference: 'Any',
+      peopleTypes: ['Bachelor', 'Working', 'Family'],
       amenities: [],
       addressLine1: '',
       addressLine2: '',
@@ -154,6 +156,8 @@ export const AddListingModal: React.FC<AddListingModalProps> = ({
             />
           </div>
 
+          <ListingPeopleTypeCheckboxes control={control} errors={errors} />
+
           {/* Rent + Spots 2-col */}
           <div className="grid grid-cols-2 gap-3">
             <Input
@@ -174,7 +178,13 @@ export const AddListingModal: React.FC<AddListingModalProps> = ({
             />
           </div>
 
-          <PropertyAddressFields register={register} errors={errors} setValue={setValue} />
+          <PropertyAddressFields
+            register={register}
+            errors={errors}
+            setValue={setValue}
+            control={control}
+            getValues={getValues}
+          />
 
           {/* Amenities */}
           <div>

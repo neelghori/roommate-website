@@ -29,8 +29,7 @@ const TYPE_BG_CLASS: Record<string, string> = {
   Flat: 'bg-[#c8eeee]',
   Roommate: 'bg-[#cce8cc]',
   CoWorkingSpace: 'bg-[#e8dcc8]',
-  Bachelor: 'bg-[#d8c8e8]',
-  Family: 'bg-[#c8d8e8]',
+  House: 'bg-[#d8e0c8]',
 };
 
 interface ListingDetailModalProps {
@@ -253,6 +252,12 @@ export const ListingDetailModal: React.FC<ListingDetailModalProps> = ({
                   {listing.genderPreference} pref.
                 </span>
               </div>
+              {listing.peopleTypes && listing.peopleTypes.length > 0 ? (
+                <p className="text-xs text-gray-600">
+                  <span className="font-semibold text-gray-700">People: </span>
+                  {listing.peopleTypes.join(' · ')}
+                </p>
+              ) : null}
 
               {/* Mobile: spots left */}
               <div className="lg:hidden flex items-center gap-1.5">

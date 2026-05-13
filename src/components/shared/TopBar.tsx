@@ -399,10 +399,13 @@ export const TopBar: React.FC<TopBarProps> = ({
           <Image
             src="/logo.png"
             alt="Roommat"
-            width={110}
-            height={36}
-            className="h-8 lg:h-9 w-auto object-contain"
+            width={220}
+            height={72}
+            className="h-8 lg:h-9 w-auto object-contain object-left"
             priority
+            quality={100}
+            unoptimized
+            sizes="(max-width: 1024px) 160px, 180px"
           />
           {pageSuffix && (
             <span className="text-sm font-medium text-gray-400 border-l border-gray-200 pl-2 lg:hidden">
@@ -458,8 +461,8 @@ export const TopBar: React.FC<TopBarProps> = ({
           </div>
         </form>
 
-        {/* Spacer when no search on mobile */}
-        {!showSearch && pageSuffix && <div className="flex-1 lg:hidden" />}
+        {/* Spacer when no search on mobile — keeps bell/avatar aligned right */}
+        {!showSearch && <div className="flex-1 min-w-0 lg:hidden" aria-hidden />}
 
         {/* ── Right actions ── */}
         <div className="flex items-center gap-2 lg:gap-3 flex-shrink-0">

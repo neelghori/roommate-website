@@ -10,7 +10,7 @@ import {
   Eye, EyeOff, ArrowRight,
   User, Building2, Users,
   BadgeCheck, MapPin, Star, Lock,
-  CheckCircle2, ShieldCheck,
+  CheckCircle2,
 } from 'lucide-react';
 import { registerSchema, type RegisterFormData } from '@/lib/validations/auth.schema';
 import { authService } from '@/services/modules/auth.service';
@@ -19,7 +19,7 @@ import { Input } from '@/components/ui/Input';
 import { Modal } from '@/components/ui/Modal';
 import { TermsDocumentBody } from '@/components/legal/TermsDocumentBody';
 import { PrivacyDocumentBody } from '@/components/legal/PrivacyDocumentBody';
-import { AuthBrandPanel, PanelFeatureList } from '@/components/shared/AuthBrandPanel';
+import { AuthBrandPanel, AUTH_SITE_SLOGAN, PanelFeatureList } from '@/components/shared/AuthBrandPanel';
 import { AuthActivityFeed } from '@/components/shared/AuthActivityFeed';
 
 /* ── Password strength ─────────────────────────────────────────── */
@@ -203,14 +203,18 @@ export default function RegisterPageClient() {
 
         <div className="relative z-10 flex flex-col items-center px-5 py-10 sm:px-8 lg:px-10 xl:px-14">
 
-          {/* Mobile logo */}
-          <div className="lg:hidden mb-8 text-center w-full">
-            <Image src="/logo.png" alt="Roommat" width={140} height={44}
+          {/* Mobile logo + slogan → home */}
+          <Link
+            href="/"
+            className="lg:hidden mb-8 text-center w-full relative z-10 inline-block focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40 rounded-sm"
+            aria-label="Roommat — home"
+          >
+            <Image src="/logo.png" alt="" width={140} height={44}
               className="mx-auto h-9 w-auto object-contain" />
             <p className="mt-2 text-[11px] uppercase tracking-widest text-gray-400">
-              Find Room · Find People · Feel Home
+              {AUTH_SITE_SLOGAN}
             </p>
-          </div>
+          </Link>
 
           {/* ── White form card ──────────────────────────────── */}
           <div className="auth-card w-full max-w-2xl">
@@ -222,7 +226,6 @@ export default function RegisterPageClient() {
               <div className="flex items-start justify-between mb-7">
                 <div>
                   <h1 className="text-2xl font-bold tracking-tight text-gray-900">Create your account</h1>
-                  <p className="mt-1.5 text-sm text-gray-500">Free forever · ready in under 2 minutes</p>
                 </div>
                 <p className="hidden sm:block text-sm text-gray-400 pt-1 whitespace-nowrap">
                   Have an account?{' '}
@@ -240,7 +243,7 @@ export default function RegisterPageClient() {
                   </p>
                   <span className="text-[10px] text-gray-300">Pick one</span>
                 </div>
-                <div className="grid grid-cols-3 gap-3">
+                <div className="grid grid-cols-1 gap-3 md:grid-cols-3 md:gap-3">
                   {ROLES.map(({ value, label, Icon, desc }) => {
                     const active = selectedRole === value;
                     return (
@@ -249,7 +252,7 @@ export default function RegisterPageClient() {
                         type="button"
                         aria-pressed={active}
                         onClick={() => setValue('role', value, { shouldValidate: true })}
-                        className={`relative flex flex-col items-start gap-2.5 rounded-xl p-4 text-left transition-all duration-200 focus-visible:outline-none ${active ? 'auth-role-active-card' : 'auth-role-idle-card'}`}
+                        className={`relative flex w-full min-w-0 flex-row items-center gap-3 rounded-xl p-3.5 text-left transition-all duration-200 focus-visible:outline-none md:flex-col md:items-start md:gap-2.5 md:p-4 ${active ? 'auth-role-active-card' : 'auth-role-idle-card'}`}
                       >
                         {/* Check indicator */}
                         <span
@@ -258,14 +261,16 @@ export default function RegisterPageClient() {
                           <CheckCircle2 size={13} className="text-white" />
                         </span>
 
-                        <span className={`flex h-9 w-9 items-center justify-center rounded-lg ${active ? 'auth-role-icon-active' : 'auth-role-icon-idle'}`}>
-                          <Icon size={17} className={active ? 'text-white' : 'text-primary-600'} />
+                        <span className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg md:h-9 md:w-9 ${active ? 'auth-role-icon-active' : 'auth-role-icon-idle'}`}>
+                          <Icon size={18} className={active ? 'text-white' : 'text-primary-600'} />
                         </span>
-                        <div>
-                          <p className={`text-sm font-bold leading-none ${active ? 'text-white' : 'text-gray-800'}`}>
+                        <div className="min-w-0 flex-1 pr-7 md:pr-6">
+                          <p
+                            className={`text-[15px] font-bold leading-snug md:text-sm ${active ? 'text-white' : 'text-gray-800'}`}
+                          >
                             {label}
                           </p>
-                          <p className={`mt-1 text-[11px] leading-snug ${active ? 'text-white/70' : 'text-gray-400'}`}>
+                          <p className={`mt-0.5 text-xs leading-snug md:mt-1 md:text-[11px] ${active ? 'text-white/75' : 'text-gray-500'}`}>
                             {desc}
                           </p>
                         </div>
@@ -417,17 +422,11 @@ export default function RegisterPageClient() {
                 </button>
 
                 {/* Trust micro-row */}
-                <div className="auth-trust-row pt-1">
-                  {[
-                    { Icon: ShieldCheck, text: 'No credit card' },
-                    { Icon: Lock, text: 'Private & secure' },
-                    { Icon: BadgeCheck, text: 'Free forever' },
-                  ].map(({ Icon, text }) => (
-                    <span key={text} className="flex items-center gap-1 text-[11px] text-gray-400">
-                      <Icon size={12} className="text-primary-500 shrink-0" />
-                      {text}
-                    </span>
-                  ))}
+                <div className="auth-trust-row pt-1 justify-center">
+                  <span className="flex items-center gap-1 text-[11px] text-gray-400">
+                    <Lock size={12} className="text-primary-500 shrink-0" />
+                    Private & secure
+                  </span>
                 </div>
               </form>
 

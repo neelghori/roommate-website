@@ -12,10 +12,11 @@ const LISTING_TYPES = [
   'Flat',
   'Roommate',
   'CoWorkingSpace',
-  'Bachelor',
-  'Family',
+  'House',
 ] as const;
 const GENDER_PREFERENCES = ['Male', 'Female', 'Any'] as const;
+const PEOPLE_TYPES = ['Bachelor', 'Working', 'Family'] as const;
+
 export const listingSchema = z.object({
   title: z
     .string()
@@ -68,6 +69,14 @@ export const listingSchema = z.object({
 
   genderPreference: z.enum(GENDER_PREFERENCES, { message: 'Select a valid gender preference' }),
 
+  peopleTypes: z
+    .array(z.enum(PEOPLE_TYPES))
+    .min(1, 'Select at least one people type')
+    .max(3)
+    .refine((arr) => new Set(arr).size === arr.length, {
+      message: 'Each people type can only be selected once',
+    }),
+
   amenities: z
     .array(z.string().trim().min(1, 'Invalid amenity').max(100))
     .min(1, 'Select at least one amenity')
@@ -103,6 +112,7 @@ export const listingWizardStep1Schema = listingSchema.pick({
   latitude: true,
   longitude: true,
   genderPreference: true,
+  peopleTypes: true,
 });
 
 export const listingWizardStep2Schema = listingSchema.pick({
