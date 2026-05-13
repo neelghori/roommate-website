@@ -10,7 +10,7 @@ import { forgotPasswordSchema, type ForgotPasswordFormData } from '@/lib/validat
 import { authService } from '@/services/modules/auth.service';
 import { useToast } from '@/hooks/useToast';
 import { Input } from '@/components/ui/Input';
-import { AuthBrandPanel, PanelFeatureList } from '@/components/shared/AuthBrandPanel';
+import { AuthBrandPanel, AUTH_SITE_SLOGAN, PanelFeatureList } from '@/components/shared/AuthBrandPanel';
 
 const STEPS = [
   { Icon: Mail, title: 'Enter your email', desc: "We'll look up your account instantly" },
@@ -82,14 +82,18 @@ export default function ForgotPasswordPage() {
         {/* Subtle glow */}
         <div aria-hidden="true" className="auth-panel-glow pointer-events-none absolute inset-0" />
 
-        {/* Mobile logo */}
-        <div className="lg:hidden mb-8 text-center relative z-10">
-          <Image src="/logo.png" alt="Roommat" width={140} height={44}
+        {/* Mobile logo + slogan → home */}
+        <Link
+          href="/"
+          className="lg:hidden mb-8 text-center relative z-10 inline-block mx-auto focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40 rounded-sm"
+          aria-label="Roommat — home"
+        >
+          <Image src="/logo.png" alt="" width={140} height={44}
             className="mx-auto h-9 w-auto object-contain" />
           <p className="mt-2 text-[11px] uppercase tracking-widest text-gray-400">
-            Find Room · Find People · Feel Home
+            {AUTH_SITE_SLOGAN}
           </p>
-        </div>
+        </Link>
 
         {sent ? (
           /* ── Success card ──────────────────────────────────── */

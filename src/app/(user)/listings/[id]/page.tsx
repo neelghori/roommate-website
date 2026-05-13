@@ -49,8 +49,7 @@ const TYPE_COLORS: Record<string, string> = {
   Flat: '#c8eeee',
   Roommate: '#cce8cc',
   CoWorkingSpace: '#e8dcc8',
-  Bachelor: '#d8c8e8',
-  Family: '#c8d8e8',
+  House: '#d8e0c8',
 };
 
 function maskPhone(phone: string): string {
@@ -609,6 +608,14 @@ export default function ListingDetailPage() {
                 >
                   {listing.genderPreference} pref.
                 </span>
+                {listing.peopleTypes && listing.peopleTypes.length > 0 ? (
+                  <span
+                    className="px-2.5 py-0.5 rounded-full font-semibold text-gray-700 bg-gray-100"
+                    title="Suitable for"
+                  >
+                    {listing.peopleTypes.join(' · ')}
+                  </span>
+                ) : null}
               </div>
 
               {!isOwner && listing.ownerId ? (

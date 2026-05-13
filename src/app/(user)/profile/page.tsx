@@ -14,8 +14,9 @@ import { faqService, type FaqItem } from '@/services/modules/faq.service';
 import { CURRENT_USER } from '@/mock/data/users';
 import {
   Pencil, Settings, Home, BadgeCheck,
-  HelpCircle, LogOut, ChevronRight, Phone, Building2,
-  Star, Heart, UserCheck, KeyRound, CalendarDays, Mail, MessageCircle,
+  HelpCircle, LogOut, ChevronRight, Phone,
+  Star, UserCheck, KeyRound, CalendarDays, Mail,
+  MessageCircle, Users,
 } from 'lucide-react';
 
 export default function ProfilePage() {
@@ -92,8 +93,12 @@ export default function ProfilePage() {
   const menuItems = [
     { icon: Settings, label: 'Super Admin Panel', href: '/admin', admin: true },
     { icon: Home, label: 'My Listings', href: '/my-listings' },
+    {
+      icon: Users,
+      label: 'Tenant Profile',
+      href: '/profile/tenant-profile',
+    },
     { icon: CalendarDays, label: 'Visit bookings', href: '/profile/bookings' },
-    { icon: Heart, label: 'Saved listings', href: '/profile/saved' },
     { icon: KeyRound, label: 'Change password', href: '/profile/change-password' },
     {
       icon: BadgeCheck,
@@ -183,8 +188,9 @@ export default function ProfilePage() {
                     </span>
                   )}
                   {profile.isCompanyVerified && (
-                    <span className="flex items-center gap-1.5 text-[11px] lg:text-sm font-bold text-orange-600 bg-orange-50 px-3.5 py-1.5 lg:px-5 lg:py-2.5 rounded-full border border-orange-100">
-                      <Building2 size={16} className="shrink-0" /> Company
+                    <span className="flex items-center gap-1.5 text-[11px] lg:text-sm font-semibold bg-blue-50 px-3.5 py-1.5 lg:px-5 lg:py-2.5 rounded-full border border-[#0095F6]/25 text-[#0095F6]">
+                      <BadgeCheck size={16} className="shrink-0 text-[#0095F6]" aria-hidden />
+                      verified
                     </span>
                   )}
                   {profile.role !== 'ADMIN' && profile.emailVerified && (

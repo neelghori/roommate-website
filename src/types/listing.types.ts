@@ -20,9 +20,11 @@ export type ListingType =
   | 'Flat'
   | 'Roommate'
   | 'CoWorkingSpace'
-  | 'Bachelor'
-  | 'Family';
-export type ListingApprovalStatus = 'PENDING' | 'APPROVED' | 'REJECTED' | 'UNDER_REVIEW';
+  | 'House';
+
+/** Preferred occupant categories (multi-select); maps to API `peopleTypes`. */
+export type ListingPeopleType = 'Bachelor' | 'Working' | 'Family';
+export type ListingApprovalStatus = 'PENDING' | 'APPROVED' | 'REJECTED' | 'UNDER_REVIEW' | 'ON_HOLD';
 
 /** Who lives here maps to backend `Property.listerSnapshot`. */
 export interface ListingResidentSnapshot {
@@ -80,6 +82,8 @@ export interface Listing {
   amenities: ListingAmenityChip[];
   badge: ListingStatus;
   type: ListingType;
+  /** Suitable for (subset of bachelor / working / family). */
+  peopleTypes?: ListingPeopleType[];
   images: string[];
   description: string;
   /** Current residents / roommates (optional). Prefer this over `residentSnapshot`. */

@@ -42,6 +42,10 @@ function listingToFormData(listing: Listing): ListingFormData {
     placeId: listing.placeId ?? '',
     formattedAddress: listing.formattedAddress ?? '',
     genderPreference: listing.genderPreference,
+    peopleTypes:
+      listing.peopleTypes && listing.peopleTypes.length > 0
+        ? listing.peopleTypes
+        : ['Bachelor', 'Working', 'Family'],
     amenities,
     description,
     phone,

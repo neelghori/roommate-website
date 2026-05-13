@@ -16,6 +16,7 @@ import { Select } from '@/components/ui/Select';
 import { Checkbox } from '@/components/ui/Checkbox';
 import { ImageUploader } from '@/components/features/ImageUploader';
 import { PropertyAddressFields } from '@/components/features/PropertyAddressFields';
+import { ListingPeopleTypeCheckboxes } from '@/components/features/ListingPeopleTypeCheckboxes';
 import {
   listingSchema,
   validateListingWizardStep,
@@ -49,6 +50,7 @@ const WIZARD_DEFAULTS: DefaultValues<ListingFormData> = {
   country: 'India',
   postalCode: '',
   genderPreference: 'Any',
+  peopleTypes: ['Bachelor', 'Working', 'Family'],
   amenities: [],
   description: '',
   phone: '',
@@ -253,6 +255,7 @@ export function PropertyListingFormWizard({
                 )}
               />
             </div>
+            <ListingPeopleTypeCheckboxes control={control} errors={errors} />
             <div className="grid grid-cols-2 gap-3">
               <Input
                 label="Rent / Month ₹ *"
@@ -271,7 +274,13 @@ export function PropertyListingFormWizard({
                 {...register('spotsLeft', { valueAsNumber: true })}
               />
             </div>
-            <PropertyAddressFields register={register} errors={errors} setValue={setValue} />
+            <PropertyAddressFields
+              register={register}
+              errors={errors}
+              setValue={setValue}
+              control={control}
+              getValues={getValues}
+            />
           </div>
         )}
 

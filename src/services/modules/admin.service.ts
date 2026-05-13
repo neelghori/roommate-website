@@ -224,6 +224,15 @@ export const adminService = {
     }
   },
 
+  markListingOnHold: async (id: string): Promise<AdminListing> => {
+    try {
+      await adminApiClient.patch(`/api/v1/admin/properties/${id}/moderate`, { action: 'on_hold' });
+      return await fetchAdminListingRow(id);
+    } catch (err) {
+      throw new Error(adminErrMessage(err, 'Could not put listing on hold'));
+    }
+  },
+
   markListingUnderReview: async (id: string): Promise<AdminListing> => {
     try {
       await adminApiClient.patch(`/api/v1/admin/properties/${id}/moderate`, { action: 'under_review' });

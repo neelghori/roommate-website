@@ -4,9 +4,10 @@
  * Authenticated users book a property visit (date, time, contact from profile by default).
  * Guests see a sign-in prompt with `next` returning to the current page.
  */
-import React, { useEffect, useMemo } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { MessageSquare } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Modal } from '@/components/ui/Modal';
@@ -46,6 +47,7 @@ export function BookVisitModal({ listing, isOpen, onClose, onBooked }: BookVisit
   const user = useAuthStore((s) => s.user);
   const setUser = useAuthStore((s) => s.setUser);
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+  const [justBooked, setJustBooked] = useState(false);
 
   const isOwnListing = Boolean(user?.id && listing?.ownerId && String(user.id) === String(listing.ownerId));
   const loginHref = `/login?next=${encodeURIComponent(pathname)}`;
@@ -71,7 +73,11 @@ export function BookVisitModal({ listing, isOpen, onClose, onBooked }: BookVisit
   });
 
   useEffect(() => {
-    if (!isOpen || !listing) return;
+    if (!isOpen) {
+      setJustBooked(false);
+      return;
+    }
+    if (!listing) return;
     reset({
       preferredDate: todayInputValue(),
       preferredTime: '',
@@ -94,9 +100,9 @@ export function BookVisitModal({ listing, isOpen, onClose, onBooked }: BookVisit
       if (u) {
         setUser({ ...u, bookingCount: (u.bookingCount ?? 0) + 1 });
       }
-      toast.success('Visit requested', 'The owner will be notified. You can adjust details if they contact you.');
+      toast.success('Visit requested', 'Message the host anytime about this visit.');
       onBooked?.();
-      onClose();
+      setJustBooked(true);
     } catch (e) {
       toast.error('Booking failed', e instanceof Error ? e.message : 'Try again.');
     }
@@ -125,6 +131,25 @@ export function BookVisitModal({ listing, isOpen, onClose, onBooked }: BookVisit
         <p className="text-sm text-gray-600 rounded-xl border border-gray-100 bg-gray-50 px-4 py-3">
           You cannot book a visit to your own listing.
         </p>
+      ) : justBooked ? (
+        <div className="rounded-xl border border-teal-100 bg-teal-50/60 px-4 py-4 space-y-4">
+          <p className="text-sm font-medium text-gray-900">Your visit request was sent.</p>
+          <p className="text-sm text-gray-600">
+            Coordinate details with the host in chat (same as Profile → Visit bookings).
+          </p>
+          {listing.ownerId ? (
+            <Link
+              href={`/chat/${encodeURIComponent(String(listing.ownerId))}`}
+              className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-primary/30 bg-white px-4 py-2.5 text-sm font-semibold text-primary shadow-sm hover:bg-primary/5 transition-colors"
+            >
+              <MessageSquare size={18} aria-hidden />
+              Message host
+            </Link>
+          ) : null}
+          <Button type="button" variant="secondary" size="md" fullWidth onClick={onClose}>
+            Done
+          </Button>
+        </div>
       ) : (
         <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4">
           <Input

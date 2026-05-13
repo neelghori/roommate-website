@@ -20,8 +20,7 @@ export type ListingType =
   | "Flat"
   | "Roommate"
   | "CoWorkingSpace"
-  | "Bachelor"
-  | "Family";
+  | "House";
 
 export interface Listing {
   id: string;
@@ -133,7 +132,7 @@ export const LISTINGS: Listing[] = [
   },
   {
     id: "l5",
-    title: "Bachelor Room | Maninagar",
+    title: "Independent room | Maninagar",
     location: "Maninagar",
     city: "Ahmedabad",
     price: 6500,
@@ -141,7 +140,7 @@ export const LISTINGS: Listing[] = [
     spotsLeft: 4,
     amenities: [{ name: "WiFi" }, { name: "Kitchen" }],
     badge: null,
-    type: "Bachelor",
+    type: "House",
     images: [],
     description: "Single non-AC room. Ground floor. Easy bus connectivity.",
     mapPlaceholder: true,
@@ -305,8 +304,7 @@ export const CATEGORIES: Category[] = [
   { id: "c2", label: "Flat", icon: "🔑", count: 0, unit: "listings" },
   { id: "c3", label: "Roommate", icon: "👥", count: 0, unit: "profiles" },
   { id: "c4", label: "CoWorkingSpace", icon: "💼", count: 0, unit: "listings" },
-  { id: "c5", label: "Bachelor", icon: "👤", count: 0, unit: "listings" },
-  { id: "c6", label: "Family", icon: "👨‍👩‍👧", count: 0, unit: "listings" },
+  { id: "c5", label: "House", icon: "🏡", count: 0, unit: "listings" },
 ];
 
 /* ─────────────────────────────────────────────────────────────────

@@ -77,9 +77,12 @@ export const Footer: React.FC = () => {
               <Image
                 src="/logo.png"
                 alt="Roommat Logo"
-                width={120}
-                height={40}
+                width={240}
+                height={80}
                 className="h-10 w-auto object-contain"
+                quality={100}
+                unoptimized
+                sizes="200px"
               />
             </Link>
             <p className="text-gray-500 text-sm max-w-xs leading-relaxed">

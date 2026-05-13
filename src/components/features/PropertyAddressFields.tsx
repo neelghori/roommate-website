@@ -1,14 +1,25 @@
 'use client';
 
 import React from 'react';
-import type { FieldErrors, UseFormRegister } from 'react-hook-form';
+import type {
+  Control,
+  FieldErrors,
+  UseFormGetValues,
+  UseFormRegister,
+  UseFormSetValue,
+} from 'react-hook-form';
+import { useWatch } from 'react-hook-form';
 import { Input } from '@/components/ui/Input';
 import type { ListingFormData } from '@/lib/validations/listing.schema';
+
+const DEFAULT_MAP_CENTER = { lat: 23.0225, lng: 72.5714 }; // Ahmedabad
 
 export type PropertyAddressFieldsProps = {
   register: UseFormRegister<ListingFormData>;
   errors: FieldErrors<ListingFormData>;
-  setValue: (name: keyof ListingFormData, value: ListingFormData[keyof ListingFormData]) => void;
+  setValue: UseFormSetValue<ListingFormData>;
+  control: Control<ListingFormData>;
+  getValues: UseFormGetValues<ListingFormData>;
 };
 
 type PlacePrediction = {
@@ -69,6 +80,7 @@ function getGoogleMaps(): GoogleMapsLike | undefined {
   return (window as unknown as { google?: GoogleMapsLike }).google;
 }
 
+/** Loads Maps JS API with Places (autocomplete + interactive Map + Marker). */
 function loadGooglePlacesScript(): Promise<void> {
   if (typeof window === 'undefined') return Promise.resolve();
   if (getGoogleMaps()) return Promise.resolve();
@@ -111,9 +123,7 @@ function parseAddressComponents(components: AddressComponent[] | undefined): {
   state?: string;
   country?: string;
   postalCode?: string;
-  /** Best-effort "street + number" line. */
   addressLine1?: string;
-  /** Best-effort "flat / floor / building / locality" line. */
   addressLine2?: string;
 } {
   const out: {
@@ -166,7 +176,13 @@ function parseAddressComponents(components: AddressComponent[] | undefined): {
   return out;
 }
 
-export function PropertyAddressFields({ register, errors, setValue }: PropertyAddressFieldsProps) {
+export function PropertyAddressFields({
+  register,
+  errors,
+  setValue,
+  control,
+  getValues,
+}: PropertyAddressFieldsProps) {
   const [query, setQuery] = React.useState('');
   const [predictions, setPredictions] = React.useState<PlacePrediction[]>([]);
   const [isLoadingPredictions, setIsLoadingPredictions] = React.useState(false);
@@ -177,6 +193,15 @@ export function PropertyAddressFields({ register, errors, setValue }: PropertyAd
   const autocompleteSvcRef = React.useRef<AutocompleteServiceLike | null>(null);
   const placesSvcRef = React.useRef<PlacesServiceLike | null>(null);
   const debounceRef = React.useRef<number | null>(null);
+
+  const mapElRef = React.useRef<HTMLDivElement | null>(null);
+  const mapRef = React.useRef<unknown>(null);
+  const markerRef = React.useRef<unknown>(null);
+  const mapListenersRef = React.useRef<Array<{ remove: () => void }>>([]);
+  const mapInitRef = React.useRef(false);
+
+  const latWatch = useWatch({ control, name: 'latitude' });
+  const lngWatch = useWatch({ control, name: 'longitude' });
 
   const addressLine1Field = register('addressLine1');
 
@@ -206,6 +231,121 @@ export function PropertyAddressFields({ register, errors, setValue }: PropertyAd
       }
     };
   }, []);
+
+  const applyLatLngToForm = React.useCallback(
+    (lat: number, lng: number) => {
+      setValue('latitude', lat, { shouldValidate: true, shouldDirty: true });
+      setValue('longitude', lng, { shouldValidate: true, shouldDirty: true });
+      setValue('placeId', undefined);
+      setValue('formattedAddress', undefined);
+    },
+    [setValue],
+  );
+
+  /** Create Map + draggable marker once the script is ready. */
+  React.useEffect(() => {
+    if (!placesReady || placesError || !mapElRef.current || mapInitRef.current) return;
+    const g = (window as unknown as { google?: { maps?: unknown } }).google?.maps as
+      | {
+          Map: new (el: HTMLElement, opts: Record<string, unknown>) => unknown;
+          Marker: new (opts: Record<string, unknown>) => unknown;
+          event: {
+            addListener: (
+              instance: unknown,
+              evt: string,
+              fn: (...args: unknown[]) => void,
+            ) => { remove: () => void };
+          };
+        }
+      | undefined;
+    if (!g?.Map || !g.Marker || !g.event) return;
+
+    const v = getValues();
+    const la =
+      typeof v.latitude === 'number' && Number.isFinite(v.latitude) ? v.latitude : DEFAULT_MAP_CENTER.lat;
+    const ln =
+      typeof v.longitude === 'number' && Number.isFinite(v.longitude) ? v.longitude : DEFAULT_MAP_CENTER.lng;
+
+    const map = new g.Map(mapElRef.current, {
+      center: { lat: la, lng: ln },
+      zoom: 15,
+      streetViewControl: false,
+      mapTypeControl: true,
+      fullscreenControl: true,
+    });
+    const marker = new g.Marker({
+      position: { lat: la, lng: ln },
+      map,
+      draggable: true,
+      title: 'Listing location',
+    });
+
+    mapRef.current = map;
+    markerRef.current = marker;
+    mapInitRef.current = true;
+
+    const hadCoords =
+      typeof v.latitude === 'number' &&
+      Number.isFinite(v.latitude) &&
+      typeof v.longitude === 'number' &&
+      Number.isFinite(v.longitude);
+    if (!hadCoords) {
+      applyLatLngToForm(la, ln);
+    }
+
+    const onDragEnd = () => {
+      const m = marker as { getPosition?: () => { lat: () => number; lng: () => number } | null };
+      const pos = m.getPosition?.();
+      if (!pos) return;
+      applyLatLngToForm(pos.lat(), pos.lng());
+    };
+
+    const onMapClick = (...args: unknown[]) => {
+      const e = args[0] as { latLng?: { lat: () => number; lng: () => number } | null };
+      if (!e.latLng) return;
+      (marker as { setPosition?: (p: { lat: number; lng: number }) => void }).setPosition?.({
+        lat: e.latLng.lat(),
+        lng: e.latLng.lng(),
+      });
+      applyLatLngToForm(e.latLng.lat(), e.latLng.lng());
+    };
+
+    mapListenersRef.current.push(g.event.addListener(marker, 'dragend', onDragEnd));
+    mapListenersRef.current.push(g.event.addListener(map, 'click', onMapClick));
+
+    return () => {
+      for (const l of mapListenersRef.current) {
+        try {
+          l.remove();
+        } catch {
+          /* ignore */
+        }
+      }
+      mapListenersRef.current = [];
+      try {
+        (marker as { setMap?: (m: null) => void }).setMap?.(null);
+      } catch {
+        /* ignore */
+      }
+      mapRef.current = null;
+      markerRef.current = null;
+      mapInitRef.current = false;
+    };
+  }, [placesReady, placesError, getValues, applyLatLngToForm]);
+
+  /** Keep marker/center in sync when lat/lng change from address autocomplete (not from map listeners clearing). */
+  React.useEffect(() => {
+    const map = mapRef.current as { panTo?: (p: { lat: number; lng: number }) => void } | null;
+    const marker = markerRef.current as {
+      setPosition?: (p: { lat: number; lng: number }) => void;
+    } | null;
+    if (!map || !marker) return;
+    const la = typeof latWatch === 'number' && Number.isFinite(latWatch) ? latWatch : null;
+    const ln = typeof lngWatch === 'number' && Number.isFinite(lngWatch) ? lngWatch : null;
+    if (la == null || ln == null) return;
+    marker.setPosition?.({ lat: la, lng: ln });
+    map.panTo?.({ lat: la, lng: ln });
+  }, [latWatch, lngWatch]);
 
   const runPredictionQuery = React.useCallback((value: string) => {
     const svc = autocompleteSvcRef.current;
@@ -260,16 +400,14 @@ export function PropertyAddressFields({ register, errors, setValue }: PropertyAd
           const lng = details.geometry?.location?.lng();
           const parsed = parseAddressComponents(details.address_components);
 
-          // Keep address fields structured (do not save full formatted address text).
           const nameLine = (details.name ?? prediction.description).trim();
-          // Keep within schema max length (addressLine1 max 200).
           setValue('addressLine1', nameLine.slice(0, 200));
           if (parsed.addressLine2) setValue('addressLine2', parsed.addressLine2);
           else setValue('addressLine2', undefined);
           if (details.formatted_address) setValue('formattedAddress', details.formatted_address);
           if (details.place_id) setValue('placeId', details.place_id);
-          if (typeof lat === 'number') setValue('latitude', lat);
-          if (typeof lng === 'number') setValue('longitude', lng);
+          if (typeof lat === 'number') setValue('latitude', lat, { shouldValidate: true, shouldDirty: true });
+          if (typeof lng === 'number') setValue('longitude', lng, { shouldValidate: true, shouldDirty: true });
           if (parsed.city) setValue('city', parsed.city);
           if (parsed.state) setValue('state', parsed.state);
           if (parsed.country) setValue('country', parsed.country);
@@ -283,6 +421,8 @@ export function PropertyAddressFields({ register, errors, setValue }: PropertyAd
     },
     [setValue],
   );
+
+  const coordError = errors.latitude?.message ?? errors.longitude?.message;
 
   return (
     <div className="space-y-4">
@@ -344,42 +484,22 @@ export function PropertyAddressFields({ register, errors, setValue }: PropertyAd
         />
       </div>
 
-      <div className="rounded-lg border border-gray-100 bg-gray-50/80 px-3 py-2.5 space-y-3">
-        <p className="text-xs font-medium text-gray-700">Coordinates *</p>
-        <p className="text-[11px] text-gray-500 leading-snug">
-          Required for map and search. Paste from Google Maps (right-click a place → the first number is lat, the second
-          is lng).
-        </p>
-        <div className="grid grid-cols-2 gap-3">
-          <Input
-            label="Latitude *"
-            type="number"
-            step="any"
-            placeholder="e.g. 23.0225"
-            error={errors.latitude?.message}
-            {...register('latitude', {
-              setValueAs: (v) => {
-                if (v === '' || v == null) return undefined;
-                const n = typeof v === 'number' ? v : Number(v);
-                return Number.isFinite(n) ? n : undefined;
-              },
-            })}
-          />
-          <Input
-            label="Longitude *"
-            type="number"
-            step="any"
-            placeholder="e.g. 72.5714"
-            error={errors.longitude?.message}
-            {...register('longitude', {
-              setValueAs: (v) => {
-                if (v === '' || v == null) return undefined;
-                const n = typeof v === 'number' ? v : Number(v);
-                return Number.isFinite(n) ? n : undefined;
-              },
-            })}
-          />
+      <div className="rounded-lg border border-gray-100 bg-gray-50/80 overflow-hidden">
+        <div className="px-3 pt-2.5 pb-1">
+          <p className="text-xs font-medium text-gray-700">Map location *</p>
+          <p className="text-[11px] text-gray-500 leading-snug mt-0.5">
+            Drag the pin or tap the map to set the exact location. Choosing an address above moves the pin
+            automatically.
+          </p>
         </div>
+        {placesError ? (
+          <p className="text-xs text-red-600 px-3 py-3">{placesError}</p>
+        ) : !placesReady ? (
+          <p className="text-xs text-gray-500 px-3 py-6">Loading map…</p>
+        ) : (
+          <div ref={mapElRef} className="h-[min(50vh,280px)] w-full min-h-[220px] bg-gray-200" />
+        )}
+        {coordError ? <p className="text-xs text-red-500 px-3 py-2 border-t border-gray-100">{coordError}</p> : null}
       </div>
     </div>
   );

@@ -9,7 +9,7 @@ import { adminService } from '@/services/modules/admin.service';
 
 type StatusFilter = 'ALL' | ListingApprovalStatus;
 
-const STATUS_OPTIONS: StatusFilter[] = ['ALL', 'PENDING', 'UNDER_REVIEW', 'APPROVED', 'REJECTED'];
+const STATUS_OPTIONS: StatusFilter[] = ['ALL', 'PENDING', 'UNDER_REVIEW', 'APPROVED', 'REJECTED', 'ON_HOLD'];
 
 const STATUS_CONFIG: Record<
   ListingApprovalStatus,
@@ -19,6 +19,7 @@ const STATUS_CONFIG: Record<
   PENDING: { label: 'Pending', className: 'bg-yellow-50 text-yellow-600 border-yellow-100' },
   UNDER_REVIEW: { label: 'Review', className: 'bg-blue-50 text-blue-600 border-blue-100' },
   REJECTED: { label: 'Rejected', className: 'bg-red-50 text-red-600 border-red-100' },
+  ON_HOLD: { label: 'On hold', className: 'bg-slate-50 text-slate-600 border-slate-100' },
 };
 
 export default function AdminListingsPage() {
@@ -66,6 +67,7 @@ export default function AdminListingsPage() {
       UNDER_REVIEW: listings.filter((l) => l.status === 'UNDER_REVIEW').length,
       APPROVED: listings.filter((l) => l.status === 'APPROVED').length,
       REJECTED: listings.filter((l) => l.status === 'REJECTED').length,
+      ON_HOLD: listings.filter((l) => l.status === 'ON_HOLD').length,
     }),
     [listings],
   );
@@ -174,7 +176,9 @@ function ListingRow({ listing }: { listing: AdminListing }) {
                 ? 'bg-yellow-400'
                 : listing.status === 'UNDER_REVIEW'
                   ? 'bg-blue-500'
-                  : 'bg-red-500'
+                  : listing.status === 'ON_HOLD'
+                    ? 'bg-slate-400'
+                    : 'bg-red-500'
           }`}
         />
         <span className="text-xs text-gray-400 hidden md:inline">{formatDate(listing.createdAt)}</span>

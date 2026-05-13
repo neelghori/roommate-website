@@ -21,6 +21,8 @@ type ApiPropertyPopulated = {
   imageUrls?: string[];
   address?: ApiAddress;
   location?: ApiGeo;
+  /** Listing owner (ObjectId string or populated `{ _id }`). */
+  owner?: string | { _id?: string } | null;
 } | null;
 
 type ApiBookingLean = {
@@ -33,6 +35,12 @@ type ApiBookingLean = {
   contactPhone?: string;
   createdAt?: string;
   property?: ApiPropertyPopulated;
+  requester?: { _id?: string; fullName?: string } | null;
+  viewerAsOwner?: boolean;
+  /** Other party for in-app chat (property owner vs visit requester). */
+  chatWithUserId?: string | null;
+  requesterUserId?: string | null;
+  propertyOwnerId?: string | null;
 };
 
 export type MyVisitBooking = {
@@ -48,7 +56,28 @@ export type MyVisitBooking = {
   propertyTitle: string;
   propertyImageUrl: string | null;
   propertyLocationLabel: string;
+  /** True when this row is someone else's request on your listing. */
+  viewerAsOwner: boolean;
+  requesterDisplayName: string | null;
+  /** User id to open `/chat/[id]` with the other party; null if unknown. */
+  chatWithUserId: string | null;
+  /** For client-side chat fallback when `chatWithUserId` is missing. */
+  requesterUserId: string | null;
+  propertyOwnerId: string | null;
 };
+
+/** 24-char hex Mongo ObjectId (normalized lowercase). */
+function extractMongoObjectId(val: unknown): string | null {
+  if (val == null) return null;
+  if (typeof val === 'string') {
+    const s = val.trim().toLowerCase();
+    return /^[a-f0-9]{24}$/.test(s) ? s : null;
+  }
+  if (typeof val === 'object' && val !== null && '_id' in val) {
+    return extractMongoObjectId((val as { _id: unknown })._id);
+  }
+  return null;
+}
 
 function normalizeBookingStatus(v: unknown): BookingStatus {
   const s = String(v ?? 'pending').toLowerCase();
@@ -71,6 +100,21 @@ function mapBookingFromApi(raw: ApiBookingLean): MyVisitBooking {
   /** Same ordering as listing cards: prefer real https URLs, drop legacy cover placeholder when gallery has S3 URLs. */
   const gallery = prop ? collectListingImageUrlsFromProperty(prop as Record<string, unknown>) : [];
   const img = gallery.length > 0 ? gallery[0] : null;
+  const reqName =
+    typeof raw.requester === 'object' && raw.requester && typeof raw.requester.fullName === 'string'
+      ? raw.requester.fullName.trim()
+      : '';
+  const requesterUserId =
+    extractMongoObjectId(raw.requesterUserId) ?? extractMongoObjectId(raw.requester);
+  const propertyOwnerId =
+    extractMongoObjectId(raw.propertyOwnerId) ?? extractMongoObjectId(prop?.owner);
+
+  let chatWithUserId = extractMongoObjectId(raw.chatWithUserId);
+  if (!chatWithUserId) {
+    if (raw.viewerAsOwner === true) chatWithUserId = requesterUserId;
+    else if (raw.viewerAsOwner === false) chatWithUserId = propertyOwnerId;
+  }
+
   return {
     id: String(raw._id),
     status: normalizeBookingStatus(raw.status),
@@ -84,6 +128,11 @@ function mapBookingFromApi(raw: ApiBookingLean): MyVisitBooking {
     propertyTitle: typeof prop?.title === 'string' && prop.title.trim() ? prop.title : 'Listing unavailable',
     propertyImageUrl: img,
     propertyLocationLabel: prop ? propertyLocationLabel(prop) : '',
+    viewerAsOwner: Boolean(raw.viewerAsOwner),
+    requesterDisplayName: reqName || null,
+    chatWithUserId,
+    requesterUserId,
+    propertyOwnerId,
   };
 }
 

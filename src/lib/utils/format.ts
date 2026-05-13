@@ -11,8 +11,7 @@ const LISTING_TYPE_LABELS: Record<ListingType, string> = {
   Flat: 'Flat',
   Roommate: 'Roommate',
   CoWorkingSpace: 'Co-Working Space',
-  Bachelor: 'Bachelor',
-  Family: 'Family',
+  House: 'House',
 };
 
 /** Human-readable label for a listing type (e.g. `CoWorkingSpace` → "Co-Working Space"). */

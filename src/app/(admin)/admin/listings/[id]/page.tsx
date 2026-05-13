@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowLeft, CheckCircle2, XCircle, Clock, Flag, AlertTriangle, ExternalLink } from 'lucide-react';
+import { ArrowLeft, CheckCircle2, XCircle, Clock, Flag, AlertTriangle, ExternalLink, PauseCircle } from 'lucide-react';
 import type { AdminListing, ListingApprovalStatus } from '@/types';
 import { formatDate } from '@/lib/utils/format';
 import { useToast } from '@/hooks/useToast';
@@ -17,6 +17,7 @@ const STATUS_CONFIG: Record<
   PENDING: { label: 'Pending', icon: Clock, className: 'text-yellow-500' },
   UNDER_REVIEW: { label: 'Under Review', icon: AlertTriangle, className: 'text-blue-500' },
   REJECTED: { label: 'Rejected', icon: XCircle, className: 'text-red-500' },
+  ON_HOLD: { label: 'On hold', icon: PauseCircle, className: 'text-slate-500' },
 };
 
 export default function AdminListingDetailPage() {
@@ -81,7 +82,7 @@ export default function AdminListingDetailPage() {
       const next = await adminService.approveListing(listing.id);
       setListing(next);
       setShowRejectForm(false);
-      toast.success('Listing approved', `"${next.title}" is now live on the home page.`);
+      toast.success('Listing approved', `"${next.title}" is verified and stays visible in search.`);
     } catch (e) {
       toast.error('Approve failed', e instanceof Error ? e.message : '');
     } finally {
@@ -103,6 +104,19 @@ export default function AdminListingDetailPage() {
       toast.success('Listing rejected', `"${next.title}" has been rejected.`);
     } catch (e) {
       toast.error('Reject failed', e instanceof Error ? e.message : '');
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleOnHold = async () => {
+    setActionLoading(true);
+    try {
+      const next = await adminService.markListingOnHold(listing.id);
+      setListing(next);
+      toast.info('Listing on hold', 'Hidden from public listings until you approve or change status.');
+    } catch (e) {
+      toast.error('Update failed', e instanceof Error ? e.message : '');
     } finally {
       setActionLoading(false);
     }
@@ -225,20 +239,22 @@ export default function AdminListingDetailPage() {
         </div>
       )}
 
-      {status !== 'APPROVED' && status !== 'REJECTED' && (
+      {status !== 'REJECTED' && (
         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-4 space-y-2">
           <h2 className="text-sm font-semibold text-gray-700 mb-3">Review Actions</h2>
 
-          <button
-            type="button"
-            onClick={handleApprove}
-            disabled={actionLoading}
-            className="w-full flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-50"
-            style={{ backgroundColor: '#22C55E' }}
-          >
-            <CheckCircle2 className="w-4 h-4" />
-            Approve Listing
-          </button>
+          {status !== 'APPROVED' && (
+            <button
+              type="button"
+              onClick={handleApprove}
+              disabled={actionLoading}
+              className="w-full flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-50"
+              style={{ backgroundColor: '#22C55E' }}
+            >
+              <CheckCircle2 className="w-4 h-4" />
+              Approve Listing
+            </button>
+          )}
 
           <button
             type="button"
@@ -250,26 +266,52 @@ export default function AdminListingDetailPage() {
             Reject Listing
           </button>
 
-          <button
-            type="button"
-            onClick={handleUnderReview}
-            disabled={actionLoading}
-            className="w-full flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-medium text-blue-600 bg-blue-50 border border-blue-200 hover:bg-blue-100 transition-colors disabled:opacity-50"
-          >
-            <AlertTriangle className="w-4 h-4" />
-            Mark Under Review
-          </button>
+          {status !== 'ON_HOLD' && (
+            <button
+              type="button"
+              onClick={handleOnHold}
+              disabled={actionLoading}
+              className="w-full flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-medium text-slate-700 bg-slate-100 border border-slate-200 hover:bg-slate-200 transition-colors disabled:opacity-50"
+            >
+              <PauseCircle className="w-4 h-4" />
+              Put on hold
+            </button>
+          )}
+
+          {status !== 'APPROVED' && (
+            <button
+              type="button"
+              onClick={handleUnderReview}
+              disabled={actionLoading}
+              className="w-full flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-medium text-blue-600 bg-blue-50 border border-blue-200 hover:bg-blue-100 transition-colors disabled:opacity-50"
+            >
+              <AlertTriangle className="w-4 h-4" />
+              Mark Under Review
+            </button>
+          )}
         </div>
       )}
 
-      {(status === 'APPROVED' || status === 'REJECTED') && (
+      {(status === 'APPROVED' || status === 'REJECTED' || status === 'ON_HOLD') && (
         <div
           className={`rounded-2xl p-4 border ${
-            status === 'APPROVED' ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'
+            status === 'APPROVED'
+              ? 'bg-green-50 border-green-200'
+              : status === 'REJECTED'
+                ? 'bg-red-50 border-red-200'
+                : 'bg-slate-50 border-slate-200'
           }`}
         >
-          <p className={`text-sm font-semibold ${status === 'APPROVED' ? 'text-green-600' : 'text-red-600'}`}>
-            {status === 'APPROVED' ? '✓ Listing is live' : '✕ Listing rejected'}
+          <p
+            className={`text-sm font-semibold ${
+              status === 'APPROVED' ? 'text-green-600' : status === 'REJECTED' ? 'text-red-600' : 'text-slate-600'
+            }`}
+          >
+            {status === 'APPROVED'
+              ? '✓ Listing is verified and visible in search'
+              : status === 'REJECTED'
+                ? '✕ Listing rejected'
+                : '⏸ Listing on hold — hidden from public search'}
           </p>
         </div>
       )}

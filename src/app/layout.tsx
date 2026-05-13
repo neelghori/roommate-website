@@ -224,7 +224,7 @@ const jsonLd = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en-IN" className={`${inter.variable} scroll-smooth`}>
+    <html lang="en-IN" className={`${inter.variable} scroll-smooth`} suppressHydrationWarning>
       <head>
         {/* JSON-LD Structured Data */}
         <script
@@ -237,7 +237,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         {/* DNS prefetch for faster third-party loads */}
         <link rel="dns-prefetch" href="https://res.cloudinary.com" />
       </head>
-      <body>
+      {/* suppressHydrationWarning: browser extensions (e.g. Grammarly) mutate <body> attributes before React hydrates */}
+      <body suppressHydrationWarning>
         <Providers>{children}</Providers>
       </body>
     </html>

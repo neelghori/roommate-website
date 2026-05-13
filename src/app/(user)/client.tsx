@@ -15,7 +15,6 @@ import { ListingCard } from '@/components/features/ListingCard';
 import { ListingDetailModal } from '@/components/features/ListingDetailModal';
 import { FilterPanel } from '@/components/features/FilterPanel';
 import { RoommateFinderPanel } from '@/components/features/RoommateFinderPanel';
-import { ReferralBanner } from '@/components/features/ReferralBanner';
 import { AddListingModal } from '@/components/features/AddListingModal';
 import { SegmentedTabs } from '@/components/ui/Tabs';
 import { Listing, type ListingFilter, type ListingType } from '@/types';
@@ -25,9 +24,7 @@ import { useAuthStore } from '@/store/authStore';
 import { geocodePlaceName } from '@/lib/geocodeLocation';
 import { hasMapCoordinates } from '@/lib/googleMapsEmbed';
 
-/** Server geo radius (meters via `$geoWithin` / `$centerSphere`) when browsing by profile location (geocoded city/area). */
-const PROFILE_NEAR_RADIUS_KM = 45;
-/** Tighter radius when the Nearby tab uses GPS or profile fallback. */
+/** Radius for the Nearby tab when using GPS or geocoded profile location (`$geoWithin` on the API). */
 const NEARBY_RADIUS_KM = 25;
 
 const CATEGORY_TABS = [
@@ -35,6 +32,7 @@ const CATEGORY_TABS = [
   { label: 'Flat', value: 'Flat' },
   { label: 'PG', value: 'PG' },
   { label: 'Roommate', value: 'Roommate' },
+  { label: 'House', value: 'House' },
   { label: 'Nearby', value: 'Nearby' },
 ];
 
@@ -77,11 +75,15 @@ export default function HomePageClient() {
       f.type = 'All';
     }
 
-    const geoCenter = activeTab === 'Nearby' ? nearCoords ?? profileGeoCoords : profileGeoCoords;
-    if (geoCenter) {
-      f.nearLatitude = geoCenter.lat;
-      f.nearLongitude = geoCenter.lng;
-      f.radiusKm = activeTab === 'Nearby' ? NEARBY_RADIUS_KM : PROFILE_NEAR_RADIUS_KM;
+    /** Only the Nearby tab sends geo to the API. Logged-in users on All / Flat / PG / etc. see the full catalog
+     * (same as guests). Otherwise profile city would limit results to ~one region and hide other listings. */
+    if (activeTab === 'Nearby') {
+      const geoCenter = nearCoords ?? profileGeoCoords;
+      if (geoCenter) {
+        f.nearLatitude = geoCenter.lat;
+        f.nearLongitude = geoCenter.lng;
+        f.radiusKm = NEARBY_RADIUS_KM;
+      }
     }
 
     return f;
@@ -193,7 +195,7 @@ export default function HomePageClient() {
   const pagedListings = filteredListings.slice(0, visibleCount);
 
   return (
-    <UserLayout showSearch showFab>
+    <UserLayout showSearch={false} showFab>
       <div
         id="browse"
         className="scroll-mt-24 max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-10 xl:px-14 py-4 space-y-4"
@@ -315,7 +317,6 @@ export default function HomePageClient() {
           {/* Right column: same stack on all breakpoints (below listings on mobile, sidebar on lg+) */}
           <aside className="flex flex-col gap-4 lg:sticky lg:top-24 lg:self-start">
             <RoommateFinderPanel maxVisible={4} />
-            <ReferralBanner />
           </aside>
         </div>
       </div>

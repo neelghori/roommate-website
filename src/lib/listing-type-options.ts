@@ -9,8 +9,7 @@ export const LISTING_TYPE_SELECT_OPTIONS: { label: string; value: ListingTypeSel
   { label: 'Flat', value: 'Flat' },
   { label: 'Roommate', value: 'Roommate' },
   { label: 'Co-Working Space', value: 'CoWorkingSpace' },
-  { label: 'Bachelor', value: 'Bachelor' },
-  { label: 'Family', value: 'Family' },
+  { label: 'House', value: 'House' },
 ];
 
 /**

@@ -1,6 +1,6 @@
 /**
  * listing.service.ts Property API (/api/v1/properties).
- * New listings are pending until staff approves (isPublished + moderationStatus).
+ * Property API (/api/v1/properties). Listings can be visible while pending; staff-approved listings show verified UI.
  */
 
 import { isAxiosError } from 'axios';
@@ -9,6 +9,7 @@ import type {
   Listing,
   ListingAmenityChip,
   ListingFilter,
+  ListingPeopleType,
   ListingResidentSnapshot,
   ListingType,
   ListingVerificationBadge,
@@ -36,8 +37,7 @@ const UI_TO_API_LISTING_TYPE: Partial<Record<ListingType | string, string>> = {
   Flat: 'flat',
   Roommate: 'roommate_seeker',
   CoWorkingSpace: 'coworking_space',
-  Bachelor: 'room',
-  Family: 'flat',
+  House: 'house',
 };
 
 const API_TO_UI_LISTING_TYPE: Record<string, ListingType> = {
@@ -46,6 +46,7 @@ const API_TO_UI_LISTING_TYPE: Record<string, ListingType> = {
   room: 'Rent',
   roommate_seeker: 'Roommate',
   coworking_space: 'CoWorkingSpace',
+  house: 'House',
 };
 
 function mapGenderToApi(pref: GenderPreference | string): string {
@@ -58,6 +59,27 @@ function mapGenderFromApi(v: string | undefined): GenderPreference {
   if (v === 'male') return 'Male';
   if (v === 'female') return 'Female';
   return 'Any';
+}
+
+const API_TO_UI_PEOPLE_TYPE: Record<string, ListingPeopleType> = {
+  bachelor: 'Bachelor',
+  working: 'Working',
+  family: 'Family',
+};
+
+function mapPeopleTypesFromApi(raw: unknown): ListingPeopleType[] {
+  if (!Array.isArray(raw)) return [];
+  const out: ListingPeopleType[] = [];
+  for (const x of raw) {
+    if (typeof x !== 'string') continue;
+    const u = API_TO_UI_PEOPLE_TYPE[x.toLowerCase()];
+    if (u && !out.includes(u)) out.push(u);
+  }
+  return out;
+}
+
+function mapPeopleTypesToApi(types: ListingPeopleType[]): string[] {
+  return [...new Set(types.map((t) => t.toLowerCase()))];
 }
 
 const RESIDENT_PRO_TYPES = new Set([
@@ -323,7 +345,7 @@ export function listingHasVerification(
 }
 
 /**
- * Profile-style “Company verified” look: staff-approved listing without a stronger badge/flag.
+ * Staff-approved listing without `isVerified` or a specific API badge — show Meta-style blue “verified”.
  * (ID / property / premium badges and `isVerified` keep the default teal/green pill.)
  */
 export function listingVerificationCompanyStyle(
@@ -345,7 +367,7 @@ export function listingVerificationLabel(
   if (b === 'property_verified') return 'Property verified';
   if (b === 'premium') return 'Premium';
   if (l.isVerified) return 'Verified';
-  if (l.approvalStatus === 'APPROVED') return 'Company verified';
+  if (l.approvalStatus === 'APPROVED') return 'verified';
   return 'Verified';
 }
 
@@ -353,9 +375,11 @@ function approvalFromProperty(p: Record<string, unknown>): Listing['approvalStat
   const mod = p.moderationStatus as string | undefined;
   const pub = Boolean(p.isPublished);
   if (mod === 'rejected') return 'REJECTED';
+  if (mod === 'on_hold') return 'ON_HOLD';
   if (mod === 'under_review') return 'UNDER_REVIEW';
   if (mod === 'approved' && pub) return 'APPROVED';
-  if (mod === 'pending' || (!pub && mod !== 'rejected')) return 'PENDING';
+  if (mod === 'pending') return 'PENDING';
+  if (mod == null || mod === '') return pub ? 'APPROVED' : 'PENDING';
   return 'UNDER_REVIEW';
 }
 
@@ -604,6 +628,7 @@ export function mapApiPropertyToListing(p: Record<string, unknown>): Listing {
     residentSnapshot: residentSnapshots[0],
     mapPlaceholder,
     genderPreference: mapGenderFromApi(typeof p.genderPreference === 'string' ? p.genderPreference : undefined),
+    peopleTypes: mapPeopleTypesFromApi(p.peopleTypes),
     ownerId,
     ownerName,
     ownerPhone: typeof p.contactPhone === 'string' ? p.contactPhone : undefined,
@@ -688,6 +713,7 @@ export type CreateListingPayload = {
   formattedAddress?: string;
   spotsLeft: number;
   genderPreference: string;
+  peopleTypes?: ListingPeopleType[];
   amenities: string[];
   description: string;
   phone?: string;
@@ -719,6 +745,7 @@ export function buildPropertyCreateBody(
     description: data.description,
     availableSpots: data.spotsLeft,
     amenityIds,
+    peopleTypes: mapPeopleTypesToApi(data.peopleTypes),
   };
   const lat = data.latitude;
   const lng = data.longitude;
@@ -963,6 +990,7 @@ export const listingService = {
       formattedAddress: payload.formattedAddress ?? '',
       spotsLeft: payload.spotsLeft,
       genderPreference: payload.genderPreference as ListingFormData['genderPreference'],
+      peopleTypes: payload.peopleTypes ?? ['Bachelor', 'Working', 'Family'],
       amenities: payload.amenities as ListingFormData['amenities'],
       description: payload.description,
       phone: payload.phone ?? '',

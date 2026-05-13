@@ -15,8 +15,7 @@ export const CATEGORIES: Category[] = [
   { id: 'c2', label: 'Flat', icon: '🔑', count: 0, unit: 'listings' },
   { id: 'c3', label: 'Roommate', icon: '👥', count: 0, unit: 'profiles' },
   { id: 'c4', label: 'CoWorkingSpace', icon: '💼', count: 0, unit: 'listings' },
-  { id: 'c5', label: 'Bachelor', icon: '👤', count: 0, unit: 'listings' },
-  { id: 'c6', label: 'Family', icon: '👨‍👩‍👧', count: 0, unit: 'listings' },
+  { id: 'c5', label: 'House', icon: '🏡', count: 0, unit: 'listings' },
 ];
 
 export const POPULAR_AREAS: string[] = [
@@ -97,7 +96,7 @@ export const MOCK_LISTINGS: Listing[] = [
   },
   {
     id: 'l4',
-    title: 'Bachelor Flat Near IIM-A',
+    title: 'Independent house near IIM-A',
     location: 'Vastrapur, Ahmedabad',
     city: 'Ahmedabad',
     price: 11000,
@@ -105,7 +104,7 @@ export const MOCK_LISTINGS: Listing[] = [
     spotsLeft: 2,
     amenities: chips('WiFi', 'AC', 'Kitchen', 'Parking', 'Gym', 'Security', 'CCTV'),
     badge: null,
-    type: 'Bachelor',
+    type: 'House',
     images: ['/images/listings/l4.jpg', '/images/listings/l4-2.jpg'],
     description:
       'Well-furnished bachelor accommodation near IIM-A campus. Separate rooms available with attached bathroom. Society gym access included. Ideal for MBA students or young professionals. Gated society with 24/7 security.',
@@ -143,7 +142,7 @@ export const MOCK_LISTINGS: Listing[] = [
   },
   {
     id: 'l6',
-    title: '2BHK Family Apartment in Gota',
+    title: '2BHK apartment in Gota',
     location: 'Gota, Ahmedabad',
     city: 'Ahmedabad',
     price: 18000,
@@ -151,7 +150,7 @@ export const MOCK_LISTINGS: Listing[] = [
     spotsLeft: 1,
     amenities: chips('WiFi', 'AC', 'Kitchen', 'Parking', 'Security', 'Power Backup', 'CCTV'),
     badge: null,
-    type: 'Family',
+    type: 'Flat',
     images: ['/images/listings/l6.jpg', '/images/listings/l6-2.jpg'],
     description:
       'Spacious 2BHK apartment for family in the peaceful Gota area. Semi-furnished with modular kitchen. 2 covered parking spots. Society has power backup. Children-friendly gated society with park.',

@@ -38,7 +38,7 @@ export interface AdminListing {
   type: string;
   city: string;
   price: number;
-  status: 'PENDING' | 'APPROVED' | 'REJECTED' | 'UNDER_REVIEW';
+  status: 'PENDING' | 'APPROVED' | 'REJECTED' | 'UNDER_REVIEW' | 'ON_HOLD';
   createdAt: string;
   flagCount: number;
 }
