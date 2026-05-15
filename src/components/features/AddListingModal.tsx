@@ -26,6 +26,7 @@ import { Checkbox } from '@/components/ui/Checkbox';
 import { ImageUploader } from '@/components/features/ImageUploader';
 import { PropertyAddressFields } from '@/components/features/PropertyAddressFields';
 import { ListingPeopleTypeCheckboxes } from '@/components/features/ListingPeopleTypeCheckboxes';
+import { ListingRentFields } from '@/components/features/ListingRentFields';
 import { useToast } from '@/hooks/useToast';
 
 const GENDER_OPTIONS = [
@@ -60,11 +61,16 @@ export const AddListingModal: React.FC<AddListingModalProps> = ({
     reset,
     getValues,
     setValue,
+    watch,
     formState: { errors },
   } = useForm<ListingFormData>({
     resolver: zodResolver(listingSchema),
     defaultValues: {
       type: 'PG',
+      rentMode: 'exact',
+      exactPrice: 8000,
+      minPrice: 5000,
+      maxPrice: 10000,
       spotsLeft: 1,
       genderPreference: 'Any',
       peopleTypes: ['Bachelor', 'Working', 'Family'],
@@ -158,25 +164,22 @@ export const AddListingModal: React.FC<AddListingModalProps> = ({
 
           <ListingPeopleTypeCheckboxes control={control} errors={errors} />
 
-          {/* Rent + Spots 2-col */}
-          <div className="grid grid-cols-2 gap-3">
-            <Input
-              label="Rent Per Month ₹ *"
-              type="number"
-              placeholder="8500"
-              error={errors.price?.message}
-              {...register('price', { valueAsNumber: true })}
-            />
-            <Input
-              label="Total Spots *"
-              type="number"
-              placeholder="1"
-              min={1}
-              max={50}
-              error={errors.spotsLeft?.message}
-              {...register('spotsLeft', { valueAsNumber: true })}
-            />
-          </div>
+          <ListingRentFields
+            control={control}
+            register={register}
+            errors={errors}
+            watch={watch}
+            setValue={setValue}
+          />
+          <Input
+            label="Total Spots *"
+            type="number"
+            placeholder="1"
+            min={1}
+            max={50}
+            error={errors.spotsLeft?.message}
+            {...register('spotsLeft', { valueAsNumber: true })}
+          />
 
           <PropertyAddressFields
             register={register}

@@ -12,7 +12,7 @@ import { Listing } from '@/types';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
 import { useToast } from '@/hooks/useToast';
-import { formatRupees, formatListingTypeLabel } from '@/lib/utils/format';
+import { formatRentRange, formatListingTypeLabel } from '@/lib/utils/format';
 import { ListingVerificationBadge } from '@/components/features/ListingVerificationBadge';
 import { BookVisitModal } from '@/components/features/BookVisitModal';
 import { useAuthStore } from '@/store/authStore';
@@ -184,7 +184,7 @@ export const ListingCard: React.FC<ListingCardProps> = ({ listing, onViewDetail,
           <div className="flex items-center justify-between mb-2">
             <div>
               <span className="text-base font-bold text-primary">
-                {formatRupees(listing.price)}
+                {formatRentRange(listing.price, listing.maxPrice)}
               </span>
               <span className="text-xs text-gray-400">/mo</span>
             </div>

@@ -73,7 +73,10 @@ export interface Listing {
   longitude?: number;
   placeId?: string;
   formattedAddress?: string;
+  /** Starting rent (API `rentRange.min`). */
   price: number;
+  /** Upper rent when room types differ (API `rentRange.max`). */
+  maxPrice?: number;
   isVerified: boolean;
   /** Staff-set badge from API; show even when `isVerified` is false. */
   verificationBadge?: ListingVerificationBadge;

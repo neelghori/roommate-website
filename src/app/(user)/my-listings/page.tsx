@@ -25,7 +25,7 @@ import { Button } from '@/components/ui/Button';
 import { Modal } from '@/components/ui/Modal';
 import { EmptyState } from '@/components/shared/EmptyState';
 import { useToast } from '@/hooks/useToast';
-import { formatRupees, formatListingTypeLabel } from '@/lib/utils/format';
+import { formatRentRange, formatListingTypeLabel } from '@/lib/utils/format';
 import { Listing } from '@/types';
 import { listingService } from '@/services/modules/listing.service';
 import { ListingAmenityIcon } from '@/components/features/ListingAmenityIcon';
@@ -250,7 +250,7 @@ export default function MyListingsPage() {
 
                       {/* Price */}
                       <p className="text-sm font-bold mb-2" style={{ color: '#1B8F8F' }}>
-                        {formatRupees(listing.price)}
+                        {formatRentRange(listing.price, listing.maxPrice)}
                         <span className="text-gray-400 font-normal text-xs">/mo</span>
                       </p>
 

@@ -29,6 +29,13 @@ export const formatRupees = (amount: number): string => {
   }).format(amount);
 };
 
+/** Rent display: single amount or min–max range (e.g. PG with multiple room types). */
+export const formatRentRange = (min: number, max?: number): string => {
+  const hi = max != null && Number.isFinite(max) ? max : min;
+  if (hi > min) return `${formatRupees(min)} – ${formatRupees(hi)}`;
+  return formatRupees(min);
+};
+
 /** Format date to locale string */
 export const formatDate = (dateString: string): string => {
   try {

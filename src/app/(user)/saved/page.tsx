@@ -8,7 +8,7 @@ import { SAVED_LISTINGS } from '@/mock/data/users';
 import { MOCK_LISTINGS } from '@/mock/data/listings';
 import { Listing } from '@/types';
 import { useToast } from '@/components/ui/Toast';
-import { formatRupees, formatListingTypeLabel } from '@/lib/utils/format';
+import { formatRentRange, formatListingTypeLabel } from '@/lib/utils/format';
 
 export default function SavedPage() {
   const { toast } = useToast();
@@ -127,7 +127,7 @@ function SavedListingCard({ listing, onRemove }: SavedListingCardProps) {
           <div className="flex items-center gap-1">
             <IndianRupee className="w-3.5 h-3.5" style={{ color: '#1B8F8F' }} />
             <span className="text-sm font-bold" style={{ color: '#1B8F8F' }}>
-              {formatRupees(listing.price).replace('₹', '')}/mo
+              {formatRentRange(listing.price, listing.maxPrice).replace(/₹/g, '').trim()}/mo
             </span>
           </div>
           <div className="flex items-center gap-3 text-xs text-gray-500">

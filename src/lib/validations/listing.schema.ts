@@ -17,7 +17,62 @@ const LISTING_TYPES = [
 const GENDER_PREFERENCES = ['Male', 'Female', 'Any'] as const;
 const PEOPLE_TYPES = ['Bachelor', 'Working', 'Family'] as const;
 
-export const listingSchema = z.object({
+const RENT_MODES = ['exact', 'range'] as const;
+
+const rentAmountField = z
+  .number({ error: 'Rent must be a number' })
+  .positive('Rent must be greater than 0')
+  .min(500, 'Minimum rent is ₹500')
+  .max(200000, 'Maximum rent is ₹2,00,000');
+
+function refineRent(
+  data: {
+    rentMode?: (typeof RENT_MODES)[number];
+    exactPrice?: number;
+    minPrice?: number;
+    maxPrice?: number;
+  },
+  ctx: z.RefinementCtx,
+): void {
+  if (data.rentMode === 'exact') {
+    if (data.exactPrice == null || Number.isNaN(data.exactPrice)) {
+      ctx.addIssue({
+        code: 'custom',
+        message: 'Enter the monthly rent',
+        path: ['exactPrice'],
+      });
+    }
+    return;
+  }
+
+  if (data.minPrice == null || Number.isNaN(data.minPrice)) {
+    ctx.addIssue({
+      code: 'custom',
+      message: 'Enter minimum rent',
+      path: ['minPrice'],
+    });
+  }
+  if (data.maxPrice == null || Number.isNaN(data.maxPrice)) {
+    ctx.addIssue({
+      code: 'custom',
+      message: 'Enter maximum rent',
+      path: ['maxPrice'],
+    });
+  }
+  if (
+    typeof data.minPrice === 'number' &&
+    typeof data.maxPrice === 'number' &&
+    data.maxPrice < data.minPrice
+  ) {
+    ctx.addIssue({
+      code: 'custom',
+      message: 'Maximum rent must be greater than or equal to minimum rent',
+      path: ['maxPrice'],
+    });
+  }
+}
+
+const listingSchemaBase = z.object({
   title: z
     .string()
     .min(3, 'Title must be at least 3 characters')
@@ -25,11 +80,13 @@ export const listingSchema = z.object({
 
   type: z.enum(LISTING_TYPES, { message: 'Select a valid listing type' }),
 
-  price: z
-    .number({ error: 'Price must be a number' })
-    .positive('Price must be greater than 0')
-    .min(500, 'Minimum price is ₹500')
-    .max(200000, 'Maximum price is ₹2,00,000'),
+  rentMode: z.enum(RENT_MODES, { message: 'Select how rent is listed' }),
+
+  exactPrice: rentAmountField.optional(),
+
+  minPrice: rentAmountField.optional(),
+
+  maxPrice: rentAmountField.optional(),
 
   addressLine1: z
     .string()
@@ -95,13 +152,18 @@ export const listingSchema = z.object({
     }),
 });
 
-export const listingEditSchema = listingSchema.partial();
+export const listingSchema = listingSchemaBase.superRefine(refineRent);
+
+export const listingEditSchema = listingSchemaBase.partial().superRefine(refineRent);
 
 /** Step-wise validation for multi-step wizard (full-schema `trigger` is unreliable for arrays). */
-export const listingWizardStep1Schema = listingSchema.pick({
+export const listingWizardStep1Schema = listingSchemaBase.pick({
   title: true,
   type: true,
-  price: true,
+  rentMode: true,
+  exactPrice: true,
+  minPrice: true,
+  maxPrice: true,
   spotsLeft: true,
   addressLine1: true,
   addressLine2: true,
@@ -113,15 +175,31 @@ export const listingWizardStep1Schema = listingSchema.pick({
   longitude: true,
   genderPreference: true,
   peopleTypes: true,
-});
+}).superRefine(refineRent);
 
-export const listingWizardStep2Schema = listingSchema.pick({
+export const listingWizardStep2Schema = listingSchemaBase.pick({
   amenities: true,
   description: true,
 });
 
 export type ListingFormData = z.infer<typeof listingSchema>;
 export type ListingEditFormData = z.infer<typeof listingEditSchema>;
+
+/** Maps form rent fields to API `rentRange`. */
+export function resolveListingRentRange(
+  data: Partial<Pick<ListingFormData, 'rentMode' | 'exactPrice' | 'minPrice' | 'maxPrice'>>,
+): { min: number; max: number } {
+  const mode =
+    data.rentMode ??
+    (data.exactPrice != null && data.minPrice == null && data.maxPrice == null ? 'exact' : 'range');
+  if (mode === 'exact') {
+    const p = (data.exactPrice ?? data.minPrice ?? data.maxPrice) as number;
+    return { min: p, max: p };
+  }
+  const min = (data.minPrice ?? data.exactPrice) as number;
+  const max = (data.maxPrice ?? data.minPrice ?? data.exactPrice) as number;
+  return { min, max: Math.max(min, max) };
+}
 
 export { EMPTY_LISTING_RESIDENT } from '@/lib/validations/listingResident.schema';
 export type { ListingResidentFormData } from '@/lib/validations/listingResident.schema';
