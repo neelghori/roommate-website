@@ -43,14 +43,18 @@ function listingMatchesExploreSearch(listing: Listing, q: string): boolean {
   return hay.includes(s);
 }
 
-export default function ExplorePageClient() {
+type ExplorePageClientProps = {
+  initialListings?: Listing[];
+};
+
+export default function ExplorePageClient({ initialListings }: ExplorePageClientProps = {}) {
   const searchParams = useSearchParams();
   const router = useRouter();
   const filtersType = useFilterStore((s) => s.filters.type);
   const [selectedListing, setSelectedListing] = useState<Listing | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedArea, setSelectedArea] = useState<string | null>(null);
-  const [listings, setListings] = useState<Listing[]>([]);
+  const [listings, setListings] = useState<Listing[]>(initialListings ?? []);
   const toast = useToast();
 
   /** Keep search box in sync with `?q=` (e.g. `/explore?q=shiv%20pg`). Omitting `q` clears the field. */
@@ -140,9 +144,9 @@ export default function ExplorePageClient() {
           <p className="text-white/60 text-xs font-semibold uppercase tracking-widest mb-3">
             🏠 Roommate &amp; PG Finder
           </p>
-          <h1 className="text-3xl lg:text-5xl font-extrabold text-white mb-3 leading-tight">
+          <p className="text-3xl lg:text-5xl font-extrabold text-white mb-3 leading-tight" role="heading" aria-level={1}>
             Find Your Perfect Space
-          </h1>
+          </p>
           <p className="text-white/75 text-sm lg:text-base font-medium">
             500+ verified listings across Ahmedabad &amp; Gandhinagar
           </p>

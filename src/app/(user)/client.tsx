@@ -36,7 +36,12 @@ const CATEGORY_TABS = [
   { label: 'Nearby', value: 'Nearby' },
 ];
 
-export default function HomePageClient() {
+type HomePageClientProps = {
+  /** Server-fetched listings for SEO + faster first paint */
+  initialListings?: Listing[];
+};
+
+export default function HomePageClient({ initialListings }: HomePageClientProps = {}) {
   const [selectedListing, setSelectedListing] = useState<Listing | null>(null);
   const [activeTab, setActiveTab] = useState<string>('All');
   const [showAddListing, setShowAddListing] = useState(false);
@@ -88,6 +93,12 @@ export default function HomePageClient() {
 
     return f;
   }, [filters, activeTab, nearCoords, profileGeoCoords]);
+
+  useEffect(() => {
+    if (initialListings?.length && listings.length === 0 && activeTab === 'All' && !filters.city && !filters.search) {
+      setListings(initialListings);
+    }
+  }, [initialListings, listings.length, activeTab, filters.city, filters.search, setListings]);
 
   useEffect(() => {
     let cancelled = false;

@@ -1,20 +1,18 @@
-/**
- * Explore page server wrapper exports SEO metadata,
- * then renders the client component.
- *
- * Next.js App Router: metadata must come from a Server Component.
- * Since ExplorePage is 'use client', we wrap it here.
- */
-import type { Metadata } from 'next';
 import { Suspense } from 'react';
+import { JsonLd } from '@/components/seo/JsonLd';
+import { CrawlableListings } from '@/components/seo/CrawlableListings';
+import { fetchListingsForSeo } from '@/lib/seo/fetch-listings';
+import { buildItemListJsonLd } from '@/lib/seo/json-ld';
+import { buildPageMetadata, SITE_URL } from '@/lib/seo/site';
 import ExplorePageClient from './client';
 
-const BASE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://roommat.in';
+export const revalidate = 3600;
 
-export const metadata: Metadata = {
-  title: 'Explore PG & Rooms in Ahmedabad Search 500+ Listings',
+export const metadata = buildPageMetadata({
+  title: 'Explore PG & Rooms in Ahmedabad — 500+ Listings',
   description:
-    'Explore 500+ verified PG, shared flat, and roommate listings across Ahmedabad & Gandhinagar. Filter by area, price & amenities. Find your perfect room today!',
+    'Explore verified PG, shared flat, and roommate listings in Ahmedabad & Gandhinagar on roommat.in. Filter by area, rent range, and amenities.',
+  path: '/explore',
   keywords: [
     'explore PG Ahmedabad',
     'find room Ahmedabad',
@@ -22,21 +20,11 @@ export const metadata: Metadata = {
     'PG Navrangpura',
     'PG Bodakdev',
     'PG Vastrapur',
-    'PG SG Highway',
     'cheap PG Ahmedabad',
     'PG for girls Ahmedabad',
     'PG for boys Ahmedabad',
-    'bachelor flat Ahmedabad',
-    'paying guest near me',
   ],
-  alternates: { canonical: '/explore' },
-  openGraph: {
-    title: 'Explore PG & Rooms in Ahmedabad Roommat',
-    description: 'Search 500+ verified PG and shared flat listings in Ahmedabad & Gandhinagar with photos and prices.',
-    url: `${BASE_URL}/explore`,
-    images: [{ url: '/og-image.png', width: 1200, height: 630, alt: 'Explore PG listings Ahmedabad' }],
-  },
-};
+});
 
 function ExploreFallback() {
   return (
@@ -46,10 +34,29 @@ function ExploreFallback() {
   );
 }
 
-export default function ExplorePage() {
+export default async function ExplorePage() {
+  const listings = await fetchListingsForSeo(24);
+
+  const itemListJsonLd = buildItemListJsonLd(
+    'Explore PG listings Ahmedabad',
+    'Search verified PG and shared flats in Ahmedabad and Gandhinagar',
+    listings.slice(0, 20).map((l) => ({
+      id: l.id,
+      title: l.title,
+      url: `${SITE_URL}/listings/${l.id}`,
+      price: l.price,
+      maxPrice: l.maxPrice,
+      city: l.city,
+    })),
+  );
+
   return (
-    <Suspense fallback={<ExploreFallback />}>
-      <ExplorePageClient />
-    </Suspense>
+    <>
+      <JsonLd data={itemListJsonLd} />
+      <CrawlableListings listings={listings} />
+      <Suspense fallback={<ExploreFallback />}>
+        <ExplorePageClient initialListings={listings} />
+      </Suspense>
+    </>
   );
 }

@@ -1,21 +1,14 @@
-import type { Metadata } from 'next';
 import { PrivacyDocumentBody } from '@/components/legal/PrivacyDocumentBody';
 import { LegalPageLayout } from '@/components/legal/LegalPageLayout';
+import { buildPageMetadata } from '@/lib/seo/site';
 
-const SITE = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://roommat.in';
-
-export const metadata: Metadata = {
+export const metadata = buildPageMetadata({
   title: 'Privacy Policy',
   description:
-    'Roommat Living privacy policy covering personal data collection, usage, sharing, security, and user rights.',
-  alternates: { canonical: '/privacy' },
-  openGraph: {
-    title: 'Privacy Policy | Roommat',
-    description: 'Understand how Roommat Living collects, uses, and protects your personal information.',
-    url: `${SITE}/privacy`,
-    type: 'article',
-  },
-};
+    'Roommat Living privacy policy for roommat.in — how we collect, use, and protect your personal data (Ahmedabad & Gandhinagar, India).',
+  path: '/privacy',
+  ogType: 'article',
+});
 
 export default function PrivacyPage() {
   return (

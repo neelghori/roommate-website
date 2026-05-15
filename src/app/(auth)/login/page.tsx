@@ -1,19 +1,14 @@
-import type { Metadata } from 'next';
 import { Suspense } from 'react';
+import { buildPageMetadata } from '@/lib/seo/site';
 import LoginPageClient from './client';
 
-export const metadata: Metadata = {
-  title: 'Sign In to Roommat',
+export const metadata = buildPageMetadata({
+  title: 'Sign In',
   description:
-    'Sign in to your Roommat account to access your saved listings, messages, and roommate matches in Ahmedabad & Gandhinagar.',
-  robots: {
-    index: false,
-    follow: false,
-  },
-  alternates: {
-    canonical: '/login',
-  },
-};
+    'Sign in to your Roommat account on roommat.in to access saved listings, messages, and roommate matches.',
+  path: '/login',
+  noIndex: true,
+});
 
 export default function LoginPage() {
   return (

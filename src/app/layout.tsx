@@ -1,20 +1,20 @@
 /**
- * Root layout wraps entire application.
- * Sets up fonts, metadata, global providers.
- *
- * Security:
- * - Content-Security-Policy set in next.config.ts headers
- * - No dangerouslySetInnerHTML anywhere in this layout
- *
- * SEO:
- * - Full OpenGraph + Twitter Card metadata
- * - JSON-LD structured data (WebSite + Organization + SearchAction)
- * - Canonical URL, alternate languages
+ * Root layout — fonts, providers, global SEO (roommat.in).
  */
 import type { Metadata, Viewport } from 'next';
 import { Inter } from 'next/font/google';
 import './globals.css';
 import { Providers } from '@/components/shared/Providers';
+import { JsonLd } from '@/components/seo/JsonLd';
+import { buildRootJsonLd } from '@/lib/seo/json-ld';
+import {
+  DEFAULT_KEYWORDS,
+  DEFAULT_OG_IMAGE,
+  SITE_NAME,
+  SITE_TAGLINE,
+  SITE_URL,
+  SOCIAL,
+} from '@/lib/seo/site';
 
 const inter = Inter({
   subsets: ['latin'],
@@ -22,51 +22,23 @@ const inter = Inter({
   display: 'swap',
 });
 
-const BASE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://roommat.in';
-const SUPPORT_EMAIL = process.env.NEXT_PUBLIC_SUPPORT_EMAIL ?? 'support@roommat.in';
-const SUPPORT_PHONE = process.env.NEXT_PUBLIC_SUPPORT_PHONE ?? '8866566752';
-
 export const metadata: Metadata = {
-  // ── Title ─────────────────────────────────────────────────────────────────
+  metadataBase: new URL(SITE_URL),
   title: {
-    default: 'Roommat Find Your Perfect Roommate & PG in Ahmedabad',
-    template: '%s | Roommat',
+    default: `${SITE_NAME} — ${SITE_TAGLINE}`,
+    template: `%s | ${SITE_NAME}`,
   },
-
-  // ── Core meta ─────────────────────────────────────────────────────────────
   description:
-    'Find verified PG rooms, shared flats, and ideal roommates in Ahmedabad & Gandhinagar. 500+ listings with photos, prices, and instant chat. Start for free!',
-
-  keywords: [
-    'roommate finder Ahmedabad',
-    'PG in Ahmedabad',
-    'shared flat Ahmedabad',
-    'room for rent Ahmedabad',
-    'roommate Gandhinagar',
-    'PG Gandhinagar',
-    'roommate app India',
-    'find roommate',
-    'paying guest Ahmedabad',
-    'flat sharing Ahmedabad',
-    'co-living Ahmedabad',
-    'room rent near me',
-    'roommat',
-  ],
-
-  authors: [{ name: 'Roommat', url: BASE_URL }],
-  creator: 'Roommat',
-  publisher: 'Roommat',
-
-  // ── Canonical + Alternates ─────────────────────────────────────────────────
-  metadataBase: new URL(BASE_URL),
+    'Find verified PG rooms, shared flats, and ideal roommates in Ahmedabad & Gandhinagar. Browse listings with photos, rent ranges, and instant chat. Free on roommat.in.',
+  keywords: [...DEFAULT_KEYWORDS],
+  authors: [{ name: SITE_NAME, url: SITE_URL }],
+  creator: SITE_NAME,
+  publisher: SITE_NAME,
+  applicationName: SITE_NAME,
   alternates: {
-    canonical: '/',
-    languages: {
-      'en-IN': '/',
-    },
+    canonical: SITE_URL,
+    languages: { 'en-IN': SITE_URL },
   },
-
-  // ── Robots ────────────────────────────────────────────────────────────────
   robots: {
     index: true,
     follow: true,
@@ -78,39 +50,31 @@ export const metadata: Metadata = {
       'max-snippet': -1,
     },
   },
-
-  // ── Open Graph ────────────────────────────────────────────────────────────
   openGraph: {
-    title: 'Roommat Find Your Perfect Roommate & PG in Ahmedabad',
+    title: `${SITE_NAME} — ${SITE_TAGLINE}`,
     description:
-      'Browse 500+ verified PG, shared flat, and roommate listings in Ahmedabad & Gandhinagar. Instant chat, smart matching, free to use.',
-    url: BASE_URL,
-    siteName: 'Roommat',
+      'Browse verified PG, shared flat, and roommate listings in Ahmedabad & Gandhinagar on roommat.in.',
+    url: SITE_URL,
+    siteName: SITE_NAME,
     type: 'website',
     locale: 'en_IN',
     images: [
       {
-        url: '/og-image.png',
+        url: DEFAULT_OG_IMAGE,
         width: 1200,
         height: 630,
-        alt: 'Roommat Find Your Perfect Roommate & PG in Ahmedabad',
-        type: 'image/png',
+        alt: `${SITE_NAME} — PG & roommate finder Ahmedabad`,
       },
     ],
   },
-
-  // ── Twitter Card ──────────────────────────────────────────────────────────
   twitter: {
     card: 'summary_large_image',
-    title: 'Roommat Find Your Perfect Roommate & PG in Ahmedabad',
-    description:
-      'Browse 500+ verified PG and shared flat listings in Ahmedabad. Start for free!',
-    images: ['/og-image.png'],
-    creator: '@roommat_in',
-    site: '@roommat_in',
+    title: `${SITE_NAME} — ${SITE_TAGLINE}`,
+    description: 'Verified PG & shared flats in Ahmedabad. Start free on roommat.in.',
+    images: [DEFAULT_OG_IMAGE],
+    site: SOCIAL.twitter,
+    creator: SOCIAL.twitter,
   },
-
-  // ── Icons ─────────────────────────────────────────────────────────────────
   icons: {
     icon: [
       { url: '/favicon.ico' },
@@ -120,18 +84,9 @@ export const metadata: Metadata = {
     apple: [{ url: '/apple-touch-icon.png', sizes: '180x180' }],
     shortcut: '/favicon.ico',
   },
-
-  // ── App links ─────────────────────────────────────────────────────────────
   manifest: '/site.webmanifest',
-
-  // ── Verification ──────────────────────────────────────────────────────────
-  // Add your Google Search Console verification token here once verified
-  // verification: {
-  //   google: 'YOUR_GOOGLE_VERIFICATION_TOKEN',
-  // },
-
-  // ── Category ──────────────────────────────────────────────────────────────
   category: 'real estate',
+  // verification: { google: 'YOUR_SEARCH_CONSOLE_TOKEN' },
 };
 
 export const viewport: Viewport = {
@@ -144,100 +99,15 @@ export const viewport: Viewport = {
   ],
 };
 
-// ── JSON-LD Structured Data ────────────────────────────────────────────────────
-// WebSite schema with SearchAction for Google Sitelinks Search Box
-const jsonLd = {
-  '@context': 'https://schema.org',
-  '@graph': [
-    // Organisation
-    {
-      '@type': 'Organization',
-      '@id': `${BASE_URL}/#organization`,
-      name: 'Roommat',
-      url: BASE_URL,
-      logo: {
-        '@type': 'ImageObject',
-        url: `${BASE_URL}/logo.png`,
-        width: 220,
-        height: 72,
-      },
-      sameAs: [
-        'https://twitter.com/roommat_in',
-        'https://www.instagram.com/roommatliving?igsh=MWRiMDN3YW9sNXZtbw==',
-        'https://www.facebook.com/share/1E79f18HU7/?mibextid=wwXIfr',
-      ],
-      contactPoint: {
-        '@type': 'ContactPoint',
-        contactType: 'customer support',
-        email: SUPPORT_EMAIL,
-        telephone: SUPPORT_PHONE,
-        availableLanguage: ['English', 'Hindi', 'Gujarati'],
-      },
-    },
-    // WebSite with Sitelinks SearchBox
-    {
-      '@type': 'WebSite',
-      '@id': `${BASE_URL}/#website`,
-      url: BASE_URL,
-      name: 'Roommat',
-      description: 'Find verified PG, shared flats, and roommates in Ahmedabad & Gandhinagar.',
-      publisher: { '@id': `${BASE_URL}/#organization` },
-      potentialAction: [
-        {
-          '@type': 'SearchAction',
-          target: {
-            '@type': 'EntryPoint',
-            urlTemplate: `${BASE_URL}/explore?q={search_term_string}`,
-          },
-          'query-input': 'required name=search_term_string',
-        },
-      ],
-      inLanguage: 'en-IN',
-    },
-    // LocalBusiness (helps Google Maps & local SEO)
-    {
-      '@type': 'LocalBusiness',
-      '@id': `${BASE_URL}/#local`,
-      name: 'Roommat',
-      url: BASE_URL,
-      image: `${BASE_URL}/logo.png`,
-      description: 'Roommate and PG finder for Ahmedabad & Gandhinagar.',
-      address: {
-        '@type': 'PostalAddress',
-        addressLocality: 'Ahmedabad',
-        addressRegion: 'Gujarat',
-        addressCountry: 'IN',
-      },
-      geo: {
-        '@type': 'GeoCoordinates',
-        latitude: '23.0225',
-        longitude: '72.5714',
-      },
-      areaServed: [
-        { '@type': 'City', name: 'Ahmedabad' },
-        { '@type': 'City', name: 'Gandhinagar' },
-      ],
-      priceRange: '₹₹',
-    },
-  ],
-};
-
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en-IN" className={`${inter.variable} scroll-smooth`} suppressHydrationWarning>
       <head>
-        {/* JSON-LD Structured Data */}
-        <script
-          type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
-        />
-        {/* Preconnect to external resources */}
+        <JsonLd data={buildRootJsonLd()} />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        {/* DNS prefetch for faster third-party loads */}
         <link rel="dns-prefetch" href="https://res.cloudinary.com" />
       </head>
-      {/* suppressHydrationWarning: browser extensions (e.g. Grammarly) mutate <body> attributes before React hydrates */}
       <body suppressHydrationWarning>
         <Providers>{children}</Providers>
       </body>

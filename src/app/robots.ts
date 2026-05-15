@@ -1,33 +1,15 @@
-/**
- * robots.ts robots.txt for Roommat
- * Next.js App Router MetadataRoute.Robots
- * Served at /robots.txt
- *
- * SEO impact: Controls what Googlebot and other crawlers can access.
- * - Allow public pages (/, /explore, /roommates, /login, /register)
- * - Disallow private/admin pages to save crawl budget
- */
-
 import type { MetadataRoute } from 'next';
-
-const BASE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://roommat.in';
+import { SITE_URL } from '@/lib/seo/site';
 
 export default function robots(): MetadataRoute.Robots {
   return {
     rules: [
       {
         userAgent: '*',
-        allow: [
-          '/',
-          '/explore',
-          '/roommates',
-          '/login',
-          '/register',
-          '/forgot-password',
-        ],
+        allow: ['/', '/explore', '/roommates', '/listings/', '/login', '/register', '/terms', '/privacy'],
         disallow: [
           '/admin',
-          '/admin/',
+          '/admin-sign-in',
           '/api/',
           '/profile',
           '/chat',
@@ -37,23 +19,15 @@ export default function robots(): MetadataRoute.Robots {
           '/onboarding',
           '/requests',
           '/matches',
+          '/listings/add',
+          '/*/edit',
         ],
       },
-      // Block AI scrapers from crawling the app
-      {
-        userAgent: 'GPTBot',
-        disallow: ['/'],
-      },
-      {
-        userAgent: 'ChatGPT-User',
-        disallow: ['/'],
-      },
-      {
-        userAgent: 'CCBot',
-        disallow: ['/'],
-      },
+      { userAgent: 'GPTBot', disallow: ['/'] },
+      { userAgent: 'ChatGPT-User', disallow: ['/'] },
+      { userAgent: 'CCBot', disallow: ['/'] },
     ],
-    sitemap: `${BASE_URL}/sitemap.xml`,
-    host: BASE_URL,
+    sitemap: `${SITE_URL}/sitemap.xml`,
+    host: SITE_URL,
   };
 }

@@ -1,0 +1,24 @@
+{
+  "name": "Roommat — PG & Roommate Finder",
+  "short_name": "Roommat",
+  "description": "Find verified PG rooms, shared flats, and roommates in Ahmedabad & Gandhinagar.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#0D9488",
+  "lang": "en-IN",
+  "icons": [
+    {
+      "src": "/favicon.ico",
+      "sizes": "48x48",
+      "type": "image/x-icon"
+    },
+    {
+      "src": "/logo.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
