@@ -34,7 +34,7 @@ import { Button } from '@/components/ui/Button';
 import { EmptyState } from '@/components/shared/EmptyState';
 import { useToast } from '@/hooks/useToast';
 import { listingService, MAX_LISTING_RESIDENTS } from '@/services/modules/listing.service';
-import { formatRupees } from '@/lib/utils/format';
+import { formatRupees, formatRentRange } from '@/lib/utils/format';
 import { Listing, type ListingResidentSnapshot } from '@/types';
 import { useAuthStore } from '@/store/authStore';
 import { ListingAmenityIcon } from '@/components/features/ListingAmenityIcon';
@@ -592,7 +592,7 @@ export default function ListingDetailPage() {
               <div className="flex items-center gap-3 mb-3">
                 <div>
                   <span className="text-2xl font-bold" style={{ color: '#1B8F8F' }}>
-                    {formatRupees(listing.price)}
+                    {formatRentRange(listing.price, listing.maxPrice)}
                   </span>
                   <span className="text-sm text-gray-400 ml-1">/month</span>
                 </div>

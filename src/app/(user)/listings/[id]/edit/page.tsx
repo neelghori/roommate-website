@@ -26,10 +26,15 @@ function listingToFormData(listing: Listing): ListingFormData {
     raw.length >= 20
       ? raw.slice(0, 2000)
       : `${raw}\n\nAdd more detail about the property (at least 20 characters).`.slice(0, 2000);
+  const hasRange =
+    listing.maxPrice != null && Number.isFinite(listing.maxPrice) && listing.maxPrice > listing.price;
   return {
     title: listing.title,
     type: listing.type,
-    price: listing.price,
+    rentMode: hasRange ? 'range' : 'exact',
+    exactPrice: listing.price,
+    minPrice: listing.price,
+    maxPrice: listing.maxPrice ?? listing.price,
     spotsLeft: listing.spotsLeft,
     addressLine1: listing.location,
     addressLine2: listing.addressLine2 ?? '',

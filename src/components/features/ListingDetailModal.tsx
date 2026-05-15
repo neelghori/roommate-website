@@ -15,7 +15,7 @@ import { Listing } from '@/types';
 import { Modal } from '@/components/ui/Modal';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
-import { formatRupees, formatListingTypeLabel } from '@/lib/utils/format';
+import { formatRentRange, formatListingTypeLabel } from '@/lib/utils/format';
 import { ListingVerificationBadge } from '@/components/features/ListingVerificationBadge';
 import { ListingLocationMap } from '@/components/features/ListingLocationMap';
 import { BookVisitModal } from '@/components/features/BookVisitModal';
@@ -243,7 +243,7 @@ export const ListingDetailModal: React.FC<ListingDetailModalProps> = ({
               {/* Price */}
               <div className="flex items-baseline gap-2">
                 <span className="text-3xl font-bold text-primary">
-                  {formatRupees(listing.price)}
+                  {formatRentRange(listing.price, listing.maxPrice)}
                 </span>
                 <span className="text-sm text-gray-400">/month</span>
                 <span

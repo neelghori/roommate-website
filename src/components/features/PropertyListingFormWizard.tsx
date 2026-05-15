@@ -17,6 +17,7 @@ import { Checkbox } from '@/components/ui/Checkbox';
 import { ImageUploader } from '@/components/features/ImageUploader';
 import { PropertyAddressFields } from '@/components/features/PropertyAddressFields';
 import { ListingPeopleTypeCheckboxes } from '@/components/features/ListingPeopleTypeCheckboxes';
+import { ListingRentFields } from '@/components/features/ListingRentFields';
 import {
   listingSchema,
   validateListingWizardStep,
@@ -33,7 +34,7 @@ const GENDER_OPTIONS = [
 ];
 
 const STEPS = [
-  { label: 'Basic Info', description: 'Name, type, price & location' },
+  { label: 'Basic Info', description: 'Name, type, rent range & location' },
   { label: 'Details', description: 'Amenities & description' },
   { label: 'Photos & Contact', description: 'Upload photos & phone' },
 ];
@@ -41,7 +42,10 @@ const STEPS = [
 const WIZARD_DEFAULTS: DefaultValues<ListingFormData> = {
   title: '',
   type: 'PG',
-  price: 5000,
+  rentMode: 'exact',
+  exactPrice: 8000,
+  minPrice: 5000,
+  maxPrice: 10000,
   spotsLeft: 1,
   addressLine1: '',
   addressLine2: '',
@@ -104,6 +108,7 @@ export function PropertyListingFormWizard({
     control,
     getValues,
     setValue,
+    watch,
     setError,
     clearErrors,
     formState: { errors },
@@ -256,24 +261,22 @@ export function PropertyListingFormWizard({
               />
             </div>
             <ListingPeopleTypeCheckboxes control={control} errors={errors} />
-            <div className="grid grid-cols-2 gap-3">
-              <Input
-                label="Rent / Month ₹ *"
-                type="number"
-                placeholder="8500"
-                error={errors.price?.message}
-                {...register('price', { valueAsNumber: true })}
-              />
-              <Input
-                label="Total Spots *"
-                type="number"
-                placeholder="1"
-                min={1}
-                max={50}
-                error={errors.spotsLeft?.message}
-                {...register('spotsLeft', { valueAsNumber: true })}
-              />
-            </div>
+            <ListingRentFields
+              control={control}
+              register={register}
+              errors={errors}
+              watch={watch}
+              setValue={setValue}
+            />
+            <Input
+              label="Total Spots *"
+              type="number"
+              placeholder="1"
+              min={1}
+              max={50}
+              error={errors.spotsLeft?.message}
+              {...register('spotsLeft', { valueAsNumber: true })}
+            />
             <PropertyAddressFields
               register={register}
               errors={errors}

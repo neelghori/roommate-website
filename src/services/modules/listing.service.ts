@@ -20,7 +20,10 @@ import { postMultipartForm } from '@/services/uploadForm';
 import { authApiErrorMessage } from '@/services/modules/auth.service';
 import { amenityService } from '@/services/modules/amenity.service';
 import { hasMapCoordinates } from '@/lib/googleMapsEmbed';
-import type { ListingFormData } from '@/lib/validations/listing.schema';
+import {
+  resolveListingRentRange,
+  type ListingFormData,
+} from '@/lib/validations/listing.schema';
 import {
   EMPTY_LISTING_RESIDENT,
   type ListingResidentFormData,
@@ -568,6 +571,8 @@ export function mapApiPropertyToListing(p: Record<string, unknown>): Listing {
   const addr = (p.address ?? {}) as Record<string, string | undefined>;
   const rent = (p.rentRange ?? {}) as { min?: number; max?: number };
   const price = typeof rent.min === 'number' && !Number.isNaN(rent.min) ? rent.min : 0;
+  const maxPrice =
+    typeof rent.max === 'number' && !Number.isNaN(rent.max) && rent.max > price ? rent.max : undefined;
   const city = addr.city ?? '';
   const location = addr.line1 ?? '';
   const addressLine2 = addr.line2?.trim() || undefined;
@@ -616,6 +621,7 @@ export function mapApiPropertyToListing(p: Record<string, unknown>): Listing {
     placeId,
     formattedAddress,
     price,
+    ...(maxPrice != null ? { maxPrice } : {}),
     isVerified: Boolean(p.isVerified),
     verificationBadge,
     spotsLeft: spots,
@@ -700,7 +706,10 @@ function buildPropertyListQueryParams(filter: ListingFilter | undefined, include
 export type CreateListingPayload = {
   title: string;
   type: string;
-  price: number;
+  rentMode?: ListingFormData['rentMode'];
+  exactPrice?: number;
+  minPrice?: number;
+  maxPrice?: number;
   addressLine1: string;
   addressLine2?: string;
   city: string;
@@ -731,7 +740,7 @@ export function buildPropertyCreateBody(
   const postal = (data.postalCode ?? '').trim();
   const body: Record<string, unknown> = {
     title: data.title,
-    rentRange: { min: data.price, max: data.price },
+    rentRange: resolveListingRentRange(data),
     listingType,
     genderPreference: mapGenderToApi(data.genderPreference),
     address: {
@@ -791,7 +800,7 @@ export const listingService = {
         listings = listings.filter((l) => l.price >= filter.minPrice!);
       }
       if (filter?.maxPrice != null) {
-        listings = listings.filter((l) => l.price <= filter.maxPrice!);
+        listings = listings.filter((l) => (l.maxPrice ?? l.price) <= filter.maxPrice!);
       }
       if (filter?.city && String(filter.city).trim()) {
         listings = listings.filter((l) => listingMatchesCityFilter(l, filter.city));
@@ -977,7 +986,10 @@ export const listingService = {
     const form = {
       title: payload.title,
       type: payload.type as ListingFormData['type'],
-      price: payload.price,
+      rentMode: payload.rentMode ?? 'exact',
+      exactPrice: payload.exactPrice ?? payload.minPrice ?? 8000,
+      minPrice: payload.minPrice ?? payload.exactPrice ?? 8000,
+      maxPrice: payload.maxPrice ?? payload.exactPrice ?? payload.minPrice ?? 8000,
       addressLine1: payload.addressLine1,
       addressLine2: payload.addressLine2 ?? '',
       city: payload.city,
@@ -1002,7 +1014,19 @@ export const listingService = {
     try {
       const body: Record<string, unknown> = {};
       if (payload.title != null) body.title = payload.title;
-      if (payload.price != null) body.rentRange = { min: payload.price, max: payload.price };
+      if (
+        payload.rentMode != null ||
+        payload.exactPrice != null ||
+        payload.minPrice != null ||
+        payload.maxPrice != null
+      ) {
+        body.rentRange = resolveListingRentRange({
+          rentMode: payload.rentMode,
+          exactPrice: payload.exactPrice,
+          minPrice: payload.minPrice,
+          maxPrice: payload.maxPrice,
+        });
+      }
       if (payload.description != null) body.description = payload.description;
       if (
         payload.addressLine1 != null ||
