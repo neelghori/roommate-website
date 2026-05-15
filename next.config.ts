@@ -85,16 +85,9 @@ const securityHeaders = [
 ];
 
 const nextConfig: NextConfig = {
-  async redirects() {
-    return [
-      {
-        source: '/:path*',
-        has: [{ type: 'host', value: 'www.roommat.in' }],
-        destination: 'https://roommat.in/:path*',
-        permanent: true,
-      },
-    ];
-  },
+  // Do not redirect www ↔ apex here — that causes "too many redirects" when the
+  // host/CDN (Vercel, Cloudflare, etc.) already redirects the other way. Set
+  // canonical domain once in your hosting dashboard (e.g. www → roommat.in).
   images: {
     remotePatterns: [
       {
