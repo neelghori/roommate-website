@@ -118,7 +118,7 @@ export default function RoommatesPageClient() {
 
         {/* ── Page header ── */}
         <div className="flex items-center justify-between pt-4 pb-3 gap-3">
-          <h1 className="text-xl font-bold text-gray-900">Find Roommates</h1>
+          <h2 className="text-xl font-bold text-gray-900">Find Roommates</h2>
 
           <div className="flex items-center gap-2 shrink-0">
             {isAuthenticated && isTenant && (

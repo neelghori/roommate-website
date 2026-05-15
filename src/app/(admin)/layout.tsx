@@ -1,11 +1,9 @@
-/**
- * Admin group layout wrapper.
- * Uses AdminLayout component.
- */
-'use client';
-import React from 'react';
-import { AdminLayout } from '@/components/shared/AdminLayout';
+import type { Metadata } from 'next';
+import AdminGroupClient from './admin-group-client';
+import { PRIVATE_PAGE_METADATA } from '@/lib/seo/site';
+
+export const metadata: Metadata = PRIVATE_PAGE_METADATA;
 
 export default function AdminGroupLayout({ children }: { children: React.ReactNode }) {
-  return <AdminLayout>{children}</AdminLayout>;
+  return <AdminGroupClient>{children}</AdminGroupClient>;
 }
