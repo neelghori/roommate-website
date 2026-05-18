@@ -27,6 +27,9 @@ import { ImageUploader } from '@/components/features/ImageUploader';
 import { PropertyAddressFields } from '@/components/features/PropertyAddressFields';
 import { ListingPeopleTypeCheckboxes } from '@/components/features/ListingPeopleTypeCheckboxes';
 import { ListingRentFields } from '@/components/features/ListingRentFields';
+import { PgMinimumStayField } from '@/components/features/PgMinimumStayField';
+import { FURNISHING_SELECT_OPTIONS } from '@/lib/furnishing';
+import { stripStudentFromPeopleTypes } from '@/lib/people-types';
 import { useToast } from '@/hooks/useToast';
 
 const GENDER_OPTIONS = [
@@ -67,13 +70,14 @@ export const AddListingModal: React.FC<AddListingModalProps> = ({
     resolver: zodResolver(listingSchema),
     defaultValues: {
       type: 'PG',
+      furnishing: 'SemiFurnished',
       rentMode: 'exact',
       exactPrice: 8000,
       minPrice: 5000,
       maxPrice: 10000,
       spotsLeft: 1,
       genderPreference: 'Any',
-      peopleTypes: ['Bachelor', 'Working', 'Family'],
+      peopleTypes: [],
       amenities: [],
       addressLine1: '',
       addressLine2: '',
@@ -81,6 +85,7 @@ export const AddListingModal: React.FC<AddListingModalProps> = ({
       state: '',
       country: 'India',
       postalCode: '',
+      minimumStayMonths: 1,
     },
   });
 
@@ -92,6 +97,20 @@ export const AddListingModal: React.FC<AddListingModalProps> = ({
       setValue('type', next, { shouldValidate: true, shouldDirty: true });
     }
   }, [listingTypeOptions, getValues, setValue]);
+
+  const listingType = watch('type');
+  useEffect(() => {
+    if (listingType !== 'PG') {
+      setValue('minimumStayMonths', undefined, { shouldValidate: false });
+      const cur = getValues('peopleTypes') ?? [];
+      const next = stripStudentFromPeopleTypes(cur);
+      if (next.length !== cur.length) {
+        setValue('peopleTypes', next, { shouldValidate: true });
+      }
+    } else if (getValues('minimumStayMonths') == null) {
+      setValue('minimumStayMonths', 1, { shouldValidate: false });
+    }
+  }, [listingType, setValue, getValues]);
 
   const handleClose = () => {
     reset();
@@ -162,7 +181,25 @@ export const AddListingModal: React.FC<AddListingModalProps> = ({
             />
           </div>
 
-          <ListingPeopleTypeCheckboxes control={control} errors={errors} />
+          <Controller
+            name="furnishing"
+            control={control}
+            render={({ field }) => (
+              <Select
+                label="Furnishing *"
+                options={FURNISHING_SELECT_OPTIONS}
+                placeholder="Select furnishing"
+                error={errors.furnishing?.message}
+                {...field}
+              />
+            )}
+          />
+
+          <ListingPeopleTypeCheckboxes
+            control={control}
+            errors={errors}
+            listingType={listingType}
+          />
 
           <ListingRentFields
             control={control}
@@ -171,6 +208,9 @@ export const AddListingModal: React.FC<AddListingModalProps> = ({
             watch={watch}
             setValue={setValue}
           />
+          {listingType === 'PG' ? (
+            <PgMinimumStayField register={register} errors={errors} />
+          ) : null}
           <Input
             label="Total Spots *"
             type="number"

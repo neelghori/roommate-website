@@ -4,6 +4,7 @@
  * Security: All inputs validated before API calls.
  */
 import { z } from 'zod';
+import { FURNISHING_FORM_VALUES } from '@/lib/furnishing';
 
 /** `Rent` kept for editing legacy listings (API `room`); new forms use `Flat` / `CoWorkingSpace` instead of For Rent / Studio. */
 const LISTING_TYPES = [
@@ -15,7 +16,7 @@ const LISTING_TYPES = [
   'House',
 ] as const;
 const GENDER_PREFERENCES = ['Male', 'Female', 'Any'] as const;
-const PEOPLE_TYPES = ['Bachelor', 'Working', 'Family'] as const;
+const PEOPLE_TYPES = ['Bachelor', 'Working', 'Family', 'Student'] as const;
 
 const RENT_MODES = ['exact', 'range'] as const;
 
@@ -24,6 +25,53 @@ const rentAmountField = z
   .positive('Rent must be greater than 0')
   .min(500, 'Minimum rent is ₹500')
   .max(200000, 'Maximum rent is ₹2,00,000');
+
+function refinePeopleTypes(
+  data: { type?: (typeof LISTING_TYPES)[number]; peopleTypes?: (typeof PEOPLE_TYPES)[number][] },
+  ctx: z.RefinementCtx,
+): void {
+  if (data.type === 'PG') return;
+  if (data.peopleTypes?.includes('Student')) {
+    ctx.addIssue({
+      code: 'custom',
+      message: 'Student is only available for PG/Hostel listings',
+      path: ['peopleTypes'],
+    });
+  }
+}
+
+function refinePgMinimumStay(
+  data: { type?: (typeof LISTING_TYPES)[number]; minimumStayMonths?: number },
+  ctx: z.RefinementCtx,
+): void {
+  if (data.type !== 'PG') return;
+  if (
+    data.minimumStayMonths == null ||
+    Number.isNaN(data.minimumStayMonths) ||
+    !Number.isFinite(data.minimumStayMonths)
+  ) {
+    ctx.addIssue({
+      code: 'custom',
+      message: 'Enter minimum stay in months',
+      path: ['minimumStayMonths'],
+    });
+    return;
+  }
+  if (data.minimumStayMonths < 1) {
+    ctx.addIssue({
+      code: 'custom',
+      message: 'Minimum stay must be at least 1 month',
+      path: ['minimumStayMonths'],
+    });
+  }
+  if (data.minimumStayMonths > 36) {
+    ctx.addIssue({
+      code: 'custom',
+      message: 'Minimum stay cannot exceed 36 months',
+      path: ['minimumStayMonths'],
+    });
+  }
+}
 
 function refineRent(
   data: {
@@ -80,6 +128,8 @@ const listingSchemaBase = z.object({
 
   type: z.enum(LISTING_TYPES, { message: 'Select a valid listing type' }),
 
+  furnishing: z.enum(FURNISHING_FORM_VALUES, { message: 'Select furnishing type' }),
+
   rentMode: z.enum(RENT_MODES, { message: 'Select how rent is listed' }),
 
   exactPrice: rentAmountField.optional(),
@@ -129,7 +179,7 @@ const listingSchemaBase = z.object({
   peopleTypes: z
     .array(z.enum(PEOPLE_TYPES))
     .min(1, 'Select at least one people type')
-    .max(3)
+    .max(4)
     .refine((arr) => new Set(arr).size === arr.length, {
       message: 'Each people type can only be selected once',
     }),
@@ -150,16 +200,31 @@ const listingSchemaBase = z.object({
     .refine((v) => v === undefined || v === '' || /^[6-9]\d{9}$/.test(v), {
       message: 'Enter a valid 10-digit Indian mobile number',
     }),
+
+  minimumStayMonths: z
+    .number({ error: 'Minimum stay must be a number' })
+    .int('Minimum stay must be a whole number')
+    .min(1, 'Minimum stay must be at least 1 month')
+    .max(36, 'Minimum stay cannot exceed 36 months')
+    .optional(),
 });
 
-export const listingSchema = listingSchemaBase.superRefine(refineRent);
+export const listingSchema = listingSchemaBase
+  .superRefine(refineRent)
+  .superRefine(refinePeopleTypes)
+  .superRefine(refinePgMinimumStay);
 
-export const listingEditSchema = listingSchemaBase.partial().superRefine(refineRent);
+export const listingEditSchema = listingSchemaBase
+  .partial()
+  .superRefine(refineRent)
+  .superRefine(refinePeopleTypes)
+  .superRefine(refinePgMinimumStay);
 
 /** Step-wise validation for multi-step wizard (full-schema `trigger` is unreliable for arrays). */
 export const listingWizardStep1Schema = listingSchemaBase.pick({
   title: true,
   type: true,
+  furnishing: true,
   rentMode: true,
   exactPrice: true,
   minPrice: true,
@@ -175,7 +240,8 @@ export const listingWizardStep1Schema = listingSchemaBase.pick({
   longitude: true,
   genderPreference: true,
   peopleTypes: true,
-}).superRefine(refineRent);
+  minimumStayMonths: true,
+}).superRefine(refineRent).superRefine(refinePeopleTypes).superRefine(refinePgMinimumStay);
 
 export const listingWizardStep2Schema = listingSchemaBase.pick({
   amenities: true,

@@ -23,7 +23,10 @@ export type ListingType =
   | 'House';
 
 /** Preferred occupant categories (multi-select); maps to API `peopleTypes`. */
-export type ListingPeopleType = 'Bachelor' | 'Working' | 'Family';
+export type ListingPeopleType = 'Bachelor' | 'Working' | 'Family' | 'Student';
+
+/** Furnishing level; maps to API `furnishing`. */
+export type ListingFurnishing = 'Unfurnished' | 'SemiFurnished' | 'FullyFurnished';
 export type ListingApprovalStatus = 'PENDING' | 'APPROVED' | 'REJECTED' | 'UNDER_REVIEW' | 'ON_HOLD';
 
 /** Who lives here maps to backend `Property.listerSnapshot`. */
@@ -81,10 +84,13 @@ export interface Listing {
   /** Staff-set badge from API; show even when `isVerified` is false. */
   verificationBadge?: ListingVerificationBadge;
   spotsLeft: number;
+  /** PG only — minimum months a tenant must stay. */
+  minimumStayMonths?: number;
   /** Amenity labels + optional `iconKey` from master / populated `amenityIds`. */
   amenities: ListingAmenityChip[];
   badge: ListingStatus;
   type: ListingType;
+  furnishing?: ListingFurnishing;
   /** Suitable for (subset of bachelor / working / family). */
   peopleTypes?: ListingPeopleType[];
   images: string[];

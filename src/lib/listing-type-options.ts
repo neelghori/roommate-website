@@ -5,7 +5,7 @@ export type ListingTypeSelectValue = ListingFormData['type'];
 
 /** Options shown in listing create/edit forms (subset of `listingSchema` types; excludes legacy `Rent`). */
 export const LISTING_TYPE_SELECT_OPTIONS: { label: string; value: ListingTypeSelectValue }[] = [
-  { label: 'PG', value: 'PG' },
+  { label: 'PG/Hostel', value: 'PG' },
   { label: 'Flat', value: 'Flat' },
   { label: 'Roommate', value: 'Roommate' },
   { label: 'Co-Working Space', value: 'CoWorkingSpace' },

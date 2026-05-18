@@ -9,6 +9,7 @@ import type {
   Listing,
   ListingAmenityChip,
   ListingFilter,
+  ListingFurnishing,
   ListingPeopleType,
   ListingResidentSnapshot,
   ListingType,
@@ -20,6 +21,7 @@ import { postMultipartForm } from '@/services/uploadForm';
 import { authApiErrorMessage } from '@/services/modules/auth.service';
 import { amenityService } from '@/services/modules/amenity.service';
 import { hasMapCoordinates } from '@/lib/googleMapsEmbed';
+import { mapFurnishingFromApi, mapFurnishingToApi } from '@/lib/furnishing';
 import {
   resolveListingRentRange,
   type ListingFormData,
@@ -68,6 +70,7 @@ const API_TO_UI_PEOPLE_TYPE: Record<string, ListingPeopleType> = {
   bachelor: 'Bachelor',
   working: 'Working',
   family: 'Family',
+  student: 'Student',
 };
 
 function mapPeopleTypesFromApi(raw: unknown): ListingPeopleType[] {
@@ -587,6 +590,9 @@ export function mapApiPropertyToListing(p: Record<string, unknown>): Listing {
     typeof p.availableSpots === 'number' && !Number.isNaN(p.availableSpots) ? p.availableSpots : 1;
   const lt = typeof p.listingType === 'string' ? p.listingType : 'room';
   const type = API_TO_UI_LISTING_TYPE[lt] ?? 'Flat';
+  const furnishing = mapFurnishingFromApi(
+    typeof p.furnishing === 'string' ? p.furnishing : undefined,
+  );
   const createdAt =
     typeof p.createdAt === 'string' ? p.createdAt : new Date().toISOString();
   const geo = p.location as
@@ -625,9 +631,15 @@ export function mapApiPropertyToListing(p: Record<string, unknown>): Listing {
     isVerified: Boolean(p.isVerified),
     verificationBadge,
     spotsLeft: spots,
+    ...(typeof p.minimumStayMonths === 'number' &&
+    !Number.isNaN(p.minimumStayMonths) &&
+    p.minimumStayMonths >= 1
+      ? { minimumStayMonths: p.minimumStayMonths }
+      : {}),
     amenities: mapAmenityDocs(p.amenityIds),
     badge: approvalFromProperty(p) === 'APPROVED' ? 'New' : null,
     type,
+    ...(furnishing ? { furnishing } : {}),
     images,
     description: typeof p.description === 'string' ? p.description : '',
     residentSnapshots,
@@ -726,6 +738,8 @@ export type CreateListingPayload = {
   amenities: string[];
   description: string;
   phone?: string;
+  minimumStayMonths?: number;
+  furnishing?: ListingFurnishing;
 };
 
 export type UpdateListingPayload = Partial<CreateListingPayload>;
@@ -742,6 +756,7 @@ export function buildPropertyCreateBody(
     title: data.title,
     rentRange: resolveListingRentRange(data),
     listingType,
+    furnishing: mapFurnishingToApi(data.furnishing),
     genderPreference: mapGenderToApi(data.genderPreference),
     address: {
       line1: data.addressLine1,
@@ -769,6 +784,9 @@ export function buildPropertyCreateBody(
   body.location = loc;
   const phone = data.phone?.replace(/\D/g, '') ?? '';
   if (phone.length >= 10) body.contactPhone = phone.slice(-10);
+  if (listingType === 'pg' && data.minimumStayMonths != null) {
+    body.minimumStayMonths = data.minimumStayMonths;
+  }
   if (imageUrls.length > 0) {
     body.imageUrls = imageUrls;
     body.coverImageUrl = imageUrls[0];
@@ -1059,9 +1077,16 @@ export const listingService = {
       }
       if (payload.spotsLeft != null) body.availableSpots = payload.spotsLeft;
       if (payload.genderPreference != null) body.genderPreference = mapGenderToApi(payload.genderPreference);
+      if (payload.furnishing != null) body.furnishing = mapFurnishingToApi(payload.furnishing);
       if (payload.type != null) {
         const lt = UI_TO_API_LISTING_TYPE[payload.type];
-        if (lt) body.listingType = lt;
+        if (lt) {
+          body.listingType = lt;
+          if (lt !== 'pg') body.minimumStayMonths = null;
+        }
+      }
+      if (payload.minimumStayMonths != null && body.minimumStayMonths !== null) {
+        body.minimumStayMonths = payload.minimumStayMonths;
       }
       if (payload.amenities != null) {
         body.amenityIds = await resolveAmenityIdsFromLabels(payload.amenities);

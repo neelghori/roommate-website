@@ -1,25 +1,33 @@
 'use client';
 
-import React from 'react';
+import React, { useMemo } from 'react';
 import { Controller, type Control, type FieldErrors } from 'react-hook-form';
 import type { ListingFormData } from '@/lib/validations/listing.schema';
-
-const OPTIONS = [
-  { value: 'Bachelor' as const, label: 'Bachelor' },
-  { value: 'Working' as const, label: 'Working' },
-  { value: 'Family' as const, label: 'Family' },
-];
+import { getPeopleTypeOptionsForListingType } from '@/lib/people-types';
 
 type ListingPeopleTypeCheckboxesProps = {
   control: Control<ListingFormData>;
   errors?: FieldErrors<ListingFormData>;
+  listingType: ListingFormData['type'];
 };
 
-export function ListingPeopleTypeCheckboxes({ control, errors }: ListingPeopleTypeCheckboxesProps) {
+export function ListingPeopleTypeCheckboxes({
+  control,
+  errors,
+  listingType,
+}: ListingPeopleTypeCheckboxesProps) {
+  const options = useMemo(
+    () => getPeopleTypeOptionsForListingType(listingType),
+    [listingType],
+  );
+
   return (
     <div>
       <label className="text-sm font-medium text-gray-700 mb-2 block">People type *</label>
-      <p className="text-xs text-gray-500 mb-2">Select all that apply — who is this listing suitable for?</p>
+      <p className="text-xs text-gray-500 mb-2">
+        Select who this listing is suitable for
+        {listingType === 'PG' ? ' (Student is available for PG/Hostel only)' : ''}.
+      </p>
       {errors?.peopleTypes && (
         <p className="text-xs text-red-500 mb-2">{errors.peopleTypes.message as string}</p>
       )}
@@ -28,7 +36,7 @@ export function ListingPeopleTypeCheckboxes({ control, errors }: ListingPeopleTy
         control={control}
         render={({ field }) => {
           const current = (field.value as ListingFormData['peopleTypes']) ?? [];
-          const toggle = (value: (typeof OPTIONS)[number]['value']) => {
+          const toggle = (value: (typeof options)[number]['value']) => {
             const set = new Set(current);
             if (set.has(value)) set.delete(value);
             else set.add(value);
@@ -36,7 +44,7 @@ export function ListingPeopleTypeCheckboxes({ control, errors }: ListingPeopleTy
           };
           return (
             <div className="flex flex-wrap gap-2">
-              {OPTIONS.map(({ value, label }) => {
+              {options.map(({ value, label }) => {
                 const active = current.includes(value);
                 return (
                   <button
