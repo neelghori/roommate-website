@@ -2,7 +2,7 @@ import type { Category, Listing, ListingType } from '@/types';
 
 /** Explore “Browse by category” grid: PG, Flat, Roommate, Co-Working Space, House. */
 const EXPLORE_GRID: { label: ListingType; icon: string; unit: Category['unit'] }[] = [
-  { label: 'PG/Hostel', icon: '🏠', unit: 'listings' },
+  { label: 'PG', icon: '🏠', unit: 'listings' },
   { label: 'Flat', icon: '🔑', unit: 'listings' },
   { label: 'Roommate', icon: '👥', unit: 'profiles' },
   { label: 'CoWorkingSpace', icon: '💼', unit: 'listings' },
