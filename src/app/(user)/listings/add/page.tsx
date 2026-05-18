@@ -17,13 +17,13 @@ export default function AddListingPage() {
   const toast = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleFinish = async (data: ListingFormData, uploadedImages: File[]) => {
+  const handleFinish = async (data: ListingFormData, gallery: { keptExistingUrls: string[]; newFiles: File[] }) => {
     setIsSubmitting(true);
     try {
       const created = await listingService.createListingFromForm(data, []);
       const pid = created.id;
-      if (uploadedImages.length > 0 && pid) {
-        const urls = await listingService.uploadPropertyListingImages(pid, uploadedImages);
+      if (gallery.newFiles.length > 0 && pid) {
+        const urls = await listingService.uploadPropertyListingImages(pid, gallery.newFiles);
         await listingService.patchListingImages(pid, urls);
       }
       toast.success(

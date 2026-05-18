@@ -16,6 +16,7 @@ import type { ListingFormData } from '@/lib/validations/listing.schema';
 import { useToast } from '@/hooks/useToast';
 import { listingService } from '@/services/modules/listing.service';
 import type { Listing } from '@/types';
+import type { ListingGalleryChange } from '@/components/features/ListingGalleryEditor';
 
 function listingToFormData(listing: Listing): ListingFormData {
   const digits = (listing.ownerPhone ?? '').replace(/\D/g, '');
@@ -70,7 +71,10 @@ export default function EditListingPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
   const [pendingData, setPendingData] = useState<ListingFormData | null>(null);
-  const [pendingImages, setPendingImages] = useState<File[]>([]);
+  const [pendingGallery, setPendingGallery] = useState<ListingGalleryChange>({
+    keptExistingUrls: [],
+    newFiles: [],
+  });
 
   useEffect(() => {
     if (!id) return;
@@ -96,9 +100,9 @@ export default function EditListingPage() {
 
   const formDefaults = useMemo(() => (listing ? listingToFormData(listing) : undefined), [listing]);
 
-  const handleFinish = (data: ListingFormData, uploadedImages: File[]) => {
+  const handleFinish = (data: ListingFormData, gallery: ListingGalleryChange) => {
     setPendingData(data);
-    setPendingImages(uploadedImages);
+    setPendingGallery(gallery);
     setShowConfirm(true);
   };
 
@@ -107,11 +111,10 @@ export default function EditListingPage() {
     setShowConfirm(false);
     setIsSubmitting(true);
     try {
-      const existing = listing?.images ?? [];
-      let merged = existing;
-      if (pendingImages.length > 0) {
-        const newUrls = await listingService.uploadPropertyListingImages(id, pendingImages);
-        merged = [...existing, ...newUrls].slice(0, 30);
+      let merged = [...pendingGallery.keptExistingUrls];
+      if (pendingGallery.newFiles.length > 0) {
+        const newUrls = await listingService.uploadPropertyListingImages(id, pendingGallery.newFiles);
+        merged = [...merged, ...newUrls].slice(0, 30);
       }
       const updated = await listingService.updateListingFromForm(id, pendingData, merged);
       setListing(updated);
@@ -124,7 +127,7 @@ export default function EditListingPage() {
       const msg = e instanceof Error ? e.message : 'Update failed';
       toast.error('Could not save listing', msg);
     } finally {
-      setPendingImages([]);
+      setPendingGallery({ keptExistingUrls: [], newFiles: [] });
       setIsSubmitting(false);
     }
   };
@@ -172,7 +175,8 @@ export default function EditListingPage() {
         variant="edit"
         submitButtonLabel="Update Listing"
         isSubmitting={isSubmitting}
-        photoHint="Leave empty to keep existing photos."
+        photoHint="Remove photos with × or add new ones. First photo is the cover. Removed photos are deleted from storage when you save."
+        initialExistingImageUrls={listing.images}
         onFinish={handleFinish}
       />
 
@@ -180,7 +184,7 @@ export default function EditListingPage() {
         isOpen={showConfirm}
         onClose={() => {
           setShowConfirm(false);
-          setPendingImages([]);
+          setPendingGallery({ keptExistingUrls: [], newFiles: [] });
         }}
         title="Save Changes?"
         size="sm"
