@@ -966,10 +966,12 @@ export const listingService = {
   updateListingFromForm: async (
     id: string,
     data: ListingFormData,
-    imageUrls: string[] = [],
+    imageUrls: string[],
   ): Promise<Listing> => {
     const amenityIds = await resolveAmenityIdsFromLabels(data.amenities as string[]);
-    const body = buildPropertyCreateBody(data, amenityIds, imageUrls);
+    const body = buildPropertyCreateBody(data, amenityIds, []);
+    body.imageUrls = imageUrls;
+    body.coverImageUrl = imageUrls.length > 0 ? imageUrls[0] : null;
     try {
       const { data: res } = await apiClient.patch<unknown>(`/api/v1/properties/${id}`, body);
       const root = res as Record<string, unknown>;

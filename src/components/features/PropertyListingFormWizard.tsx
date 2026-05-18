@@ -15,6 +15,10 @@ import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
 import { Checkbox } from '@/components/ui/Checkbox';
 import { ImageUploader } from '@/components/features/ImageUploader';
+import {
+  ListingGalleryEditor,
+  type ListingGalleryChange,
+} from '@/components/features/ListingGalleryEditor';
 import { PropertyAddressFields } from '@/components/features/PropertyAddressFields';
 import { ListingPeopleTypeCheckboxes } from '@/components/features/ListingPeopleTypeCheckboxes';
 import { ListingRentFields } from '@/components/features/ListingRentFields';
@@ -78,7 +82,9 @@ export type PropertyListingFormWizardProps = {
   isSubmitting?: boolean;
   /** Shown under the image uploader (edit: keep existing photos). */
   photoHint?: string;
-  onFinish: (data: ListingFormData, uploadedImages: File[]) => void | Promise<void>;
+  /** Existing gallery URLs when editing a listing. */
+  initialExistingImageUrls?: string[];
+  onFinish: (data: ListingFormData, gallery: ListingGalleryChange) => void | Promise<void>;
 };
 
 const DEFAULT_PHOTO_HINT =
@@ -93,6 +99,7 @@ export function PropertyListingFormWizard({
   submitButtonLabel,
   isSubmitting = false,
   photoHint = DEFAULT_PHOTO_HINT,
+  initialExistingImageUrls = [],
   onFinish,
 }: PropertyListingFormWizardProps) {
   const toast = useToast();
@@ -100,7 +107,10 @@ export function PropertyListingFormWizard({
   const listingTypeOptions = useMemo(() => getListingTypeSelectOptionsForRole(userRole), [userRole]);
   const { items: masterAmenities, loading: amenitiesLoading, error: amenitiesLoadError } = useAmenityMaster();
   const [step, setStep] = useState(0);
-  const [uploadedImages, setUploadedImages] = useState<File[]>([]);
+  const [gallery, setGallery] = useState<ListingGalleryChange>({
+    keptExistingUrls: initialExistingImageUrls,
+    newFiles: [],
+  });
 
   const defaultValues = useMemo(
     () => ({ ...WIZARD_DEFAULTS, ...initialValues }),
@@ -164,8 +174,12 @@ export function PropertyListingFormWizard({
 
   const handleBack = () => setStep((s) => Math.max(s - 1, 0));
 
+  useEffect(() => {
+    setGallery({ keptExistingUrls: initialExistingImageUrls, newFiles: [] });
+  }, [initialExistingImageUrls]);
+
   const onSubmit = async (data: ListingFormData) => {
-    await onFinish(data, uploadedImages);
+    await onFinish(data, gallery);
   };
 
   /**
@@ -406,7 +420,16 @@ export function PropertyListingFormWizard({
           <div className="space-y-5">
             <div>
               <label className="text-sm font-medium text-gray-700 mb-2 block">Property Photos</label>
-              <ImageUploader onChange={setUploadedImages} />
+              {variant === 'edit' ? (
+                <ListingGalleryEditor
+                  initialExistingUrls={initialExistingImageUrls}
+                  onChange={setGallery}
+                />
+              ) : (
+                <ImageUploader
+                  onChange={(files) => setGallery({ keptExistingUrls: [], newFiles: files })}
+                />
+              )}
               <p className="text-xs text-gray-400 mt-1.5">{photoHint}</p>
             </div>
             <Input
