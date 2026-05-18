@@ -35,6 +35,7 @@ import { EmptyState } from '@/components/shared/EmptyState';
 import { useToast } from '@/hooks/useToast';
 import { listingService, MAX_LISTING_RESIDENTS } from '@/services/modules/listing.service';
 import { formatRupees, formatRentRange } from '@/lib/utils/format';
+import { formatFurnishingLabel } from '@/lib/furnishing';
 import { Listing, type ListingResidentSnapshot } from '@/types';
 import { useAuthStore } from '@/store/authStore';
 import { ListingAmenityIcon } from '@/components/features/ListingAmenityIcon';
@@ -633,6 +634,14 @@ export default function ListingDetailClient({
                 >
                   {listing.genderPreference} pref.
                 </span>
+                {listing.furnishing ? (
+                  <span
+                    className="px-2.5 py-0.5 rounded-full font-semibold text-gray-700 bg-gray-100"
+                    title="Furnishing"
+                  >
+                    {formatFurnishingLabel(listing.furnishing)}
+                  </span>
+                ) : null}
                 {listing.peopleTypes && listing.peopleTypes.length > 0 ? (
                   <span
                     className="px-2.5 py-0.5 rounded-full font-semibold text-gray-700 bg-gray-100"

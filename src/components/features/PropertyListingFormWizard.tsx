@@ -18,6 +18,9 @@ import { ImageUploader } from '@/components/features/ImageUploader';
 import { PropertyAddressFields } from '@/components/features/PropertyAddressFields';
 import { ListingPeopleTypeCheckboxes } from '@/components/features/ListingPeopleTypeCheckboxes';
 import { ListingRentFields } from '@/components/features/ListingRentFields';
+import { PgMinimumStayField } from '@/components/features/PgMinimumStayField';
+import { FURNISHING_SELECT_OPTIONS } from '@/lib/furnishing';
+import { stripStudentFromPeopleTypes } from '@/lib/people-types';
 import {
   listingSchema,
   validateListingWizardStep,
@@ -42,6 +45,7 @@ const STEPS = [
 const WIZARD_DEFAULTS: DefaultValues<ListingFormData> = {
   title: '',
   type: 'PG',
+  furnishing: 'SemiFurnished',
   rentMode: 'exact',
   exactPrice: 8000,
   minPrice: 5000,
@@ -54,10 +58,11 @@ const WIZARD_DEFAULTS: DefaultValues<ListingFormData> = {
   country: 'India',
   postalCode: '',
   genderPreference: 'Any',
-  peopleTypes: ['Bachelor', 'Working', 'Family'],
+  peopleTypes: [],
   amenities: [],
   description: '',
   phone: '',
+  minimumStayMonths: 1,
 };
 
 export type PropertyListingFormWizardProps = {
@@ -126,6 +131,20 @@ export function PropertyListingFormWizard({
       setValue('type', next, { shouldValidate: true, shouldDirty: true });
     }
   }, [listingTypeOptions, getValues, setValue]);
+
+  const listingType = watch('type');
+  useEffect(() => {
+    if (listingType !== 'PG') {
+      setValue('minimumStayMonths', undefined, { shouldValidate: false });
+      const cur = getValues('peopleTypes') ?? [];
+      const next = stripStudentFromPeopleTypes(cur);
+      if (next.length !== cur.length) {
+        setValue('peopleTypes', next, { shouldValidate: true });
+      }
+    } else if (getValues('minimumStayMonths') == null) {
+      setValue('minimumStayMonths', 1, { shouldValidate: false });
+    }
+  }, [listingType, setValue, getValues]);
 
   const handleNext = () => {
     if (step !== 0 && step !== 1) return;
@@ -260,7 +279,24 @@ export function PropertyListingFormWizard({
                 )}
               />
             </div>
-            <ListingPeopleTypeCheckboxes control={control} errors={errors} />
+            <Controller
+              name="furnishing"
+              control={control}
+              render={({ field }) => (
+                <Select
+                  label="Furnishing *"
+                  options={FURNISHING_SELECT_OPTIONS}
+                  placeholder="Select furnishing"
+                  error={errors.furnishing?.message}
+                  {...field}
+                />
+              )}
+            />
+            <ListingPeopleTypeCheckboxes
+              control={control}
+              errors={errors}
+              listingType={listingType}
+            />
             <ListingRentFields
               control={control}
               register={register}
@@ -268,6 +304,9 @@ export function PropertyListingFormWizard({
               watch={watch}
               setValue={setValue}
             />
+            {listingType === 'PG' ? (
+              <PgMinimumStayField register={register} errors={errors} />
+            ) : null}
             <Input
               label="Total Spots *"
               type="number"

@@ -31,6 +31,7 @@ function listingToFormData(listing: Listing): ListingFormData {
   return {
     title: listing.title,
     type: listing.type,
+    furnishing: listing.furnishing ?? 'SemiFurnished',
     rentMode: hasRange ? 'range' : 'exact',
     exactPrice: listing.price,
     minPrice: listing.price,
@@ -47,13 +48,13 @@ function listingToFormData(listing: Listing): ListingFormData {
     placeId: listing.placeId ?? '',
     formattedAddress: listing.formattedAddress ?? '',
     genderPreference: listing.genderPreference,
-    peopleTypes:
-      listing.peopleTypes && listing.peopleTypes.length > 0
-        ? listing.peopleTypes
-        : ['Bachelor', 'Working', 'Family'],
+    peopleTypes: listing.peopleTypes ?? [],
     amenities,
     description,
     phone,
+    ...(listing.type === 'PG' && listing.minimumStayMonths != null
+      ? { minimumStayMonths: listing.minimumStayMonths }
+      : {}),
   } as ListingFormData;
 }
 

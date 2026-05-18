@@ -16,6 +16,7 @@ import { Modal } from '@/components/ui/Modal';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
 import { formatRentRange, formatListingTypeLabel } from '@/lib/utils/format';
+import { formatFurnishingLabel } from '@/lib/furnishing';
 import { ListingVerificationBadge } from '@/components/features/ListingVerificationBadge';
 import { ListingLocationMap } from '@/components/features/ListingLocationMap';
 import { BookVisitModal } from '@/components/features/BookVisitModal';
@@ -256,6 +257,18 @@ export const ListingDetailModal: React.FC<ListingDetailModalProps> = ({
                 <p className="text-xs text-gray-600">
                   <span className="font-semibold text-gray-700">People: </span>
                   {listing.peopleTypes.join(' · ')}
+                </p>
+              ) : null}
+              {listing.furnishing ? (
+                <p className="text-xs text-gray-600">
+                  <span className="font-semibold text-gray-700">Furnishing: </span>
+                  {formatFurnishingLabel(listing.furnishing)}
+                </p>
+              ) : null}
+              {listing.type === 'PG' && listing.minimumStayMonths != null ? (
+                <p className="text-xs text-gray-600">
+                  <span className="font-semibold text-gray-700">Minimum stay: </span>
+                  {listing.minimumStayMonths} month{listing.minimumStayMonths !== 1 ? 's' : ''}
                 </p>
               ) : null}
 

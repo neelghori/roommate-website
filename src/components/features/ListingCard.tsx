@@ -13,6 +13,7 @@ import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
 import { useToast } from '@/hooks/useToast';
 import { formatRentRange, formatListingTypeLabel } from '@/lib/utils/format';
+import { formatFurnishingLabel } from '@/lib/furnishing';
 import { ListingVerificationBadge } from '@/components/features/ListingVerificationBadge';
 import { BookVisitModal } from '@/components/features/BookVisitModal';
 import { useAuthStore } from '@/store/authStore';
@@ -174,6 +175,11 @@ export const ListingCard: React.FC<ListingCardProps> = ({ listing, onViewDetail,
             <MapPin size={11} className="text-gray-400 flex-shrink-0" />
             <span className="text-xs text-gray-500 truncate">{listing.location}</span>
           </div>
+          {listing.furnishing ? (
+            <p className="text-[10px] text-gray-500 mb-1">
+              {formatFurnishingLabel(listing.furnishing)}
+            </p>
+          ) : null}
           {listing.peopleTypes && listing.peopleTypes.length > 0 ? (
             <p className="text-[10px] text-gray-500 mb-2">
               People: {listing.peopleTypes.join(' · ')}

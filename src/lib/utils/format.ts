@@ -6,7 +6,7 @@
 import type { ListingType } from '@/types/listing.types';
 
 const LISTING_TYPE_LABELS: Record<ListingType, string> = {
-  PG: 'PG',
+  PG: 'PG/Hostel',
   Rent: 'Rent',
   Flat: 'Flat',
   Roommate: 'Roommate',
