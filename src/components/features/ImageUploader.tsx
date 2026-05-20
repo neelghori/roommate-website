@@ -72,10 +72,9 @@ export const ImageUploader: React.FC<ImageUploaderProps> = ({
 
       if (limit === 1) {
         const file = acceptedAll[0];
-        let nextFiles: File[] = [file];
         setPreviews((prev) => {
           prev.forEach((p) => URL.revokeObjectURL(p.objectUrl));
-          nextFiles = [file];
+          onChange?.([file]);
           return [
             {
               file,
@@ -84,7 +83,6 @@ export const ImageUploader: React.FC<ImageUploaderProps> = ({
             },
           ];
         });
-        onChange?.(nextFiles);
         return;
       }
 
@@ -99,13 +97,11 @@ export const ImageUploader: React.FC<ImageUploaderProps> = ({
         id: `${file.name}-${Date.now()}-${Math.random()}`,
       }));
 
-      let nextFiles: File[] = [];
       setPreviews((prev) => {
         const updated = [...prev, ...newPreviews];
-        nextFiles = updated.map((p) => p.file);
+        onChange?.(updated.map((p) => p.file));
         return updated;
       });
-      onChange?.(nextFiles);
     },
     [previews.length, onChange, limit, toast]
   );
@@ -117,15 +113,13 @@ export const ImageUploader: React.FC<ImageUploaderProps> = ({
   };
 
   const handleRemove = (id: string) => {
-    let nextFiles: File[] = [];
     setPreviews((prev) => {
       const target = prev.find((p) => p.id === id);
       if (target) URL.revokeObjectURL(target.objectUrl);
       const updated = prev.filter((p) => p.id !== id);
-      nextFiles = updated.map((p) => p.file);
+      onChange?.(updated.map((p) => p.file));
       return updated;
     });
-    onChange?.(nextFiles);
   };
 
   const handleDrop = (e: React.DragEvent) => {

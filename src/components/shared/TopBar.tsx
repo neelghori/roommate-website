@@ -75,7 +75,7 @@ const AvatarDropdown: React.FC = () => {
     await authService.logout();
     logout();
     toast.success('Logged out', 'See you soon!');
-    router.push('/');
+    router.replace('/');
   };
 
   const MENU = [
