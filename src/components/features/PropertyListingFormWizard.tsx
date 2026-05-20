@@ -15,7 +15,6 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
 import { Checkbox } from '@/components/ui/Checkbox';
-import { ImageUploader } from '@/components/features/ImageUploader';
 import {
   ListingGalleryEditor,
   type ListingGalleryChange,
@@ -113,9 +112,6 @@ export function PropertyListingFormWizard({
     keptExistingUrls: initialExistingImageUrls,
     newFiles: [],
   });
-  const galleryRef = useRef(gallery);
-  galleryRef.current = gallery;
-
   const defaultValues = useMemo(
     () => ({ ...WIZARD_DEFAULTS, ...initialValues }),
     [initialValues],
@@ -204,12 +200,11 @@ export function PropertyListingFormWizard({
     }));
   }
 
-  const handleCreateGalleryFiles = useCallback((files: File[]) => {
-    setGallery({ keptExistingUrls: [], newFiles: files });
-  }, []);
-
   const onSubmit = async (data: ListingFormData) => {
-    await onFinish(data, galleryRef.current);
+    await onFinish(data, {
+      keptExistingUrls: gallery.keptExistingUrls,
+      newFiles: [...gallery.newFiles],
+    });
   };
 
   /**
@@ -458,14 +453,10 @@ export function PropertyListingFormWizard({
           <div className="space-y-5">
             <div>
               <label className="text-sm font-medium text-gray-700 mb-2 block">Property Photos</label>
-              {variant === 'edit' ? (
-                <ListingGalleryEditor
-                  initialExistingUrls={initialExistingImageUrls}
-                  onChange={setGallery}
-                />
-              ) : (
-                <ImageUploader onChange={handleCreateGalleryFiles} />
-              )}
+              <ListingGalleryEditor
+                initialExistingUrls={variant === 'edit' ? initialExistingImageUrls : EMPTY_STRING_ARRAY}
+                onChange={setGallery}
+              />
               <p className="text-xs text-gray-400 mt-1.5">{photoHint}</p>
             </div>
             <Input

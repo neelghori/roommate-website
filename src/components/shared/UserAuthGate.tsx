@@ -8,6 +8,7 @@ import React, { useEffect } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { useAuthStore } from '@/store/authStore';
 import { isPublicGuestRoute } from '@/lib/publicRoutes';
+import { loginHrefForProtectedPath } from '@/lib/loginRedirect';
 
 export function UserAuthGate({ children }: { children: React.ReactNode }) {
   const sessionReady = useAuthStore((s) => s.sessionReady);
@@ -18,8 +19,7 @@ export function UserAuthGate({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (!sessionReady || isAuthenticated) return;
     if (isPublicGuestRoute(pathname)) return;
-    const next = encodeURIComponent(pathname || '/');
-    router.replace(`/login?next=${next}`);
+    router.replace(loginHrefForProtectedPath(pathname || '/'));
   }, [sessionReady, isAuthenticated, pathname, router]);
 
   if (!sessionReady) {

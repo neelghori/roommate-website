@@ -17,14 +17,7 @@ import { Input } from '@/components/ui/Input';
 import { AuthBrandPanel, AUTH_SITE_SLOGAN, PanelFeatureList } from '@/components/shared/AuthBrandPanel';
 import { AuthActivityFeed } from '@/components/shared/AuthActivityFeed';
 
-function safeNextPath(raw: string | null): string {
-  if (!raw) return '/';
-  try {
-    const path = decodeURIComponent(raw);
-    if (path.startsWith('/') && !path.startsWith('//')) return path;
-  } catch { /* ignore */ }
-  return '/';
-}
+import { sanitizeLoginNextPath } from '@/lib/loginRedirect';
 
 const FEATURES = [
   { Icon: Sparkles,    title: 'Smart Matching',      desc: 'Rooms and roommates tailored to your lifestyle'       },
@@ -53,7 +46,7 @@ export default function LoginPageClient() {
       setUser(res.user);
       wsService.connect(getAccessToken() ?? undefined);
       success('Welcome back!', `Logged in as ${res.user.name}`);
-      router.push(safeNextPath(searchParams.get('next')));
+      router.push(sanitizeLoginNextPath(searchParams.get('next')));
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Something went wrong. Please try again.';
       toastError('Login failed', message);

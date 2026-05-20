@@ -15,6 +15,7 @@ import { PropertyListingFormWizard } from '@/components/features/PropertyListing
 import type { ListingFormData } from '@/lib/validations/listing.schema';
 import { useToast } from '@/hooks/useToast';
 import { listingService } from '@/services/modules/listing.service';
+import { useAuthStore } from '@/store/authStore';
 import type { Listing } from '@/types';
 import type { ListingGalleryChange } from '@/components/features/ListingGalleryEditor';
 
@@ -66,8 +67,11 @@ export default function EditListingPage() {
   const toast = useToast();
   const id = params?.id as string;
 
+  const sessionReady = useAuthStore((s) => s.sessionReady);
+  const userId = useAuthStore((s) => s.user?.id);
+
   const [listing, setListing] = useState<Listing | null>(null);
-  const [loadState, setLoadState] = useState<'loading' | 'ok' | 'error'>('loading');
+  const [loadState, setLoadState] = useState<'loading' | 'ok' | 'error' | 'forbidden'>('loading');
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
@@ -80,14 +84,24 @@ export default function EditListingPage() {
   const pendingNewFilesRef = useRef<File[]>([]);
 
   useEffect(() => {
-    if (!id) return;
+    if (!id || !sessionReady) return;
+    if (!userId) {
+      setLoadState('forbidden');
+      return;
+    }
     let cancelled = false;
     setLoadState('loading');
     listingService
-      .getListingById(id)
-      .then((l) => {
+      .getMyListings()
+      .then((rows) => {
         if (cancelled) return;
-        setListing(l);
+        const owned = rows.find((l) => l.id === id);
+        if (!owned) {
+          setListing(null);
+          setLoadState('forbidden');
+          return;
+        }
+        setListing(owned);
         setLoadState('ok');
       })
       .catch(() => {
@@ -99,7 +113,12 @@ export default function EditListingPage() {
     return () => {
       cancelled = true;
     };
-  }, [id]);
+  }, [id, sessionReady, userId]);
+
+  useEffect(() => {
+    if (loadState !== 'forbidden' || !id) return;
+    router.replace(`/listings/${id}`);
+  }, [loadState, id, router]);
 
   const formDefaults = useMemo(() => (listing ? listingToFormData(listing) : undefined), [listing]);
 
@@ -153,13 +172,23 @@ export default function EditListingPage() {
     );
   }
 
+  if (loadState === 'forbidden') {
+    return (
+      <UserLayout pageSuffix="Edit Listing" showFab={false}>
+        <div className="max-w-lg mx-auto px-4 py-12 text-center text-sm text-gray-500">
+          Redirecting to listing…
+        </div>
+      </UserLayout>
+    );
+  }
+
   if (loadState === 'error' || !listing || !formDefaults) {
     return (
       <UserLayout pageSuffix="Edit Listing" showFab={false}>
         <div className="max-w-lg mx-auto px-4 py-8">
           <EmptyState
             title="Listing not found"
-            description="We could not load this listing. It may have been removed or you may not have access."
+            description="We could not load this listing. It may have been removed."
             actionLabel="My Listings"
             onAction={() => router.push('/my-listings')}
           />
