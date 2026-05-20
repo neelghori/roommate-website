@@ -5,11 +5,14 @@
  * First image in order is the cover photo.
  */
 
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import { Camera, ImagePlus, X } from 'lucide-react';
+import { EMPTY_STRING_ARRAY } from '@/lib/stableDefaults';
+import { filterListingImageFiles, formatMaxListingImageLabel } from '@/lib/uploadLimits';
+import { useToast } from '@/hooks/useToast';
 
 const DEFAULT_MAX = 5;
-const ACCEPTED_TYPES = 'image/jpeg,image/png,image/webp,image/gif';
+const ACCEPTED_TYPES = 'image/jpeg,image/png,image/webp,image/gif,image/heic,image/heif';
 
 export type ListingGalleryChange = {
   keptExistingUrls: string[];
@@ -27,26 +30,32 @@ type ListingGalleryEditorProps = {
 };
 
 export function ListingGalleryEditor({
-  initialExistingUrls = [],
+  initialExistingUrls = EMPTY_STRING_ARRAY,
   maxImages = DEFAULT_MAX,
   onChange,
   className = '',
 }: ListingGalleryEditorProps) {
+  const toast = useToast();
   const limit = Math.max(1, maxImages);
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const [existing, setExisting] = useState<ExistingItem[]>(() =>
-    initialExistingUrls.map((url, i) => ({ id: `ex-${i}-${url}`, url })),
-  );
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
   const [newPreviews, setNewPreviews] = useState<NewPreview[]>([]);
   const [isDragging, setIsDragging] = useState(false);
+  const [removedExistingUrls, setRemovedExistingUrls] = useState<Set<string>>(() => new Set());
 
-  useEffect(() => {
-    setExisting(initialExistingUrls.map((url, i) => ({ id: `ex-${i}-${url}`, url })));
-    setNewPreviews((prev) => {
-      prev.forEach((p) => URL.revokeObjectURL(p.objectUrl));
-      return [];
-    });
-  }, [initialExistingUrls]);
+  const existingUrlsKey = initialExistingUrls.join('\u0001');
+  const [prevExistingUrlsKey, setPrevExistingUrlsKey] = useState(existingUrlsKey);
+  if (existingUrlsKey !== prevExistingUrlsKey) {
+    setPrevExistingUrlsKey(existingUrlsKey);
+    setRemovedExistingUrls(new Set());
+  }
+
+  const existing = useMemo<ExistingItem[]>(
+    () =>
+      initialExistingUrls
+        .filter((url) => !removedExistingUrls.has(url))
+        .map((url) => ({ id: `ex-${url}`, url })),
+    [initialExistingUrls, removedExistingUrls],
+  );
 
   const emit = useCallback(
     (ex: ExistingItem[], nw: NewPreview[]) => {
@@ -64,7 +73,18 @@ export function ListingGalleryEditor({
   const addFiles = useCallback(
     (incoming: FileList | null) => {
       if (!incoming) return;
-      const accepted = Array.from(incoming).filter((f) => f.type.startsWith('image/'));
+      const { accepted, rejectedTooLarge, rejectedType } = filterListingImageFiles(
+        Array.from(incoming),
+      );
+      if (rejectedType.length) {
+        toast.error('Unsupported file', 'Use JPEG, PNG, WebP, or HEIC photos only.');
+      }
+      if (rejectedTooLarge.length) {
+        toast.error(
+          'File too large',
+          `${rejectedTooLarge[0].name} exceeds ${formatMaxListingImageLabel().toLowerCase()}.`,
+        );
+      }
       if (!accepted.length) return;
       const remaining = limit - totalCount;
       if (remaining <= 0) return;
@@ -75,29 +95,32 @@ export function ListingGalleryEditor({
         id: `new-${file.name}-${Date.now()}-${Math.random()}`,
       }));
       setNewPreviews((prev) => {
-        const next = [...prev, ...added];
-        emit(existing, next);
-        return next;
+        const nextNew = [...prev, ...added];
+        emit(existing, nextNew);
+        return nextNew;
       });
     },
-    [existing, emit, limit, totalCount],
+    [existing, emit, limit, totalCount, toast],
   );
 
-  const removeExisting = (id: string) => {
-    setExisting((prev) => {
-      const next = prev.filter((e) => e.id !== id);
-      emit(next, newPreviews);
-      return next;
-    });
+  const removeExisting = (url: string) => {
+    const nextRemoved = new Set(removedExistingUrls);
+    nextRemoved.add(url);
+    setRemovedExistingUrls(nextRemoved);
+    const nextExisting = initialExistingUrls
+      .filter((u) => !nextRemoved.has(u))
+      .map((u) => ({ id: `ex-${u}`, url: u }));
+    emit(nextExisting, newPreviews);
   };
 
   const removeNew = (id: string) => {
+    let nextNew: NewPreview[] = [];
     setNewPreviews((prev) => {
       const target = prev.find((p) => p.id === id);
       if (target) URL.revokeObjectURL(target.objectUrl);
-      const next = prev.filter((p) => p.id !== id);
-      emit(existing, next);
-      return next;
+      nextNew = prev.filter((p) => p.id !== id);
+      emit(existing, nextNew);
+      return nextNew;
     });
   };
 
@@ -112,7 +135,7 @@ export function ListingGalleryEditor({
         kind: 'existing' as const,
         id: e.id,
         src: e.url,
-        onRemove: () => removeExisting(e.id),
+        onRemove: () => removeExisting(e.url),
       })),
       ...newPreviews.map((p) => ({
         kind: 'new' as const,
@@ -155,7 +178,7 @@ export function ListingGalleryEditor({
               {isDragging ? 'Drop photos here' : 'Tap to add photos'}
             </p>
             <p className="text-xs text-gray-400 mt-0.5">
-              JPEG, PNG, WebP · Max {limit} photos · {totalCount}/{limit}
+              JPEG, PNG, WebP, HEIC · Max {limit} photos · {formatMaxListingImageLabel()} · {totalCount}/{limit}
             </p>
           </div>
         </div>
@@ -212,7 +235,3 @@ export function ListingGalleryEditor({
     </div>
   );
 }
-
-
-
-

@@ -95,6 +95,8 @@ export interface Listing {
   peopleTypes?: ListingPeopleType[];
   images: string[];
   description: string;
+  /** Optional property tour video (YouTube). */
+  youtubeUrl?: string;
   /** Current residents / roommates (optional). Prefer this over `residentSnapshot`. */
   residentSnapshots?: ListingResidentSnapshot[];
   /** First resident only same as `residentSnapshots?.[0]` when populated from API. */

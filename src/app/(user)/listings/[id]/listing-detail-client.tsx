@@ -33,12 +33,18 @@ import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { EmptyState } from '@/components/shared/EmptyState';
 import { useToast } from '@/hooks/useToast';
-import { listingService, MAX_LISTING_RESIDENTS } from '@/services/modules/listing.service';
+import {
+  listingService,
+  MAX_LISTING_RESIDENTS,
+  hasRemoteListingPhotos,
+} from '@/services/modules/listing.service';
 import { formatRupees, formatRentRange } from '@/lib/utils/format';
 import { formatFurnishingLabel } from '@/lib/furnishing';
 import { Listing, type ListingResidentSnapshot } from '@/types';
 import { useAuthStore } from '@/store/authStore';
 import { ListingAmenityIcon } from '@/components/features/ListingAmenityIcon';
+import { ListingYoutubeLink } from '@/components/features/ListingYoutubeLink';
+import { ListingYoutubeSection } from '@/components/features/ListingYoutubeSection';
 
 const BADGE_VARIANT_MAP: Record<string, 'hot' | 'limited' | 'new'> = {
   Hot: 'hot', 'Limited Offer': 'limited', New: 'new',
@@ -156,6 +162,8 @@ export default function ListingDetailClient({
     setResidentsForViewModal([]);
   };
 
+  const initialHasRemotePhotos = hasRemoteListingPhotos(initialListing?.images);
+
   useEffect(() => {
     if (!id) return;
     let cancelled = false;
@@ -169,14 +177,17 @@ export default function ListingDetailClient({
       }
     };
 
-    if (initialListing) {
+    if (initialListing && initialHasRemotePhotos) {
       void loadSimilar(initialListing);
       return () => {
         cancelled = true;
       };
     }
 
-    setLoadState('loading');
+    if (!initialListing) {
+      setLoadState('loading');
+    }
+
     (async () => {
       try {
         const l = await listingService.getListingById(id);
@@ -186,16 +197,18 @@ export default function ListingDetailClient({
         await loadSimilar(l);
       } catch {
         if (!cancelled) {
-          setListing(null);
-          setSimilarListings([]);
-          setLoadState('error');
+          if (!initialListing) {
+            setListing(null);
+            setSimilarListings([]);
+            setLoadState('error');
+          }
         }
       }
     })();
     return () => {
       cancelled = true;
     };
-  }, [id, initialListing]);
+  }, [id, initialHasRemotePhotos, initialListing?.id]);
 
   useEffect(() => {
     setPhotoIndex(0);
@@ -407,7 +420,12 @@ export default function ListingDetailClient({
 
               {/* Title + location shown on mobile only (desktop is in right col) */}
               <div className="lg:hidden">
-                <h2 className="text-xl font-bold text-gray-900 leading-tight mb-1">{listing.title}</h2>
+                <div className="flex items-start gap-2 mb-1">
+                  <h2 className="text-xl font-bold text-gray-900 leading-tight flex-1 min-w-0">
+                    {listing.title}
+                  </h2>
+                  <ListingYoutubeLink youtubeUrl={listing.youtubeUrl} />
+                </div>
                 <div className="flex items-center gap-2 text-sm text-gray-500">
                   <MapPin size={14} className="text-gray-400 flex-shrink-0" />
                   <span>{listing.location}</span>
@@ -442,6 +460,8 @@ export default function ListingDetailClient({
                 <h2 className="text-sm font-bold text-gray-700 mb-2">About this place</h2>
                 <p className="text-sm text-gray-600 leading-relaxed">{listing.description}</p>
               </div>
+
+              <ListingYoutubeSection youtubeUrl={listing.youtubeUrl} withHeading className="mt-1" />
 
               {isOwner && (
                 <div className="rounded-2xl border border-dashed border-teal-200 bg-teal-50/50 p-4">
@@ -605,7 +625,12 @@ export default function ListingDetailClient({
 
             {/* Title + location desktop only */}
             <div className="hidden lg:block">
-              <h2 className="text-xl font-bold text-gray-900 leading-tight mb-1">{listing.title}</h2>
+              <div className="flex items-start gap-2 mb-1">
+                <h2 className="text-xl font-bold text-gray-900 leading-tight flex-1 min-w-0">
+                  {listing.title}
+                </h2>
+                <ListingYoutubeLink youtubeUrl={listing.youtubeUrl} />
+              </div>
               <div className="flex items-center gap-2 text-sm text-gray-500">
                 <MapPin size={14} className="text-gray-400 flex-shrink-0" />
                 <span>{listing.location}</span>

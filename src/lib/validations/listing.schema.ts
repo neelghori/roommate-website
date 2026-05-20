@@ -5,6 +5,7 @@
  */
 import { z } from 'zod';
 import { FURNISHING_FORM_VALUES } from '@/lib/furnishing';
+import { isValidYoutubeUrl } from '@/lib/youtube';
 
 /** `Rent` kept for editing legacy listings (API `room`); new forms use `Flat` / `CoWorkingSpace` instead of For Rent / Studio. */
 const LISTING_TYPES = [
@@ -199,6 +200,14 @@ const listingSchemaBase = z.object({
     .optional()
     .refine((v) => v === undefined || v === '' || /^[6-9]\d{9}$/.test(v), {
       message: 'Enter a valid 10-digit Indian mobile number',
+    }),
+
+  youtubeUrl: z
+    .string()
+    .max(500)
+    .optional()
+    .refine((v) => !v?.trim() || isValidYoutubeUrl(v), {
+      message: 'Enter a valid YouTube link (youtube.com or youtu.be)',
     }),
 
   minimumStayMonths: z

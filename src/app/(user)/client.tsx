@@ -52,7 +52,7 @@ export default function HomePageClient({ initialListings }: HomePageClientProps 
   const toast = useToast();
   const user = useAuthStore((s) => s.user);
 
-  const { filters } = useFilterStore();
+  const filters = useFilterStore((s) => s.filters);
   const { visibleCount, loadMore, resetPagination, listings, setListings } = useListingStore();
 
   useEffect(() => {
