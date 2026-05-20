@@ -116,7 +116,7 @@ interface SavedListingCardProps {
 }
 
 function SavedListingCard({ listing, removing, onRemove }: SavedListingCardProps) {
-  const cover = listing.coverImageUrl || listing.images?.[0];
+  const cover = listing.images?.[0];
 
   return (
     <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
