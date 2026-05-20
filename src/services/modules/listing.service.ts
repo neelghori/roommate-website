@@ -17,7 +17,7 @@ import type {
 } from '@/types';
 import { isAmenityIconKey } from '@/lib/amenities/amenity-icon';
 import { apiClient } from '@/services/api';
-import { postMultipartForm } from '@/services/uploadForm';
+import { patchMultipartForm, postMultipartForm } from '@/services/uploadForm';
 import { authApiErrorMessage } from '@/services/modules/auth.service';
 import { amenityService } from '@/services/modules/amenity.service';
 import { hasMapCoordinates } from '@/lib/googleMapsEmbed';
@@ -803,35 +803,54 @@ export function buildPropertyCreateBody(
   return body;
 }
 
-async function submitPropertyWithImages(
-  method: 'POST' | 'PATCH',
-  path: string,
+/** POST /api/v1/properties — create listing (JSON or multipart). */
+async function createPropertyRequest(
   body: Record<string, unknown>,
   newFiles: File[],
 ): Promise<Record<string, unknown>> {
-  const hasFiles = newFiles.length > 0;
   try {
-    if (hasFiles) {
+    if (newFiles.length > 0) {
       const fd = new FormData();
       fd.append('data', JSON.stringify(body));
       for (const f of newFiles) fd.append('images', f);
-      return await postMultipartForm(path, fd, { fileCount: newFiles.length });
+      return await postMultipartForm('/api/v1/properties', fd, { fileCount: newFiles.length });
     }
-    if (method === 'POST') {
-      const { data: res } = await apiClient.post<unknown>(path, body);
-      return res as Record<string, unknown>;
+    const { data: res } = await apiClient.post<unknown>('/api/v1/properties', body);
+    return res as Record<string, unknown>;
+  } catch (err) {
+    throw enrichPropertyUploadError(err);
+  }
+}
+
+/** PATCH /api/v1/properties/:id — partial update (JSON or multipart). Never POST to /:id. */
+async function patchPropertyRequest(
+  id: string,
+  body: Record<string, unknown>,
+  newFiles: File[],
+): Promise<Record<string, unknown>> {
+  const path = `/api/v1/properties/${id}`;
+  try {
+    if (newFiles.length > 0) {
+      const fd = new FormData();
+      fd.append('data', JSON.stringify(body));
+      for (const f of newFiles) fd.append('images', f);
+      return await patchMultipartForm(path, fd, { fileCount: newFiles.length });
     }
     const { data: res } = await apiClient.patch<unknown>(path, body);
     return res as Record<string, unknown>;
   } catch (err) {
-    const status = (err as { response?: { status?: number } })?.response?.status;
-    if (status === 413) {
-      throw new Error(
-        'Upload too large for the server. Use photos under 5 MB each, or ask ops to raise nginx client_max_body_size.',
-      );
-    }
-    throw err;
+    throw enrichPropertyUploadError(err);
   }
+}
+
+function enrichPropertyUploadError(err: unknown): unknown {
+  const status = (err as { response?: { status?: number } })?.response?.status;
+  if (status === 413) {
+    return new Error(
+      'Upload too large for the server. Use photos under 5 MB each, or ask ops to raise nginx client_max_body_size.',
+    );
+  }
+  return err;
 }
 
 export const listingService = {
@@ -989,12 +1008,7 @@ export const listingService = {
       body.coverImageUrl = null;
     }
     try {
-      const root = await submitPropertyWithImages(
-        'PATCH',
-        `/api/v1/properties/${id}`,
-        body,
-        newFiles,
-      );
+      const root = await patchPropertyRequest(id, body, newFiles);
       const inner = root.data as Record<string, unknown> | undefined;
       const prop = (inner?.property ?? inner) as Record<string, unknown> | undefined;
       if (!prop) throw new Error('Invalid response');
@@ -1011,7 +1025,7 @@ export const listingService = {
     const amenityIds = await resolveAmenityIdsFromLabels(data.amenities as string[]);
     const body = buildPropertyCreateBody(data, amenityIds, []);
     try {
-      const root = await submitPropertyWithImages('POST', '/api/v1/properties', body, newFiles);
+      const root = await createPropertyRequest(body, newFiles);
       const inner = root.data as Record<string, unknown> | undefined;
       const prop = (inner?.property ?? inner) as Record<string, unknown> | undefined;
       if (!prop) throw new Error('Invalid server response');
