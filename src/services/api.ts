@@ -14,6 +14,7 @@
  */
 import axios from 'axios';
 import { getAccessToken } from '@/lib/authToken';
+import { applyFormDataHeaders } from '@/lib/formDataUpload';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:5000';
 
@@ -31,10 +32,7 @@ export const apiClient = axios.create({
 // Request interceptor Bearer JWT from login/register + cookies (withCredentials)
 apiClient.interceptors.request.use(
   (config) => {
-    if (config.data instanceof FormData && config.headers) {
-      delete config.headers['Content-Type'];
-      delete config.headers['content-type'];
-    }
+    applyFormDataHeaders(config);
     const token = getAccessToken();
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;

@@ -13,11 +13,14 @@
 
 import React, { useRef, useState, useCallback } from 'react';
 import { Camera, X, ImagePlus } from 'lucide-react';
-import { filterListingImageFiles, formatMaxListingImageLabel } from '@/lib/uploadLimits';
+import {
+  filterListingImageFiles,
+  formatMaxListingImageLabel,
+  LISTING_IMAGE_ACCEPT,
+} from '@/lib/uploadLimits';
 import { useToast } from '@/hooks/useToast';
 
 const DEFAULT_MAX_IMAGES = 5;
-const ACCEPTED_TYPES = 'image/jpeg,image/png,image/webp,image/gif,image/heic,image/heif';
 
 interface ImageUploaderProps {
   /** Called with the current list of File objects whenever images change */
@@ -196,7 +199,7 @@ export const ImageUploader: React.FC<ImageUploaderProps> = ({
       <input
         ref={fileInputRef}
         type="file"
-        accept={ACCEPTED_TYPES}
+        accept={LISTING_IMAGE_ACCEPT}
         multiple={limit > 1}
         className="hidden"
         onChange={handleFileInput}

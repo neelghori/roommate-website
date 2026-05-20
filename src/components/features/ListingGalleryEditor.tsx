@@ -8,11 +8,14 @@
 import React, { useCallback, useMemo, useState } from 'react';
 import { Camera, ImagePlus, X } from 'lucide-react';
 import { EMPTY_STRING_ARRAY } from '@/lib/stableDefaults';
-import { filterListingImageFiles, formatMaxListingImageLabel } from '@/lib/uploadLimits';
+import {
+  filterListingImageFiles,
+  formatMaxListingImageLabel,
+  LISTING_IMAGE_ACCEPT,
+} from '@/lib/uploadLimits';
 import { useToast } from '@/hooks/useToast';
 
 const DEFAULT_MAX = 5;
-const ACCEPTED_TYPES = 'image/jpeg,image/png,image/webp,image/gif,image/heic,image/heif';
 
 export type ListingGalleryChange = {
   keptExistingUrls: string[];
@@ -187,7 +190,7 @@ export function ListingGalleryEditor({
       <input
         ref={fileInputRef}
         type="file"
-        accept={ACCEPTED_TYPES}
+        accept={LISTING_IMAGE_ACCEPT}
         multiple
         className="hidden"
         onChange={handleFileInput}
