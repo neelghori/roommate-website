@@ -17,6 +17,7 @@ import type {
 } from '@/types';
 import { isAmenityIconKey } from '@/lib/amenities/amenity-icon';
 import { apiClient } from '@/services/api';
+import { appendListingImages } from '@/lib/formDataUpload';
 import { patchMultipartForm, postMultipartForm } from '@/services/uploadForm';
 import { authApiErrorMessage } from '@/services/modules/auth.service';
 import { amenityService } from '@/services/modules/amenity.service';
@@ -812,7 +813,7 @@ async function createPropertyRequest(
     if (newFiles.length > 0) {
       const fd = new FormData();
       fd.append('data', JSON.stringify(body));
-      for (const f of newFiles) fd.append('images', f);
+      appendListingImages(fd, newFiles);
       return await postMultipartForm('/api/v1/properties', fd, { fileCount: newFiles.length });
     }
     const { data: res } = await apiClient.post<unknown>('/api/v1/properties', body);
@@ -833,7 +834,7 @@ async function patchPropertyRequest(
     if (newFiles.length > 0) {
       const fd = new FormData();
       fd.append('data', JSON.stringify(body));
-      for (const f of newFiles) fd.append('images', f);
+      appendListingImages(fd, newFiles);
       return await patchMultipartForm(path, fd, { fileCount: newFiles.length });
     }
     const { data: res } = await apiClient.patch<unknown>(path, body);
