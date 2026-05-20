@@ -4,7 +4,7 @@
  * Edit Listing API load/save + confirm modal; shared PropertyListingFormWizard.
  */
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { ChevronLeft, AlertTriangle } from 'lucide-react';
 import { UserLayout } from '@/components/shared/UserLayout';
@@ -53,6 +53,7 @@ function listingToFormData(listing: Listing): ListingFormData {
     amenities,
     description,
     phone,
+    youtubeUrl: listing.youtubeUrl ?? '',
     ...(listing.type === 'PG' && listing.minimumStayMonths != null
       ? { minimumStayMonths: listing.minimumStayMonths }
       : {}),
@@ -75,6 +76,8 @@ export default function EditListingPage() {
     keptExistingUrls: [],
     newFiles: [],
   });
+  /** Snapshot of files to upload — survives confirm modal close handlers. */
+  const pendingNewFilesRef = useRef<File[]>([]);
 
   useEffect(() => {
     if (!id) return;
@@ -100,23 +103,31 @@ export default function EditListingPage() {
 
   const formDefaults = useMemo(() => (listing ? listingToFormData(listing) : undefined), [listing]);
 
+  const existingImageUrls = useMemo(
+    () => (listing?.images ?? []).filter((u) => /^https?:\/\//i.test(u)),
+    [listing?.id, listing?.images?.join('\u0001')],
+  );
+
   const handleFinish = (data: ListingFormData, gallery: ListingGalleryChange) => {
     setPendingData(data);
     setPendingGallery(gallery);
+    pendingNewFilesRef.current = [...gallery.newFiles];
     setShowConfirm(true);
   };
 
   const handleConfirmSave = async () => {
     if (!pendingData || !id) return;
+    const data = pendingData;
+    const filesToUpload = pendingNewFilesRef.current;
     setShowConfirm(false);
     setIsSubmitting(true);
     try {
       let merged = [...pendingGallery.keptExistingUrls];
-      if (pendingGallery.newFiles.length > 0) {
-        const newUrls = await listingService.uploadPropertyListingImages(id, pendingGallery.newFiles);
+      if (filesToUpload.length > 0) {
+        const newUrls = await listingService.uploadPropertyListingImages(id, filesToUpload);
         merged = [...merged, ...newUrls].slice(0, 30);
       }
-      const updated = await listingService.updateListingFromForm(id, pendingData, merged);
+      const updated = await listingService.updateListingFromForm(id, data, merged);
       setListing(updated);
       toast.success(
         'Listing updated',
@@ -127,6 +138,7 @@ export default function EditListingPage() {
       const msg = e instanceof Error ? e.message : 'Update failed';
       toast.error('Could not save listing', msg);
     } finally {
+      pendingNewFilesRef.current = [];
       setPendingGallery({ keptExistingUrls: [], newFiles: [] });
       setIsSubmitting(false);
     }
@@ -176,16 +188,13 @@ export default function EditListingPage() {
         submitButtonLabel="Update Listing"
         isSubmitting={isSubmitting}
         photoHint="Remove photos with × or add new ones. First photo is the cover. Removed photos are deleted from storage when you save."
-        initialExistingImageUrls={listing.images}
+        initialExistingImageUrls={existingImageUrls}
         onFinish={handleFinish}
       />
 
       <Modal
         isOpen={showConfirm}
-        onClose={() => {
-          setShowConfirm(false);
-          setPendingGallery({ keptExistingUrls: [], newFiles: [] });
-        }}
+        onClose={() => setShowConfirm(false)}
         title="Save Changes?"
         size="sm"
       >

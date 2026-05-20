@@ -13,9 +13,11 @@
 
 import React, { useRef, useState, useCallback } from 'react';
 import { Camera, X, ImagePlus } from 'lucide-react';
+import { filterListingImageFiles, formatMaxListingImageLabel } from '@/lib/uploadLimits';
+import { useToast } from '@/hooks/useToast';
 
 const DEFAULT_MAX_IMAGES = 5;
-const ACCEPTED_TYPES = 'image/jpeg,image/png,image/webp,image/gif';
+const ACCEPTED_TYPES = 'image/jpeg,image/png,image/webp,image/gif,image/heic,image/heif';
 
 interface ImageUploaderProps {
   /** Called with the current list of File objects whenever images change */
@@ -40,6 +42,7 @@ export const ImageUploader: React.FC<ImageUploaderProps> = ({
   className = '',
 }) => {
   const limit = Math.max(1, maxImages);
+  const toast = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [previews, setPreviews] = useState<PreviewImage[]>(() =>
     initialFiles.map((file) => ({
@@ -53,23 +56,35 @@ export const ImageUploader: React.FC<ImageUploaderProps> = ({
   const addFiles = useCallback(
     (incoming: FileList | null) => {
       if (!incoming) return;
-      const acceptedAll = Array.from(incoming).filter((f) => f.type.startsWith('image/'));
+      const { accepted: acceptedAll, rejectedTooLarge, rejectedType } = filterListingImageFiles(
+        Array.from(incoming),
+      );
+      if (rejectedType.length) {
+        toast.error('Unsupported file', 'Use JPEG, PNG, WebP, or HEIC photos only.');
+      }
+      if (rejectedTooLarge.length) {
+        toast.error(
+          'File too large',
+          `${rejectedTooLarge[0].name} exceeds ${formatMaxListingImageLabel().toLowerCase()}.`,
+        );
+      }
       if (!acceptedAll.length) return;
 
       if (limit === 1) {
         const file = acceptedAll[0];
+        let nextFiles: File[] = [file];
         setPreviews((prev) => {
           prev.forEach((p) => URL.revokeObjectURL(p.objectUrl));
-          const next: PreviewImage[] = [
+          nextFiles = [file];
+          return [
             {
               file,
               objectUrl: URL.createObjectURL(file),
               id: `${file.name}-${Date.now()}-${Math.random()}`,
             },
           ];
-          onChange?.([file]);
-          return next;
         });
+        onChange?.(nextFiles);
         return;
       }
 
@@ -84,13 +99,15 @@ export const ImageUploader: React.FC<ImageUploaderProps> = ({
         id: `${file.name}-${Date.now()}-${Math.random()}`,
       }));
 
+      let nextFiles: File[] = [];
       setPreviews((prev) => {
         const updated = [...prev, ...newPreviews];
-        onChange?.(updated.map((p) => p.file));
+        nextFiles = updated.map((p) => p.file);
         return updated;
       });
+      onChange?.(nextFiles);
     },
-    [previews.length, onChange, limit]
+    [previews.length, onChange, limit, toast]
   );
 
   const handleFileInput = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -100,13 +117,15 @@ export const ImageUploader: React.FC<ImageUploaderProps> = ({
   };
 
   const handleRemove = (id: string) => {
+    let nextFiles: File[] = [];
     setPreviews((prev) => {
       const target = prev.find((p) => p.id === id);
       if (target) URL.revokeObjectURL(target.objectUrl);
       const updated = prev.filter((p) => p.id !== id);
-      onChange?.(updated.map((p) => p.file));
+      nextFiles = updated.map((p) => p.file);
       return updated;
     });
+    onChange?.(nextFiles);
   };
 
   const handleDrop = (e: React.DragEvent) => {
@@ -125,7 +144,8 @@ export const ImageUploader: React.FC<ImageUploaderProps> = ({
   const isFull = previews.length >= limit;
   const multiLabel = limit === 1 ? 'Tap to upload profile photo' : 'Tap to Upload Photos';
   const dropLabel = limit === 1 ? 'Drop photo here' : 'Drop photos here';
-  const maxCopy = limit === 1 ? '1 photo' : `Max ${limit} photos`;
+  const maxCopy =
+    limit === 1 ? `1 photo · ${formatMaxListingImageLabel()}` : `Max ${limit} photos · ${formatMaxListingImageLabel()}`;
 
   return (
     <div className={['space-y-3', className].join(' ')}>
@@ -157,7 +177,7 @@ export const ImageUploader: React.FC<ImageUploaderProps> = ({
               {isDragging ? dropLabel : multiLabel}
             </p>
             <p className="text-xs text-gray-400 mt-0.5">
-              JPEG, PNG, WebP · {maxCopy}
+              JPEG, PNG, WebP, HEIC · {maxCopy}
             </p>
           </div>
 

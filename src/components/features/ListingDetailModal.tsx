@@ -18,10 +18,13 @@ import { Badge } from '@/components/ui/Badge';
 import { formatRentRange, formatListingTypeLabel } from '@/lib/utils/format';
 import { formatFurnishingLabel } from '@/lib/furnishing';
 import { ListingVerificationBadge } from '@/components/features/ListingVerificationBadge';
+import { ListingYoutubeLink } from '@/components/features/ListingYoutubeLink';
+import { ListingYoutubeSection } from '@/components/features/ListingYoutubeSection';
 import { ListingLocationMap } from '@/components/features/ListingLocationMap';
 import { BookVisitModal } from '@/components/features/BookVisitModal';
 import { useAuthStore } from '@/store/authStore';
 import { ListingAmenityIcon } from '@/components/features/ListingAmenityIcon';
+import { listingService } from '@/services/modules/listing.service';
 
 /** Tailwind arbitrary-value bg class per listing type no inline styles needed */
 const TYPE_BG_CLASS: Record<string, string> = {
@@ -47,11 +50,12 @@ export const ListingDetailModal: React.FC<ListingDetailModalProps> = ({
   const router = useRouter();
   const [currentImage, setCurrentImage] = useState(0);
   const [visitBookingOpen, setVisitBookingOpen] = useState(false);
+  const [detail, setDetail] = useState<Listing | null>(listing);
   const user = useAuthStore((s) => s.user);
   const isOwnListing = Boolean(
-    user?.id && listing?.ownerId && String(user.id) === String(listing?.ownerId),
+    user?.id && detail?.ownerId && String(user.id) === String(detail?.ownerId),
   );
-  const ownerChatPath = listing?.ownerId ? `/chat/${listing.ownerId}` : '';
+  const ownerChatPath = detail?.ownerId ? `/chat/${detail.ownerId}` : '';
 
   const handleMessageOwner = () => {
     if (!ownerChatPath) return;
@@ -65,14 +69,31 @@ export const ListingDetailModal: React.FC<ListingDetailModalProps> = ({
   };
 
   React.useEffect(() => {
+    setDetail(listing);
+  }, [listing]);
+
+  React.useEffect(() => {
     setCurrentImage(0);
-  }, [listing?.id]);
+  }, [detail?.id]);
 
-  if (!listing) return null;
+  React.useEffect(() => {
+    if (!isOpen || !listing?.id) return;
+    let cancelled = false;
+    void listingService.getListingById(listing.id).then((fresh) => {
+      if (!cancelled) setDetail(fresh);
+    }).catch(() => {
+      /* keep card snapshot if fetch fails */
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [isOpen, listing?.id]);
 
-  const images = listing.images.length > 0 ? listing.images : [];
+  if (!detail) return null;
+
+  const images = detail.images.length > 0 ? detail.images : [];
   const hasImages = images.length > 0;
-  const typeBgCls = TYPE_BG_CLASS[listing.type] ?? 'bg-[#c8eeee]';
+  const typeBgCls = TYPE_BG_CLASS[detail.type] ?? 'bg-[#c8eeee]';
   const prevImage = () =>
     setCurrentImage((p) => (p === 0 ? images.length - 1 : p - 1));
   const nextImage = () =>
@@ -82,7 +103,7 @@ export const ListingDetailModal: React.FC<ListingDetailModalProps> = ({
     setVisitBookingOpen(true);
   };
 
-  const ownerInitials = listing.ownerName
+  const ownerInitials = detail.ownerName
     .split(' ').map((n) => n[0]).join('').toUpperCase().slice(0, 2);
 
   return (
@@ -109,7 +130,7 @@ export const ListingDetailModal: React.FC<ListingDetailModalProps> = ({
               {hasImages ? (
                 <img
                   src={images[currentImage]}
-                  alt={`${listing.title} photo ${currentImage + 1}`}
+                  alt={`${detail.title} photo ${currentImage + 1}`}
                   className="w-full h-full object-cover object-center"
                   loading="eager"
                   decoding="async"
@@ -155,10 +176,10 @@ export const ListingDetailModal: React.FC<ListingDetailModalProps> = ({
               )}
 
               {/* Badge */}
-              {listing.badge && (
+              {detail.badge && (
                 <div className="absolute top-3 left-3">
-                  <Badge variant={listing.badge === 'Hot' ? 'hot' : listing.badge === 'Limited Offer' ? 'limited' : 'new'}>
-                    {listing.badge}
+                  <Badge variant={detail.badge === 'Hot' ? 'hot' : detail.badge === 'Limited Offer' ? 'limited' : 'new'}>
+                    {detail.badge}
                   </Badge>
                 </div>
               )}
@@ -195,12 +216,12 @@ export const ListingDetailModal: React.FC<ListingDetailModalProps> = ({
               <span
                 className="text-xs font-bold text-white px-2.5 py-1 rounded-full bg-primary"
               >
-                {formatListingTypeLabel(listing.type)}
+                {formatListingTypeLabel(detail.type)}
               </span>
-              <ListingVerificationBadge listing={listing} variant="modalDesktopPill" />
+              <ListingVerificationBadge listing={detail} variant="modalDesktopPill" />
               <span className="ml-auto text-xs text-gray-500">
                 <Users size={12} className="inline mr-1 mb-0.5" />
-                {listing.spotsLeft} spot{listing.spotsLeft !== 1 ? 's' : ''} left
+                {detail.spotsLeft} spot{detail.spotsLeft !== 1 ? 's' : ''} left
               </span>
             </div>
           </div>
@@ -209,12 +230,17 @@ export const ListingDetailModal: React.FC<ListingDetailModalProps> = ({
           <div className="flex flex-col">
 
             {/* Desktop header bar with close button */}
-            <div className="hidden lg:flex items-start justify-between px-6 pt-5 pb-3">
-              <div className="flex-1 min-w-0 pr-4">
-                <h2 className="text-xl font-bold text-gray-900 leading-tight">{listing.title}</h2>
+            <div className="hidden lg:flex items-start justify-between px-6 pt-5 pb-3 gap-3">
+              <div className="flex-1 min-w-0 pr-2">
+                <div className="flex items-start gap-2">
+                  <h2 className="text-xl font-bold text-gray-900 leading-tight flex-1 min-w-0">
+                    {detail.title}
+                  </h2>
+                  <ListingYoutubeLink youtubeUrl={detail.youtubeUrl} size={20} />
+                </div>
                 <div className="flex items-center gap-1.5 mt-1">
                   <MapPin size={13} className="text-gray-400 flex-shrink-0" />
-                  <span className="text-sm text-gray-500">{listing.location}</span>
+                  <span className="text-sm text-gray-500">{detail.location}</span>
                 </div>
               </div>
               <button
@@ -232,43 +258,48 @@ export const ListingDetailModal: React.FC<ListingDetailModalProps> = ({
               {/* Mobile: title + location */}
               <div className="lg:hidden">
                 <div className="flex items-start justify-between gap-2">
-                  <h2 className="text-lg font-bold text-gray-900 leading-tight">{listing.title}</h2>
-                  <ListingVerificationBadge listing={listing} variant="modalMobilePill" />
+                  <h2 className="text-lg font-bold text-gray-900 leading-tight flex-1 min-w-0">
+                    {detail.title}
+                  </h2>
+                  <div className="flex shrink-0 items-center gap-1.5">
+                    <ListingYoutubeLink youtubeUrl={detail.youtubeUrl} size={20} />
+                    <ListingVerificationBadge listing={detail} variant="modalMobilePill" />
+                  </div>
                 </div>
                 <div className="flex items-center gap-1.5 mt-1">
                   <MapPin size={13} className="text-gray-400 flex-shrink-0" />
-                  <span className="text-sm text-gray-500">{listing.location}</span>
+                  <span className="text-sm text-gray-500">{detail.location}</span>
                 </div>
               </div>
 
               {/* Price */}
               <div className="flex items-baseline gap-2">
                 <span className="text-3xl font-bold text-primary">
-                  {formatRentRange(listing.price, listing.maxPrice)}
+                  {formatRentRange(detail.price, detail.maxPrice)}
                 </span>
                 <span className="text-sm text-gray-400">/month</span>
                 <span
                   className="ml-auto text-xs font-semibold px-2.5 py-1 rounded-full bg-teal-50 text-primary"
                 >
-                  {listing.genderPreference} pref.
+                  {detail.genderPreference} pref.
                 </span>
               </div>
-              {listing.peopleTypes && listing.peopleTypes.length > 0 ? (
+              {detail.peopleTypes && detail.peopleTypes.length > 0 ? (
                 <p className="text-xs text-gray-600">
                   <span className="font-semibold text-gray-700">People: </span>
-                  {listing.peopleTypes.join(' · ')}
+                  {detail.peopleTypes.join(' · ')}
                 </p>
               ) : null}
-              {listing.furnishing ? (
+              {detail.furnishing ? (
                 <p className="text-xs text-gray-600">
                   <span className="font-semibold text-gray-700">Furnishing: </span>
-                  {formatFurnishingLabel(listing.furnishing)}
+                  {formatFurnishingLabel(detail.furnishing)}
                 </p>
               ) : null}
-              {listing.type === 'PG' && listing.minimumStayMonths != null ? (
+              {detail.type === 'PG' && detail.minimumStayMonths != null ? (
                 <p className="text-xs text-gray-600">
                   <span className="font-semibold text-gray-700">Minimum stay: </span>
-                  {listing.minimumStayMonths} month{listing.minimumStayMonths !== 1 ? 's' : ''}
+                  {detail.minimumStayMonths} month{detail.minimumStayMonths !== 1 ? 's' : ''}
                 </p>
               ) : null}
 
@@ -276,7 +307,7 @@ export const ListingDetailModal: React.FC<ListingDetailModalProps> = ({
               <div className="lg:hidden flex items-center gap-1.5">
                 <span className="w-2.5 h-2.5 rounded-full bg-red-500 flex-shrink-0" />
                 <span className="text-sm text-gray-600 font-medium">
-                  {listing.spotsLeft} spot{listing.spotsLeft !== 1 ? 's' : ''} left
+                  {detail.spotsLeft} spot{detail.spotsLeft !== 1 ? 's' : ''} left
                 </span>
               </div>
 
@@ -286,11 +317,11 @@ export const ListingDetailModal: React.FC<ListingDetailModalProps> = ({
               {/* Amenities */}
               <div>
                 <h3 className="text-sm font-semibold text-gray-700 mb-2.5">Amenities</h3>
-                {listing.amenities.length === 0 ? (
+                {detail.amenities.length === 0 ? (
                   <p className="text-sm text-gray-500">No amenities listed for this place.</p>
                 ) : (
                   <div className="grid grid-cols-3 lg:grid-cols-4 gap-2">
-                    {listing.amenities.map((chip) => (
+                    {detail.amenities.map((chip) => (
                       <div
                         key={chip.name}
                         className="flex flex-col items-center gap-1.5 bg-gray-50 border border-gray-100 rounded-xl p-2.5 text-center"
@@ -308,8 +339,10 @@ export const ListingDetailModal: React.FC<ListingDetailModalProps> = ({
               {/* Description */}
               <div>
                 <h3 className="text-sm font-semibold text-gray-700 mb-1.5">About this place</h3>
-                <p className="text-sm text-gray-600 leading-relaxed">{listing.description}</p>
+                <p className="text-sm text-gray-600 leading-relaxed">{detail.description}</p>
               </div>
+
+              <ListingYoutubeSection youtubeUrl={detail.youtubeUrl} withHeading />
 
               {/* Owner info */}
               <div className="flex items-center gap-3 bg-gray-50 rounded-xl p-3 border border-gray-100">
@@ -319,19 +352,19 @@ export const ListingDetailModal: React.FC<ListingDetailModalProps> = ({
                   {ownerInitials}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-semibold text-gray-800">{listing.ownerName}</p>
+                  <p className="text-sm font-semibold text-gray-800">{detail.ownerName}</p>
                   <p className="text-xs text-gray-500">Property Owner</p>
                 </div>
-                <ListingVerificationBadge listing={listing} variant="ownerIconOnly" />
+                <ListingVerificationBadge listing={detail} variant="ownerIconOnly" />
               </div>
 
               {/* Map Google embed iframe from lat/lng (no API key) */}
               <div>
                 <h3 className="text-sm font-semibold text-gray-700 mb-2">Location</h3>
                 <ListingLocationMap
-                  latitude={listing.latitude}
-                  longitude={listing.longitude}
-                  locationLabel={listing.location}
+                  latitude={detail.latitude}
+                  longitude={detail.longitude}
+                  locationLabel={detail.location}
                   minHeightClass="min-h-[180px] lg:min-h-[200px]"
                   roundedClass="rounded-xl"
                   embedHeightClass="h-[180px] sm:h-[200px] lg:h-[220px]"
@@ -368,7 +401,7 @@ export const ListingDetailModal: React.FC<ListingDetailModalProps> = ({
         </div>
       </Modal>
       <BookVisitModal
-        listing={listing}
+        listing={detail}
         isOpen={visitBookingOpen}
         onClose={() => setVisitBookingOpen(false)}
       />

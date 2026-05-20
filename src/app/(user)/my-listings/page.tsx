@@ -114,13 +114,12 @@ export default function MyListingsPage() {
   const pendingCount = listings.filter((l) => l.myStatus === 'Pending').length;
   const rejectedCount = listings.filter((l) => l.myStatus === 'Rejected').length;
 
-  const handleDeleteConfirm = async () => {
-    if (!deleteTarget) return;
+  const handleDeleteListing = async (listing: MyListing) => {
     setIsDeleting(true);
     try {
-      await listingService.deleteListing(deleteTarget.id);
-      setListings((prev) => prev.filter((l) => l.id !== deleteTarget.id));
-      toast.success('Listing deleted', `"${deleteTarget.title}" has been removed.`);
+      await listingService.deleteListing(listing.id);
+      setListings((prev) => prev.filter((l) => l.id !== listing.id));
+      toast.success('Listing deleted', `"${listing.title}" has been removed.`);
       setDeleteTarget(null);
     } catch (e) {
       toast.error('Delete failed', e instanceof Error ? e.message : '');
@@ -326,7 +325,6 @@ export default function MyListingsPage() {
         </Link>
       </div>
 
-      {/* ── Delete Confirm Modal ────────────────────────────────────── */}
       <Modal
         isOpen={!!deleteTarget}
         onClose={() => setDeleteTarget(null)}
@@ -345,8 +343,8 @@ export default function MyListingsPage() {
                 </p>
                 <p className="text-sm text-gray-500">
                   Are you sure you want to delete{' '}
-                  <span className="font-medium text-gray-700">"{deleteTarget.title}"</span>?
-                  All applications and enquiries for this listing will also be removed.
+                  <span className="font-medium text-gray-700">&quot;{deleteTarget.title}&quot;</span>?
+                  Photos and related data will be removed.
                 </p>
               </div>
             </div>
@@ -364,7 +362,7 @@ export default function MyListingsPage() {
                 size="md"
                 fullWidth
                 isLoading={isDeleting}
-                onClick={handleDeleteConfirm}
+                onClick={() => void handleDeleteListing(deleteTarget)}
               >
                 Delete
               </Button>

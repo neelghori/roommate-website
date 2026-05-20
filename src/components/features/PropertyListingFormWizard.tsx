@@ -5,7 +5,8 @@
  * Step advances use per-step Zod picks full-form `trigger()` fails for `amenities` / partial steps.
  */
 
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { formatMaxListingImageLabel } from '@/lib/uploadLimits';
 import { useAmenityMaster } from '@/hooks/useAmenityMaster';
 import { useForm, Controller, type DefaultValues } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -33,6 +34,7 @@ import {
 import { getListingTypeSelectOptionsForRole } from '@/lib/listing-type-options';
 import { useAuthStore } from '@/store/authStore';
 import { useToast } from '@/hooks/useToast';
+import { EMPTY_STRING_ARRAY } from '@/lib/stableDefaults';
 
 const GENDER_OPTIONS = [
   { label: 'Any', value: 'Any' },
@@ -66,6 +68,7 @@ const WIZARD_DEFAULTS: DefaultValues<ListingFormData> = {
   amenities: [],
   description: '',
   phone: '',
+  youtubeUrl: '',
   minimumStayMonths: 1,
 };
 
@@ -87,8 +90,7 @@ export type PropertyListingFormWizardProps = {
   onFinish: (data: ListingFormData, gallery: ListingGalleryChange) => void | Promise<void>;
 };
 
-const DEFAULT_PHOTO_HINT =
-  'Upload up to 5 photos. First photo is the cover image.';
+const DEFAULT_PHOTO_HINT = `Upload up to 5 photos. First photo is the cover. ${formatMaxListingImageLabel()} (JPEG, PNG, WebP).`;
 
 export function PropertyListingFormWizard({
   topSlot,
@@ -99,7 +101,7 @@ export function PropertyListingFormWizard({
   submitButtonLabel,
   isSubmitting = false,
   photoHint = DEFAULT_PHOTO_HINT,
-  initialExistingImageUrls = [],
+  initialExistingImageUrls = EMPTY_STRING_ARRAY,
   onFinish,
 }: PropertyListingFormWizardProps) {
   const toast = useToast();
@@ -111,6 +113,8 @@ export function PropertyListingFormWizard({
     keptExistingUrls: initialExistingImageUrls,
     newFiles: [],
   });
+  const galleryRef = useRef(gallery);
+  galleryRef.current = gallery;
 
   const defaultValues = useMemo(
     () => ({ ...WIZARD_DEFAULTS, ...initialValues }),
@@ -126,12 +130,28 @@ export function PropertyListingFormWizard({
     watch,
     setError,
     clearErrors,
+    reset,
     formState: { errors },
   } = useForm<ListingFormData>({
     resolver: zodResolver(listingSchema),
     defaultValues,
     mode: 'onTouched',
   });
+
+  const formSeedKey = useMemo(
+    () =>
+      [
+        initialValues?.title ?? '',
+        initialValues?.youtubeUrl ?? '',
+        initialValues?.phone ?? '',
+        initialValues?.description?.slice(0, 80) ?? '',
+      ].join('\u0001'),
+    [initialValues],
+  );
+
+  useEffect(() => {
+    reset({ ...WIZARD_DEFAULTS, ...initialValues });
+  }, [formSeedKey, reset, initialValues]);
 
   useEffect(() => {
     const allowed = new Set(listingTypeOptions.map((o) => o.value));
@@ -174,12 +194,22 @@ export function PropertyListingFormWizard({
 
   const handleBack = () => setStep((s) => Math.max(s - 1, 0));
 
-  useEffect(() => {
-    setGallery({ keptExistingUrls: initialExistingImageUrls, newFiles: [] });
-  }, [initialExistingImageUrls]);
+  const existingUrlsKey = initialExistingImageUrls.join('\u0001');
+  const [prevExistingUrlsKey, setPrevExistingUrlsKey] = useState(existingUrlsKey);
+  if (existingUrlsKey !== prevExistingUrlsKey) {
+    setPrevExistingUrlsKey(existingUrlsKey);
+    setGallery((prev) => ({
+      keptExistingUrls: initialExistingImageUrls,
+      newFiles: prev.newFiles,
+    }));
+  }
+
+  const handleCreateGalleryFiles = useCallback((files: File[]) => {
+    setGallery({ keptExistingUrls: [], newFiles: files });
+  }, []);
 
   const onSubmit = async (data: ListingFormData) => {
-    await onFinish(data, gallery);
+    await onFinish(data, galleryRef.current);
   };
 
   /**
@@ -413,6 +443,14 @@ export function PropertyListingFormWizard({
               {errors.description && <p className="text-xs text-red-500">{errors.description.message}</p>}
               <p className="text-xs text-gray-400">Minimum 20 characters</p>
             </div>
+            <Input
+              label="YouTube video link"
+              type="url"
+              placeholder="https://www.youtube.com/watch?v=..."
+              hint="Optional — saved link shows as a YouTube icon on your listing"
+              error={errors.youtubeUrl?.message}
+              {...register('youtubeUrl')}
+            />
           </div>
         )}
 
@@ -426,9 +464,7 @@ export function PropertyListingFormWizard({
                   onChange={setGallery}
                 />
               ) : (
-                <ImageUploader
-                  onChange={(files) => setGallery({ keptExistingUrls: [], newFiles: files })}
-                />
+                <ImageUploader onChange={handleCreateGalleryFiles} />
               )}
               <p className="text-xs text-gray-400 mt-1.5">{photoHint}</p>
             </div>

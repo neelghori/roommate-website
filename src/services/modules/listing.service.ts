@@ -22,6 +22,7 @@ import { authApiErrorMessage } from '@/services/modules/auth.service';
 import { amenityService } from '@/services/modules/amenity.service';
 import { hasMapCoordinates } from '@/lib/googleMapsEmbed';
 import { mapFurnishingFromApi, mapFurnishingToApi } from '@/lib/furnishing';
+import { youtubeUrlForApi } from '@/lib/youtube';
 import {
   resolveListingRentRange,
   type ListingFormData,
@@ -502,6 +503,11 @@ function isHttpImageUrl(s: string): boolean {
   return /^https?:\/\//i.test(s.trim());
 }
 
+/** True when the listing has at least one remote photo (S3/CDN), not only local placeholders. */
+export function hasRemoteListingPhotos(images: string[] | undefined): boolean {
+  return (images ?? []).some(isHttpImageUrl);
+}
+
 /**
  * De-dupe cover + imageUrls, drop broken legacy placeholder when any https URL exists,
  * and put absolute URLs first so listing cards show S3 photos instead of a missing local file.
@@ -642,6 +648,8 @@ export function mapApiPropertyToListing(p: Record<string, unknown>): Listing {
     ...(furnishing ? { furnishing } : {}),
     images,
     description: typeof p.description === 'string' ? p.description : '',
+    youtubeUrl:
+      typeof p.youtubeUrl === 'string' && p.youtubeUrl.trim() ? p.youtubeUrl.trim() : undefined,
     residentSnapshots,
     residentSnapshot: residentSnapshots[0],
     mapPlaceholder,
@@ -784,6 +792,7 @@ export function buildPropertyCreateBody(
   body.location = loc;
   const phone = data.phone?.replace(/\D/g, '') ?? '';
   if (phone.length >= 10) body.contactPhone = phone.slice(-10);
+  body.youtubeUrl = youtubeUrlForApi(data.youtubeUrl);
   if (listingType === 'pg' && data.minimumStayMonths != null) {
     body.minimumStayMonths = data.minimumStayMonths;
   }
@@ -868,11 +877,17 @@ export const listingService = {
     if (!files.length) return [];
     const fd = new FormData();
     for (const f of files) fd.append('images', f);
-    const raw = await postMultipartForm(`/api/v1/upload/properties/${propertyId}/gallery`, fd);
-    const inner = raw.data as Record<string, unknown> | undefined;
-    const urls = inner?.urls;
-    if (!Array.isArray(urls) || !urls.every((u) => typeof u === 'string')) throw new Error('Invalid upload response');
-    return urls as string[];
+    try {
+      const raw = await postMultipartForm(`/api/v1/upload/properties/${propertyId}/gallery`, fd);
+      const inner = raw.data as Record<string, unknown> | undefined;
+      const urls = inner?.urls;
+      if (!Array.isArray(urls) || !urls.every((u) => typeof u === 'string')) {
+        throw new Error('Invalid upload response');
+      }
+      return urls as string[];
+    } catch (err) {
+      throw new Error(apiErr(err, 'Could not upload photos to storage'));
+    }
   },
 
   /** PATCH only gallery URLs (first becomes cover). */

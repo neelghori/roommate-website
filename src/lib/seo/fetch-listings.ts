@@ -43,7 +43,7 @@ export async function fetchListingsForSeo(limit = 24): Promise<Listing[]> {
 export async function fetchListingByIdForPage(id: string): Promise<Listing | null> {
   try {
     const res = await fetch(`${API_BASE}/api/v1/properties/${encodeURIComponent(id)}`, {
-      next: { revalidate: 3600 },
+      cache: 'no-store',
       headers: { Accept: 'application/json' },
     });
     if (!res.ok) return null;

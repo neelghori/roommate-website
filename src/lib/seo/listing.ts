@@ -61,11 +61,11 @@ function mapPropertyToSeo(prop: Record<string, unknown>): SeoListingSnapshot | n
   };
 }
 
-/** Server-side fetch for generateMetadata & sitemap (revalidates hourly). */
+/** Server-side fetch for listing detail metadata & JSON-LD (always fresh — photos change often). */
 export async function fetchListingForSeo(id: string): Promise<SeoListingSnapshot | null> {
   try {
     const res = await fetch(`${API_BASE}/api/v1/properties/${encodeURIComponent(id)}`, {
-      next: { revalidate: 3600 },
+      cache: 'no-store',
       headers: { Accept: 'application/json' },
     });
     if (!res.ok) return null;

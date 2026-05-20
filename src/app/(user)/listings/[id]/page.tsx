@@ -1,7 +1,8 @@
 import ListingDetailClient from './listing-detail-client';
 import { fetchListingByIdForPage } from '@/lib/seo/fetch-listings';
 
-export const revalidate = 3600;
+/** Listing photos and moderation change frequently; avoid hour-long stale gallery. */
+export const revalidate = 0;
 
 type PageProps = {
   params: Promise<{ id: string }>;

@@ -31,6 +31,10 @@ export const apiClient = axios.create({
 // Request interceptor Bearer JWT from login/register + cookies (withCredentials)
 apiClient.interceptors.request.use(
   (config) => {
+    if (config.data instanceof FormData && config.headers) {
+      delete config.headers['Content-Type'];
+      delete config.headers['content-type'];
+    }
     const token = getAccessToken();
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
