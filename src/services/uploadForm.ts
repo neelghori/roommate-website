@@ -1,15 +1,25 @@
 import type { AxiosRequestConfig } from 'axios';
 import { apiClient } from '@/services/api';
-import { MAX_LISTING_IMAGE_BYTES } from '@/lib/uploadLimits';
+import { multipartMaxBytesForFileCount } from '@/lib/uploadLimits';
 
-/** Room for one max listing photo plus multipart overhead. */
-const MULTIPART_MAX_BYTES = MAX_LISTING_IMAGE_BYTES + 2 * 1024 * 1024;
+export type PostMultipartOptions = {
+  /** How many files are in this FormData (defaults to 1). Sets axios body size cap. */
+  fileCount?: number;
+  timeoutMs?: number;
+};
 
 /**
  * POST multipart via the same axios instance as all other API calls (same baseURL, auth, cookies).
  * Clears the default JSON Content-Type so the browser sets multipart boundaries on FormData.
  */
-export async function postMultipartForm(path: string, formData: FormData): Promise<Record<string, unknown>> {
+export async function postMultipartForm(
+  path: string,
+  formData: FormData,
+  options?: PostMultipartOptions,
+): Promise<Record<string, unknown>> {
+  const fileCount = options?.fileCount ?? 1;
+  const maxBytes = multipartMaxBytesForFileCount(fileCount);
+
   const config: AxiosRequestConfig = {
     transformRequest: [
       (data, headers) => {
@@ -20,9 +30,9 @@ export async function postMultipartForm(path: string, formData: FormData): Promi
         return data;
       },
     ],
-    maxBodyLength: MULTIPART_MAX_BYTES,
-    maxContentLength: MULTIPART_MAX_BYTES,
-    timeout: 120_000,
+    maxBodyLength: maxBytes,
+    maxContentLength: maxBytes,
+    timeout: options?.timeoutMs ?? 120_000,
   };
   const { data } = await apiClient.post<Record<string, unknown>>(path, formData, config);
   return data as Record<string, unknown>;

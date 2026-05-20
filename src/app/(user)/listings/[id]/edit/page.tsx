@@ -122,12 +122,13 @@ export default function EditListingPage() {
     setShowConfirm(false);
     setIsSubmitting(true);
     try {
-      let merged = [...pendingGallery.keptExistingUrls];
-      if (filesToUpload.length > 0) {
-        const newUrls = await listingService.uploadPropertyListingImages(id, filesToUpload);
-        merged = [...merged, ...newUrls].slice(0, 30);
-      }
-      const updated = await listingService.updateListingFromForm(id, data, merged);
+      const merged = [...pendingGallery.keptExistingUrls];
+      const updated = await listingService.updateListingFromForm(
+        id,
+        data,
+        merged,
+        filesToUpload,
+      );
       setListing(updated);
       toast.success(
         'Listing updated',

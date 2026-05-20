@@ -273,8 +273,8 @@ export const ListingDetailModal: React.FC<ListingDetailModalProps> = ({
               </div>
 
               {/* Price */}
-              <div className="flex items-baseline gap-2">
-                <span className="text-3xl font-bold text-primary">
+              <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
+                <span className="text-xl font-bold text-primary leading-snug">
                   {formatRentRange(detail.price, detail.maxPrice)}
                 </span>
                 <span className="text-sm text-gray-400">/month</span>
