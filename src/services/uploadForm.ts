@@ -1,8 +1,6 @@
 import type { AxiosRequestConfig } from 'axios';
 import { apiClient } from '@/services/api';
 import { multipartMaxBytesForFileCount } from '@/lib/uploadLimits';
-import { applyFormDataHeaders } from '@/lib/formDataUpload';
-
 export type MultipartFormOptions = {
   /** How many files are in this FormData (defaults to 1). Sets axios body size cap. */
   fileCount?: number;
@@ -21,14 +19,6 @@ function buildMultipartConfig(options?: MultipartFormOptions): AxiosRequestConfi
     maxBodyLength: maxBytes,
     maxContentLength: maxBytes,
     timeout: options?.timeoutMs ?? 120_000,
-    transformRequest: [
-      (data, _headers, config) => {
-        if (data instanceof FormData && config) {
-          applyFormDataHeaders(config);
-        }
-        return data;
-      },
-    ],
   };
 }
 
