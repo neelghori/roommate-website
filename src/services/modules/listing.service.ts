@@ -803,6 +803,37 @@ export function buildPropertyCreateBody(
   return body;
 }
 
+async function submitPropertyWithImages(
+  method: 'POST' | 'PATCH',
+  path: string,
+  body: Record<string, unknown>,
+  newFiles: File[],
+): Promise<Record<string, unknown>> {
+  const hasFiles = newFiles.length > 0;
+  try {
+    if (hasFiles) {
+      const fd = new FormData();
+      fd.append('data', JSON.stringify(body));
+      for (const f of newFiles) fd.append('images', f);
+      return await postMultipartForm(path, fd, { fileCount: newFiles.length });
+    }
+    if (method === 'POST') {
+      const { data: res } = await apiClient.post<unknown>(path, body);
+      return res as Record<string, unknown>;
+    }
+    const { data: res } = await apiClient.patch<unknown>(path, body);
+    return res as Record<string, unknown>;
+  } catch (err) {
+    const status = (err as { response?: { status?: number } })?.response?.status;
+    if (status === 413) {
+      throw new Error(
+        'Upload too large for the server. Use photos under 5 MB each, or ask ops to raise nginx client_max_body_size.',
+      );
+    }
+    throw err;
+  }
+}
+
 export const listingService = {
   getListings: async (filter?: ListingFilter): Promise<Listing[]> => {
     try {
@@ -870,42 +901,6 @@ export const listingService = {
     const url = typeof inner?.url === 'string' ? inner.url : undefined;
     if (!url) throw new Error('Invalid upload response');
     return { url };
-  },
-
-  /** POST `images[]` to S3 under `properties/{propertyId}/`. */
-  uploadPropertyListingImages: async (propertyId: string, files: File[]): Promise<string[]> => {
-    if (!files.length) return [];
-    const fd = new FormData();
-    for (const f of files) fd.append('images', f);
-    try {
-      const raw = await postMultipartForm(`/api/v1/upload/properties/${propertyId}/gallery`, fd);
-      const inner = raw.data as Record<string, unknown> | undefined;
-      const urls = inner?.urls;
-      if (!Array.isArray(urls) || !urls.every((u) => typeof u === 'string')) {
-        throw new Error('Invalid upload response');
-      }
-      return urls as string[];
-    } catch (err) {
-      throw new Error(apiErr(err, 'Could not upload photos to storage'));
-    }
-  },
-
-  /** PATCH only gallery URLs (first becomes cover). */
-  patchListingImages: async (propertyId: string, imageUrls: string[]): Promise<Listing> => {
-    const coverImageUrl = imageUrls.length > 0 ? imageUrls[0] : null;
-    try {
-      const { data: res } = await apiClient.patch<unknown>(`/api/v1/properties/${propertyId}`, {
-        imageUrls,
-        coverImageUrl,
-      });
-      const root = res as Record<string, unknown>;
-      const inner = root.data as Record<string, unknown> | undefined;
-      const prop = (inner?.property ?? inner) as Record<string, unknown> | undefined;
-      if (!prop) throw new Error('Invalid response');
-      return mapApiPropertyToListingWithAmenities(prop);
-    } catch (err) {
-      throw new Error(apiErr(err, 'Could not save listing photos'));
-    }
   },
 
   /** POST one resident row server appends to `listerSnapshots` (does not resend existing rows). */
@@ -982,14 +977,24 @@ export const listingService = {
     id: string,
     data: ListingFormData,
     imageUrls: string[],
+    newFiles: File[] = [],
   ): Promise<Listing> => {
     const amenityIds = await resolveAmenityIdsFromLabels(data.amenities as string[]);
-    const body = buildPropertyCreateBody(data, amenityIds, []);
-    body.imageUrls = imageUrls;
-    body.coverImageUrl = imageUrls.length > 0 ? imageUrls[0] : null;
+    const body = buildPropertyCreateBody(data, amenityIds, imageUrls);
+    if (imageUrls.length > 0) {
+      body.imageUrls = imageUrls;
+      body.coverImageUrl = imageUrls[0];
+    } else {
+      body.imageUrls = [];
+      body.coverImageUrl = null;
+    }
     try {
-      const { data: res } = await apiClient.patch<unknown>(`/api/v1/properties/${id}`, body);
-      const root = res as Record<string, unknown>;
+      const root = await submitPropertyWithImages(
+        'PATCH',
+        `/api/v1/properties/${id}`,
+        body,
+        newFiles,
+      );
       const inner = root.data as Record<string, unknown> | undefined;
       const prop = (inner?.property ?? inner) as Record<string, unknown> | undefined;
       if (!prop) throw new Error('Invalid response');
@@ -1001,13 +1006,12 @@ export const listingService = {
 
   createListingFromForm: async (
     data: ListingFormData,
-    imageUrls: string[] = [],
+    newFiles: File[] = [],
   ): Promise<Listing> => {
     const amenityIds = await resolveAmenityIdsFromLabels(data.amenities as string[]);
-    const body = buildPropertyCreateBody(data, amenityIds, imageUrls);
+    const body = buildPropertyCreateBody(data, amenityIds, []);
     try {
-      const { data: res } = await apiClient.post<unknown>('/api/v1/properties', body);
-      const root = res as Record<string, unknown>;
+      const root = await submitPropertyWithImages('POST', '/api/v1/properties', body, newFiles);
       const inner = root.data as Record<string, unknown> | undefined;
       const prop = (inner?.property ?? inner) as Record<string, unknown> | undefined;
       if (!prop) throw new Error('Invalid server response');
@@ -1042,7 +1046,7 @@ export const listingService = {
       description: payload.description,
       phone: payload.phone ?? '',
     } as ListingFormData;
-    return listingService.createListingFromForm(form, []);
+    return listingService.createListingFromForm(form);
   },
 
   updateListing: async (id: string, payload: UpdateListingPayload): Promise<Listing> => {
