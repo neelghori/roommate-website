@@ -8,7 +8,7 @@ import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import {
   Eye, EyeOff, ArrowRight,
-  User, Building2, Users,
+  User as UserIcon, Building2, Users,
   BadgeCheck, MapPin, Star, Lock,
   CheckCircle2,
 } from 'lucide-react';
@@ -53,7 +53,7 @@ const BENEFITS = [
 
 
 const ROLES = [
-  { value: 'TENANT', Icon: User, label: "I'm a Tenant", desc: 'Looking for a room' },
+  { value: 'TENANT', Icon: UserIcon, label: "I'm a Tenant", desc: 'Looking for a room' },
   { value: 'ROOMMATE', Icon: Users, label: 'Find Roommate', desc: 'Need a flatmate' },
   { value: 'OWNER', Icon: Building2, label: "I'm an Owner", desc: 'Have a room to rent' },
 ] as const;

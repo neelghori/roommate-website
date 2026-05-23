@@ -7,7 +7,6 @@ import type { RoommateProfile } from '@/types';
 import { normalizeAvatarUrl } from '@/lib/avatarUrl';
 import { apiClient } from '@/services/api';
 import { authApiErrorMessage } from '@/services/modules/auth.service';
-import { normalizeAvatarUrl } from '@/lib/avatarUrl';
 
 function apiErr(err: unknown, fallback: string): string {
   return authApiErrorMessage(err, fallback);
