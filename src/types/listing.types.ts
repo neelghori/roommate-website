@@ -6,7 +6,7 @@
 import type { GenderPreference } from './user.types';
 export type { GenderPreference };
 
-export type ListingStatus = 'Hot' | 'Limited Offer' | 'New' | null;
+export type ListingStatus = 'Hot' | 'Limited Offer' | 'New' | 'Featured' | null;
 /** Matches backend `Property.verificationBadge`. */
 export type ListingVerificationBadge =
   | 'none'

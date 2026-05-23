@@ -9,6 +9,8 @@
  * All monetary values are in INR (₹).
  */
 
+import { dedupeAreaLabels } from '@/lib/listingLocationMatch';
+
 /* ─────────────────────────────────────────────────────────────────
    TYPES
    ───────────────────────────────────────────────────────────────── */
@@ -359,11 +361,21 @@ export const NOTIFICATIONS: Notification[] = [
    POPULAR AREAS  (shown on Explore page)
    BACKEND: Aggregate from listings grouped by locality
    ───────────────────────────────────────────────────────────────── */
-export const POPULAR_AREAS = [
-  "Prahladnagar", "Satellite", "Navrangpura", "Bodakdev",
-  "Vastrapur", "Chandkheda", "Ambawadi", "Thaltej",
-  "SG Highway", "Gota", "Maninagar", "Prahlad Nagar",
-];
+const POPULAR_AREAS_RAW = [
+  'Prahladnagar',
+  'Satellite',
+  'Navrangpura',
+  'Bodakdev',
+  'Vastrapur',
+  'Chandkheda',
+  'Ambawadi',
+  'Thaltej',
+  'SG Highway',
+  'Gota',
+  'Maninagar',
+] as const;
+
+export const POPULAR_AREAS = dedupeAreaLabels(POPULAR_AREAS_RAW);
 
 /* ─────────────────────────────────────────────────────────────────
    GUEST USER  (Profile page static state)

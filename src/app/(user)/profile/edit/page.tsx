@@ -8,6 +8,7 @@ import { profileSchema, type ProfileFormData } from '@/lib/validations/profile.s
 import { UserLayout } from '@/components/shared/UserLayout';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
+import { UserAvatarImage } from '@/components/ui/UserAvatarImage';
 import { useAuthStore } from '@/store/authStore';
 import { useToast } from '@/hooks/useToast';
 import { userService } from '@/services/modules/user.service';
@@ -188,10 +189,8 @@ export default function EditProfilePage() {
           />
           <div className="relative">
             {profile.avatarUrl ? (
-              // eslint-disable-next-line @next/next/no-img-element -- user-uploaded S3 URL; remotePatterns vary per deploy
-              <img
+              <UserAvatarImage
                 src={profile.avatarUrl}
-                alt=""
                 className="w-24 h-24 rounded-full object-cover border-4 border-white shadow-md bg-gray-100"
               />
             ) : (

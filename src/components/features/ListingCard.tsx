@@ -33,6 +33,7 @@ const BADGE_VARIANT_MAP: Record<string, 'hot' | 'limited' | 'new'> = {
   Hot: 'hot',
   'Limited Offer': 'limited',
   New: 'new',
+  Featured: 'hot',
 };
 
 interface ListingCardProps {

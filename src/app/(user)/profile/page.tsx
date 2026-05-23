@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { UserLayout } from '@/components/shared/UserLayout';
+import { UserAvatarImage } from '@/components/ui/UserAvatarImage';
 import { Button } from '@/components/ui/Button';
 import { Modal } from '@/components/ui/Modal';
 import { useAuthStore } from '@/store/authStore';
@@ -124,10 +125,8 @@ export default function ProfilePage() {
                 <div className="relative group shrink-0">
                   <div className="w-24 h-24 lg:w-48 lg:h-48 rounded-3xl lg:rounded-[3.5rem] bg-primary/5 border-2 border-primary/10 overflow-hidden shadow-inner transition-transform group-hover:scale-[1.02] flex items-center justify-center">
                     {profile.avatarUrl ? (
-                      // eslint-disable-next-line @next/next/no-img-element -- user-uploaded URL from API
-                      <img
+                      <UserAvatarImage
                         src={profile.avatarUrl}
-                        alt=""
                         className="h-full w-full object-cover"
                       />
                     ) : (

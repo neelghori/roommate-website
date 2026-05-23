@@ -16,6 +16,7 @@ import { ListingCard } from '@/components/features/ListingCard';
 import { ListingDetailModal } from '@/components/features/ListingDetailModal';
 import { CategoryGrid } from '@/components/features/CategoryGrid';
 import { POPULAR_AREAS } from '@/lib/staticData';
+import { listingMatchesArea } from '@/lib/listingLocationMatch';
 import { buildExploreCategoriesFromListings } from '@/lib/exploreCategories';
 import { useFilterStore } from '@/store/filterStore';
 import { Listing } from '@/types';
@@ -93,8 +94,7 @@ export default function ExplorePageClient({ initialListings }: ExplorePageClient
       const matchesType =
         !filtersType || filtersType === 'All' || l.type === filtersType;
       const matchesSearch = listingMatchesExploreSearch(l, searchQuery);
-      const matchesArea =
-        !selectedArea || l.location.toLowerCase().includes(selectedArea.toLowerCase());
+      const matchesArea = listingMatchesArea(l, selectedArea ?? undefined);
       return matchesType && matchesSearch && matchesArea;
     });
   }, [listings, searchQuery, selectedArea, filtersType]);

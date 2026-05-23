@@ -13,6 +13,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter, usePathname } from 'next/navigation';
+import { UserAvatarImage } from '@/components/ui/UserAvatarImage';
 import {
   Bell,
   User,
@@ -98,10 +99,8 @@ const AvatarDropdown: React.FC = () => {
       >
         {/* Avatar photo when available (stays in sync with profile edit via useAuthStore) */}
         {user?.avatarUrl ? (
-          // eslint-disable-next-line @next/next/no-img-element -- S3/CDN URL from API; keeps TopBar in sync without remotePatterns edge cases
-          <img
+          <UserAvatarImage
             src={user.avatarUrl}
-            alt=""
             className="w-8 h-8 lg:w-9 lg:h-9 rounded-full object-cover shadow-sm ring-2 ring-white"
           />
         ) : (

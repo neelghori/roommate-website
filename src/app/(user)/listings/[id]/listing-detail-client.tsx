@@ -47,7 +47,10 @@ import { ListingYoutubeLink } from '@/components/features/ListingYoutubeLink';
 import { ListingYoutubeSection } from '@/components/features/ListingYoutubeSection';
 
 const BADGE_VARIANT_MAP: Record<string, 'hot' | 'limited' | 'new'> = {
-  Hot: 'hot', 'Limited Offer': 'limited', New: 'new',
+  Hot: 'hot',
+  'Limited Offer': 'limited',
+  New: 'new',
+  Featured: 'hot',
 };
 
 const TYPE_COLORS: Record<string, string> = {

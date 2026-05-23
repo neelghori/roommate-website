@@ -19,9 +19,17 @@ export const CATEGORIES: Category[] = [
 ];
 
 export const POPULAR_AREAS: string[] = [
-  'Prahladnagar', 'Satellite', 'Navrangpura', 'Bodakdev',
-  'Vastrapur', 'Chandkheda', 'Ambawadi', 'Thaltej',
-  'SG Highway', 'Gota', 'Maninagar', 'Prahlad Nagar',
+  'Prahladnagar',
+  'Satellite',
+  'Navrangpura',
+  'Bodakdev',
+  'Vastrapur',
+  'Chandkheda',
+  'Ambawadi',
+  'Thaltej',
+  'SG Highway',
+  'Gota',
+  'Maninagar',
 ];
 
 export const MOCK_LISTINGS: Listing[] = [

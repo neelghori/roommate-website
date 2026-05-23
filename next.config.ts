@@ -31,6 +31,8 @@ function buildConnectSrcDirective(): string {
   origins.add("https://maps.googleapis.com");
   origins.add("https://*.googleapis.com");
   origins.add("https://*.gstatic.com");
+  /** Google Identity Services (Sign in with Google). */
+  origins.add("https://accounts.google.com");
 
   return `connect-src ${[...origins].join(" ")}`;
 }
@@ -38,15 +40,15 @@ function buildConnectSrcDirective(): string {
 function buildContentSecurityPolicy(): string {
   return [
     "default-src 'self'",
-    /** Loader + chunks for Maps JS API / Places library (blocked without these). */
-    "script-src 'self' 'unsafe-eval' 'unsafe-inline' https://maps.googleapis.com https://*.gstatic.com",
-    "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+    /** Maps JS API + Google Identity Services (gsi/client). */
+    "script-src 'self' 'unsafe-eval' 'unsafe-inline' https://maps.googleapis.com https://*.gstatic.com https://accounts.google.com",
+    "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://accounts.google.com",
     "font-src 'self' https://fonts.gstatic.com",
     // `https:` listing/resident photos from S3, CloudFront, or any HTTPS CDN (URLs are server-controlled).
-    "img-src 'self' data: blob: https: https://res.cloudinary.com https://avatars.githubusercontent.com",
+    "img-src 'self' data: blob: https: https://res.cloudinary.com https://avatars.githubusercontent.com https://*.googleusercontent.com",
     buildConnectSrcDirective(),
-    /** Google Maps iframe embed nested frames may use other *.google.com hosts */
-    "frame-src 'self' https://*.google.com https://*.gstatic.com",
+    /** Google Maps embed + Sign in with Google button iframe */
+    "frame-src 'self' https://*.google.com https://accounts.google.com https://*.gstatic.com",
     /** Maps JS API web workers */
     "worker-src 'self' blob:",
     "frame-ancestors 'none'",
@@ -107,6 +109,16 @@ const nextConfig: NextConfig = {
       {
         protocol: "https",
         hostname: "*.cloudfront.net",
+        pathname: "/**",
+      },
+      {
+        protocol: "https",
+        hostname: "lh3.googleusercontent.com",
+        pathname: "/**",
+      },
+      {
+        protocol: "https",
+        hostname: "*.googleusercontent.com",
         pathname: "/**",
       },
     ],

@@ -28,6 +28,7 @@ import {
   resolveListingRentRange,
   type ListingFormData,
 } from '@/lib/validations/listing.schema';
+import { listingMatchesArea, listingMatchesCity } from '@/lib/listingLocationMatch';
 import {
   EMPTY_LISTING_RESIDENT,
   type ListingResidentFormData,
@@ -542,25 +543,6 @@ export function collectListingImageUrlsFromProperty(p: Record<string, unknown>):
   return merged;
 }
 
-/** City filter: many listings only have area text in `location` while `city` is empty. */
-function listingMatchesCityFilter(l: Listing, city: string | undefined): boolean {
-  if (!city || !String(city).trim()) return true;
-  const c = String(city).trim().toLowerCase();
-  const hay = [l.city, l.location, l.formattedAddress, l.addressLine2, l.state]
-    .filter((x): x is string => typeof x === 'string' && x.trim().length > 0)
-    .join(' ')
-    .toLowerCase();
-  return hay.includes(c);
-}
-
-/** Area / locality substring on title + location + formatted address. */
-function listingMatchesAreaFilter(l: Listing, area: string | undefined): boolean {
-  if (!area || !String(area).trim()) return true;
-  const q = String(area).trim().toLowerCase();
-  const hay = [l.location, l.title, l.formattedAddress, l.city].filter(Boolean).join(' ').toLowerCase();
-  return hay.includes(q);
-}
-
 /**
  * Amenity filter OR semantics: show listings that have **at least one** of the selected amenities.
  * (AND would hide a TV+AC listing when the user checks TV + Parking because Parking is missing.)
@@ -644,7 +626,12 @@ export function mapApiPropertyToListing(p: Record<string, unknown>): Listing {
       ? { minimumStayMonths: p.minimumStayMonths }
       : {}),
     amenities: mapAmenityDocs(p.amenityIds),
-    badge: approvalFromProperty(p) === 'APPROVED' ? 'New' : null,
+    badge:
+      p.isFeatured === true
+        ? 'Featured'
+        : approvalFromProperty(p) === 'APPROVED'
+          ? 'New'
+          : null,
     type,
     ...(furnishing ? { furnishing } : {}),
     images,
@@ -680,6 +667,17 @@ function unwrapItems(data: unknown): Record<string, unknown>[] {
 function propertyRowId(row: Record<string, unknown>): string {
   const id = row._id ?? row.id;
   return id != null ? String(id) : '';
+}
+
+/** Pinned PG listings first (admin `isFeatured`), preserving relative order within each group. */
+function sortFeaturedFirst(rows: Record<string, unknown>[]): Record<string, unknown>[] {
+  const pinned: Record<string, unknown>[] = [];
+  const rest: Record<string, unknown>[] = [];
+  for (const row of rows) {
+    if (row.isFeatured === true) pinned.push(row);
+    else rest.push(row);
+  }
+  return [...pinned, ...rest];
 }
 
 /** Nearby rows first (server uses `$geoWithin`; order is not strict distance), then remaining rows without duplicates. */
@@ -867,11 +865,13 @@ export const listingService = {
           apiClient.get<unknown>(`/api/v1/properties?${paramsNear.toString()}`),
           apiClient.get<unknown>(`/api/v1/properties?${paramsRest.toString()}`),
         ]);
-        items = mergeNearbyFirstThenRest(unwrapItems(nearRes.data), unwrapItems(restRes.data));
+        items = sortFeaturedFirst(
+          mergeNearbyFirstThenRest(unwrapItems(nearRes.data), unwrapItems(restRes.data)),
+        );
       } else {
         const params = buildPropertyListQueryParams(filter, false);
         const { data } = await apiClient.get<unknown>(`/api/v1/properties?${params.toString()}`);
-        items = unwrapItems(data);
+        items = sortFeaturedFirst(unwrapItems(data));
       }
       let listings = await Promise.all(items.map((item) => mapApiPropertyToListingWithAmenities(item)));
       if (filter?.minPrice != null) {
@@ -881,10 +881,10 @@ export const listingService = {
         listings = listings.filter((l) => (l.maxPrice ?? l.price) <= filter.maxPrice!);
       }
       if (filter?.city && String(filter.city).trim()) {
-        listings = listings.filter((l) => listingMatchesCityFilter(l, filter.city));
+        listings = listings.filter((l) => listingMatchesCity(l, filter.city));
       }
       if (filter?.area && String(filter.area).trim()) {
-        listings = listings.filter((l) => listingMatchesAreaFilter(l, filter.area));
+        listings = listings.filter((l) => listingMatchesArea(l, filter.area));
       }
       if (filter?.genderPreference && filter.genderPreference !== 'Any') {
         listings = listings.filter(
