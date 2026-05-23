@@ -4,8 +4,10 @@
 
 import { isAxiosError } from 'axios';
 import type { RoommateProfile } from '@/types';
+import { normalizeAvatarUrl } from '@/lib/avatarUrl';
 import { apiClient } from '@/services/api';
 import { authApiErrorMessage } from '@/services/modules/auth.service';
+import { normalizeAvatarUrl } from '@/lib/avatarUrl';
 
 function apiErr(err: unknown, fallback: string): string {
   return authApiErrorMessage(err, fallback);
@@ -120,7 +122,13 @@ export function mapTenantRoommateApiToProfile(raw: unknown): RoommateProfile | n
     userId,
     name,
     displayName: displayName ?? name,
-    avatarUrl: typeof raw.avatarUrl === 'string' ? raw.avatarUrl : undefined,
+    avatarUrl: normalizeAvatarUrl(
+      typeof raw.avatarUrl === 'string'
+        ? raw.avatarUrl
+        : typeof raw.profileImageUrl === 'string'
+          ? raw.profileImageUrl
+          : undefined,
+    ),
     avatarInitial,
     matchPercent,
     tags,

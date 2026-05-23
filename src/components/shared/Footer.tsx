@@ -53,7 +53,7 @@ const FOOTER_LINKS = {
     { label: 'Satellite', href: '/explore?q=Satellite' },
     { label: 'Navrangpura', href: '/explore?q=Navrangpura' },
     { label: 'Vastrapur', href: '/explore?q=Vastrapur' },
-    { label: 'Prahlad Nagar', href: '/explore?q=Prahlad' },
+    { label: 'Prahladnagar', href: '/explore?q=Prahladnagar' },
     { label: 'Bodakdev', href: '/explore?q=Bodakdev' },
   ],
 };

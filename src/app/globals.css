@@ -489,6 +489,64 @@ input.roommat-inline-search:focus-visible {
   box-shadow: none;
 }
 
+/* Custom Google sign-in (visual layer; real GIS iframe sits on top, nearly invisible) */
+.auth-google-wrap {
+  position: relative;
+  width: 100%;
+  height: 52px;
+  border-radius: 0.75rem;
+}
+
+.auth-google-wrap--disabled {
+  opacity: 0.55;
+  pointer-events: none;
+}
+
+.auth-google-gis-layer {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  overflow: hidden;
+  border-radius: 0.75rem;
+  opacity: 0.01;
+}
+
+.auth-google-gis-layer > div,
+.auth-google-gis-layer iframe {
+  width: 100% !important;
+  height: 52px !important;
+  margin: 0 !important;
+}
+
+.auth-google-btn-visual {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.625rem;
+  border-radius: 0.75rem;
+  border: 1.5px solid rgba(27, 143, 143, 0.22);
+  background: #ffffff;
+  color: #374151;
+  font-size: 0.875rem;
+  font-weight: 600;
+  line-height: 1.25;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.06);
+  pointer-events: none;
+  transition:
+    border-color 0.2s ease,
+    background-color 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.auth-google-wrap:not(.auth-google-wrap--disabled):hover .auth-google-btn-visual {
+  border-color: rgba(27, 143, 143, 0.45);
+  background: #f4fbfb;
+  box-shadow: 0 2px 8px rgba(27, 143, 143, 0.12);
+}
+
 /* Role selector cards */
 .auth-role-active {
   border: 2px solid #1B8F8F;

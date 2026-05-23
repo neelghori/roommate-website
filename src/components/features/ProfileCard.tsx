@@ -12,6 +12,7 @@ import { Button } from '@/components/ui/Button';
 import { useToast } from '@/hooks/useToast';
 import { tenantRoommateProfileService } from '@/services/modules/tenantRoommateProfile.service';
 import { RoommateProfileDetailModal } from '@/components/features/RoommateProfileDetailModal';
+import { UserAvatarImage } from '@/components/ui/UserAvatarImage';
 
 const TAG_STYLES: Record<string, string> = {
   WORKING: 'bg-amber-100 text-amber-800',
@@ -77,8 +78,7 @@ export const ProfileCard: React.FC<ProfileCardProps> = ({ profile, onChatClick }
             aria-label={`${profile.name}'s avatar`}
           >
             {profile.avatarUrl ? (
-              // eslint-disable-next-line @next/next/no-img-element -- user-uploaded URL from API
-              <img src={profile.avatarUrl} alt="" className="h-full w-full object-cover" />
+              <UserAvatarImage src={profile.avatarUrl} className="h-full w-full object-cover" />
             ) : (
               profile.avatarInitial
             )}

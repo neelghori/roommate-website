@@ -8,7 +8,6 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Eye, EyeOff, Sparkles, ShieldCheck, Users, MapPin, Lock, BadgeCheck } from 'lucide-react';
 import { loginSchema, type LoginFormData } from '@/lib/validations/auth.schema';
-import { authService } from '@/services/modules/auth.service';
 import { useAuthStore } from '@/store/authStore';
 import { getAccessToken } from '@/lib/authToken';
 import { wsService } from '@/services/wsService';
@@ -18,6 +17,9 @@ import { AuthBrandPanel, AUTH_SITE_SLOGAN, PanelFeatureList } from '@/components
 import { AuthActivityFeed } from '@/components/shared/AuthActivityFeed';
 
 import { sanitizeLoginNextPath } from '@/lib/loginRedirect';
+import { GoogleSignInButton } from '@/components/auth/GoogleSignInButton';
+import { authService, GoogleRoleRequiredError } from '@/services/modules/auth.service';
+import type { User } from '@/types';
 
 const FEATURES = [
   { Icon: Sparkles,    title: 'Smart Matching',      desc: 'Rooms and roommates tailored to your lifestyle'       },
@@ -33,6 +35,39 @@ export default function LoginPageClient() {
   const { success, error: toastError } = useToast();
   const setUser      = useAuthStore((s) => s.setUser);
   const [showPassword, setShowPassword] = useState(false);
+  const [googleBusy, setGoogleBusy] = useState(false);
+  const [googleToken, setGoogleToken] = useState<string | null>(null);
+  const [googleRolePick, setGoogleRolePick] = useState(false);
+
+  const finishGoogleSession = (res: { user: User; token: string; isNew: boolean }) => {
+    setUser(res.user);
+    wsService.connect(getAccessToken() ?? undefined);
+    success(
+      res.isNew ? 'Welcome to Roommat!' : 'Welcome back!',
+      res.isNew ? 'Your Google account is ready.' : `Signed in as ${res.user.name}`,
+    );
+    router.push(sanitizeLoginNextPath(searchParams.get('next')));
+  };
+
+  const runGoogleSignIn = async (idToken: string, role?: User['role']) => {
+    setGoogleBusy(true);
+    try {
+      const res = await authService.loginWithGoogle(idToken, role);
+      setGoogleRolePick(false);
+      setGoogleToken(null);
+      finishGoogleSession(res);
+    } catch (err) {
+      if (err instanceof GoogleRoleRequiredError) {
+        setGoogleToken(idToken);
+        setGoogleRolePick(true);
+        return;
+      }
+      const message = err instanceof Error ? err.message : 'Google sign-in failed.';
+      toastError('Google sign-in failed', message);
+    } finally {
+      setGoogleBusy(false);
+    }
+  };
 
   const {
     register,
@@ -240,8 +275,42 @@ export default function LoginPageClient() {
               <div className="h-px flex-1 bg-primary-600/10" />
             </div>
 
+            <GoogleSignInButton
+              text="signin_with"
+              disabled={isSubmitting || googleBusy}
+              loading={googleBusy}
+              onCredential={(token) => void runGoogleSignIn(token)}
+              onError={(m) => toastError('Google sign-in failed', m)}
+            />
+
+            {googleRolePick && googleToken ? (
+              <div className="mt-4 rounded-xl border border-primary-100 bg-primary-50/60 p-4 space-y-3">
+                <p className="text-sm font-semibold text-gray-800">How will you use Roommat?</p>
+                <p className="text-xs text-gray-600">Choose one to finish creating your account with Google.</p>
+                <div className="flex flex-col gap-2">
+                  {(
+                    [
+                      { role: 'TENANT' as const, label: "I'm a Tenant" },
+                      { role: 'ROOMMATE' as const, label: 'Find Roommate' },
+                      { role: 'OWNER' as const, label: "I'm an Owner" },
+                    ] as const
+                  ).map(({ role, label }) => (
+                    <button
+                      key={role}
+                      type="button"
+                      disabled={googleBusy}
+                      onClick={() => void runGoogleSignIn(googleToken, role)}
+                      className="w-full rounded-xl border border-primary-200 bg-white py-2.5 text-sm font-semibold text-primary-800 hover:bg-primary-50 disabled:opacity-50"
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            ) : null}
+
             {/* Secondary CTA */}
-            <Link href="/register">
+            <Link href="/register" className="mt-4 block">
               <button
                 type="button"
                 className="w-full flex items-center justify-center rounded-xl border-2 border-primary-600/20 text-sm font-semibold text-gray-600 transition-all duration-200 hover:bg-teal-50/60 hover:border-teal-300 active:scale-[0.98]"

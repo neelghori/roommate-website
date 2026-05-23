@@ -26,6 +26,7 @@ import {
 import { apiClient } from '@/services/api';
 import { clearAccessToken, setAccessToken } from '@/lib/authToken';
 import { extractAccessTokenFromUnknown } from '@/lib/extractAccessToken';
+import { normalizeAvatarUrl } from '@/lib/avatarUrl';
 
 // Mock delay to simulate network latency
 const delay = (ms = 800) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -77,6 +78,20 @@ function mapGenderFromApi(v: unknown): GenderPreference | undefined {
 export type LoginPayload = {
   email: string;
   password: string;
+};
+
+/** New Google user must pick tenant / owner / roommate before account is created. */
+export class GoogleRoleRequiredError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'GoogleRoleRequiredError';
+  }
+}
+
+export type GoogleAuthResult = {
+  user: User;
+  token: string;
+  isNew: boolean;
 };
 
 export type RegisterResult = {
@@ -253,12 +268,13 @@ export function mapApiUserToUser(
     if (fromTags.length) lifestyle = fromTags;
   }
 
-  const avatarUrl =
+  const rawAvatar =
     typeof raw.avatarUrl === 'string'
       ? raw.avatarUrl
       : typeof raw.profileImageUrl === 'string'
         ? raw.profileImageUrl
         : undefined;
+  const avatarUrl = normalizeAvatarUrl(rawAvatar);
 
   const bio = typeof raw.bio === 'string' ? raw.bio : undefined;
   const location = typeof raw.location === 'string' ? raw.location : undefined;
@@ -388,6 +404,40 @@ export const authService = {
    * Login user with email & password.
    * BACKEND: POST /api/v1/auth/login
    */
+  loginWithGoogle: async (
+    idToken: string,
+    role?: User['role'],
+  ): Promise<GoogleAuthResult> => {
+    const body: Record<string, unknown> = { idToken };
+    if (role && role !== 'ADMIN') {
+      body.role = mapAppRoleToApi(role);
+    }
+    try {
+      const { data } = await apiClient.post<unknown>('/api/v1/auth/google', body);
+      const { raw, token } = parseAuthResponse(data);
+      const user = mapApiUserToUser(raw, {});
+      const accessToken = token ?? '';
+      if (accessToken) setAccessToken(accessToken);
+      else setAccessToken(null);
+      let isNew = false;
+      const block = (data as Record<string, unknown>).data;
+      if (block && typeof block === 'object' && !Array.isArray(block)) {
+        isNew = (block as Record<string, unknown>).isNew === true;
+      }
+      return { user, token: accessToken, isNew };
+    } catch (err) {
+      const msg = authApiErrorMessage(err, 'Google sign-in failed');
+      if (
+        isAxiosError(err) &&
+        err.response?.status === 400 &&
+        /tenant|owner|roommate/i.test(msg)
+      ) {
+        throw new GoogleRoleRequiredError(msg);
+      }
+      throw new Error(msg);
+    }
+  },
+
   login: async (payload: LoginPayload): Promise<{ user: User; token: string }> => {
     if (!payload.email?.trim() || !payload.password) {
       throw new Error('Email and password are required');

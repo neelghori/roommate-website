@@ -7,6 +7,7 @@ import React from 'react';
 import { MapPin, IndianRupee, Calendar, Briefcase } from 'lucide-react';
 import { Modal } from '@/components/ui/Modal';
 import type { RoommateProfile } from '@/types';
+import { UserAvatarImage } from '@/components/ui/UserAvatarImage';
 
 function Row({ label, children }: { label: string; children: React.ReactNode }) {
   if (children == null || children === '') return null;
@@ -77,8 +78,7 @@ export function RoommateProfileDetailModal({
               aria-hidden
             >
               {profile.avatarUrl ? (
-                // eslint-disable-next-line @next/next/no-img-element -- user-uploaded URL from API
-                <img src={profile.avatarUrl} alt="" className="h-full w-full object-cover" />
+                <UserAvatarImage src={profile.avatarUrl} className="h-full w-full object-cover" />
               ) : (
                 profile.avatarInitial
               )}

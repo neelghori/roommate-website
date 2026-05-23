@@ -14,7 +14,12 @@ import {
 } from 'lucide-react';
 import { registerSchema, type RegisterFormData } from '@/lib/validations/auth.schema';
 import { authService } from '@/services/modules/auth.service';
+import { useAuthStore } from '@/store/authStore';
+import { getAccessToken } from '@/lib/authToken';
+import { wsService } from '@/services/wsService';
 import { useToast } from '@/hooks/useToast';
+import { GoogleSignInButton } from '@/components/auth/GoogleSignInButton';
+import type { User } from '@/types';
 import { Input } from '@/components/ui/Input';
 import { Modal } from '@/components/ui/Modal';
 import { TermsDocumentBody } from '@/components/legal/TermsDocumentBody';
@@ -57,7 +62,9 @@ const ROLES = [
 export default function RegisterPageClient() {
   const router = useRouter();
   const { success, error: toastError } = useToast();
+  const setUser = useAuthStore((s) => s.setUser);
   const [showPassword, setShowPassword] = useState(false);
+  const [googleBusy, setGoogleBusy] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
   const [legalModal, setLegalModal] = useState<'terms' | 'privacy' | null>(null);
 
@@ -80,6 +87,23 @@ export default function RegisterPageClient() {
   const selectedRole = watch('role');
   const passwordValue = watch('password') ?? '';
   const strength = getStrength(passwordValue);
+
+  const handleGoogleRegister = async (idToken: string) => {
+    const role = selectedRole as User['role'];
+    setGoogleBusy(true);
+    try {
+      const res = await authService.loginWithGoogle(idToken, role);
+      setUser(res.user);
+      wsService.connect(getAccessToken() ?? undefined);
+      success('Account created', 'You are signed in with Google.');
+      router.push('/');
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Google sign-up failed.';
+      toastError('Google sign-up failed', message);
+    } finally {
+      setGoogleBusy(false);
+    }
+  };
 
   const onSubmit = async (data: RegisterFormData) => {
     try {
@@ -282,8 +306,21 @@ export default function RegisterPageClient() {
                 {errors.role && <p className="mt-2 text-xs text-red-500">{errors.role.message}</p>}
               </div>
 
-              {/* Divider */}
-              <div className="mb-6 h-px bg-primary-600/10" />
+              <div className="mb-6">
+                <GoogleSignInButton
+                  text="signup_with"
+                  disabled={isSubmitting || googleBusy}
+                  loading={googleBusy}
+                  onCredential={(token) => void handleGoogleRegister(token)}
+                  onError={(m) => toastError('Google sign-up failed', m)}
+                />
+              </div>
+
+              <div className="mb-6 flex items-center gap-3">
+                <div className="h-px flex-1 bg-primary-600/10" />
+                <span className="text-xs text-gray-400">or register with email</span>
+                <div className="h-px flex-1 bg-primary-600/10" />
+              </div>
 
               {/* Form */}
               <form onSubmit={handleSubmit(onSubmit)} noValidate className="space-y-5">
