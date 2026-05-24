@@ -119,6 +119,8 @@ export interface ListingFilter {
   nearLongitude?: number;
   /** Search radius in km (API default 10; capped at 100). */
   radiusKm?: number;
+  /** When true with geo coords, return only listings within radius (Nearby tab). */
+  nearbyOnly?: boolean;
   /** City name passed to API and matched loosely on `city` / address text client-side. */
   city?: string;
   /** Locality / area (e.g. Satellite) substring match on title + location. */

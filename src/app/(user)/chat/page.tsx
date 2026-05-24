@@ -8,6 +8,7 @@ import { wsService } from '@/services/wsService';
 import { getAccessToken } from '@/lib/authToken';
 import { ConversationItem } from '@/components/features/chat/ConversationItem';
 import { ChatSidebar } from '@/components/features/chat/ChatSidebar';
+import { ChatPushBanner } from '@/components/features/chat/ChatPushBanner';
 import { UserLayout } from '@/components/shared/UserLayout';
 import { TopBar } from '@/components/shared/TopBar';
 import { BottomNav } from '@/components/shared/BottomNav';
@@ -109,6 +110,8 @@ export default function ChatListPage() {
                   className="w-full pl-9 pr-4 py-2 text-sm bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:border-teal-500 transition-colors"
                 />
               </div>
+
+              <ChatPushBanner className="mt-3" />
             </div>
 
             {/* Conversation list */}

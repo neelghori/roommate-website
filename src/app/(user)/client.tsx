@@ -23,9 +23,10 @@ import { useToast } from '@/hooks/useToast';
 import { useAuthStore } from '@/store/authStore';
 import { geocodePlaceName } from '@/lib/geocodeLocation';
 import { hasMapCoordinates } from '@/lib/googleMapsEmbed';
+import { listingWithinRadiusKm } from '@/lib/geoDistance';
 
 /** Radius for the Nearby tab when using GPS or geocoded profile location (`$geoWithin` on the API). */
-const NEARBY_RADIUS_KM = 25;
+const NEARBY_RADIUS_KM = 10;
 
 const CATEGORY_TABS = [
   { label: 'All', value: 'All' },
@@ -48,6 +49,8 @@ export default function HomePageClient({ initialListings }: HomePageClientProps 
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [nearCoords, setNearCoords] = useState<{ lat: number; lng: number } | null>(null);
   const [profileGeoCoords, setProfileGeoCoords] = useState<{ lat: number; lng: number } | null>(null);
+  const [geoLookupDone, setGeoLookupDone] = useState(false);
+  const [profileGeoPending, setProfileGeoPending] = useState(false);
   const observerRef = React.useRef<HTMLDivElement>(null);
   const toast = useToast();
   const user = useAuthStore((s) => s.user);
@@ -59,13 +62,17 @@ export default function HomePageClient({ initialListings }: HomePageClientProps 
     const loc = user?.location?.trim();
     if (!loc) {
       setProfileGeoCoords(null);
+      setProfileGeoPending(false);
       return;
     }
     let cancelled = false;
+    setProfileGeoPending(true);
     void geocodePlaceName(loc).then((coords) => {
       if (cancelled) return;
       if (coords && hasMapCoordinates(coords.lat, coords.lng)) setProfileGeoCoords(coords);
       else setProfileGeoCoords(null);
+    }).finally(() => {
+      if (!cancelled) setProfileGeoPending(false);
     });
     return () => {
       cancelled = true;
@@ -88,11 +95,19 @@ export default function HomePageClient({ initialListings }: HomePageClientProps 
         f.nearLatitude = geoCenter.lat;
         f.nearLongitude = geoCenter.lng;
         f.radiusKm = NEARBY_RADIUS_KM;
+        f.nearbyOnly = true;
       }
     }
 
     return f;
   }, [filters, activeTab, nearCoords, profileGeoCoords]);
+
+  const geoCenter = nearCoords ?? profileGeoCoords;
+
+  const nearbyLocating =
+    activeTab === 'Nearby' &&
+    !geoCenter &&
+    (!geoLookupDone || (Boolean(user?.location?.trim()) && profileGeoPending));
 
   useEffect(() => {
     if (initialListings?.length && listings.length === 0 && activeTab === 'All' && !filters.city && !filters.search) {
@@ -101,6 +116,7 @@ export default function HomePageClient({ initialListings }: HomePageClientProps 
   }, [initialListings, listings.length, activeTab, filters.city, filters.search, setListings]);
 
   useEffect(() => {
+    if (nearbyLocating) return;
     let cancelled = false;
     listingService
       .getListings(apiFilter)
@@ -117,7 +133,7 @@ export default function HomePageClient({ initialListings }: HomePageClientProps 
     return () => {
       cancelled = true;
     };
-  }, [apiFilter, setListings, toast]);
+  }, [apiFilter, nearbyLocating, setListings, toast]);
 
   useEffect(() => {
     resetPagination();
@@ -126,10 +142,13 @@ export default function HomePageClient({ initialListings }: HomePageClientProps 
   useEffect(() => {
     if (activeTab !== 'Nearby') {
       setNearCoords(null);
+      setGeoLookupDone(false);
       return;
     }
+    setGeoLookupDone(false);
     if (typeof navigator === 'undefined' || !navigator.geolocation) {
       setNearCoords(null);
+      setGeoLookupDone(true);
       return;
     }
     navigator.geolocation.getCurrentPosition(
@@ -137,24 +156,28 @@ export default function HomePageClient({ initialListings }: HomePageClientProps 
         const lat = pos.coords.latitude;
         const lng = pos.coords.longitude;
         setNearCoords(hasMapCoordinates(lat, lng) ? { lat, lng } : null);
+        setGeoLookupDone(true);
       },
-      () => setNearCoords(null),
+      () => {
+        setNearCoords(null);
+        setGeoLookupDone(true);
+      },
       { enableHighAccuracy: false, maximumAge: 300_000, timeout: 12_000 },
     );
   }, [activeTab]);
 
-  /** Nearby: server geo filter when GPS or geocoded profile location exists; else listings that have map pins only. */
+  /** Nearby: within radius when geo known; else listings that have map pins only. */
   const filteredListings = useMemo(() => {
     if (activeTab !== 'Nearby') {
       return listings;
     }
-    if (nearCoords ?? profileGeoCoords) {
-      return listings;
+    if (geoCenter) {
+      return listings.filter((l) => listingWithinRadiusKm(l, geoCenter, NEARBY_RADIUS_KM));
     }
     return listings.filter(
       (l) => typeof l.latitude === 'number' && typeof l.longitude === 'number',
     );
-  }, [listings, activeTab, nearCoords, profileGeoCoords]);
+  }, [listings, activeTab, geoCenter]);
 
   const handleTabChange = (value: string) => {
     setActiveTab(value);
@@ -292,7 +315,13 @@ export default function HomePageClient({ initialListings }: HomePageClientProps 
             </div>
 
             {/* Listing grid */}
-            {pagedListings.length > 0 ? (
+            {nearbyLocating ? (
+              <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
+                {[...Array(3)].map((_, i) => (
+                  <div key={i} className="h-[380px] rounded-2xl bg-gray-100 animate-pulse" />
+                ))}
+              </div>
+            ) : pagedListings.length > 0 ? (
               <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
                 {pagedListings.map((listing) => (
                   <ListingCard
