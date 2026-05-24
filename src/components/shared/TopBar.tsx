@@ -192,6 +192,19 @@ const NotificationPopover: React.FC = () => {
   }, [isAuthenticated, load]);
 
   useEffect(() => {
+    const onNew = (e: Event) => {
+      const detail = (e as CustomEvent<ApiNotification>).detail;
+      if (!detail?._id) return;
+      setItems((prev) => {
+        if (prev.some((x) => x._id === detail._id)) return prev;
+        return [detail, ...prev];
+      });
+    };
+    window.addEventListener('roommat:notification:new', onNew);
+    return () => window.removeEventListener('roommat:notification:new', onNew);
+  }, []);
+
+  useEffect(() => {
     if (open && isAuthenticated) void load();
   }, [open, isAuthenticated, load]);
 

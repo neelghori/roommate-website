@@ -7,6 +7,7 @@ import { chatService } from '@/services/modules/chat.service';
 import { wsService } from '@/services/wsService';
 import { getAccessToken } from '@/lib/authToken';
 import { ConversationItem } from './ConversationItem';
+import { ChatPushBanner } from './ChatPushBanner';
 
 interface ChatSidebarProps {
   activeChatId?: string;
@@ -72,6 +73,8 @@ export const ChatSidebar: React.FC<ChatSidebarProps> = ({ activeChatId }) => {
             className="w-full pl-9 pr-4 py-2 text-sm bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:border-teal-500 transition-colors"
           />
         </div>
+
+        <ChatPushBanner className="mt-3" />
       </div>
 
       {/* Conversation list */}

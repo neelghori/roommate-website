@@ -18,6 +18,12 @@ import { mapChatMessageFromApi } from '@/services/modules/chat.service';
 import type { ChatMessage } from '@/types';
 import { getAccessToken } from '@/lib/authToken';
 import { escapeHtml } from '@/lib/utils/sanitize';
+import {
+  dispatchNotificationNewEvent,
+  showBrowserNotificationFromPayload,
+  showChatMessageNotification,
+  type PushNotificationPayload,
+} from '@/services/modules/push.service';
 
 type WSEvent =
   | { type: 'message:new'; payload: ChatMessage }
@@ -269,6 +275,15 @@ class RoommatWS {
           isOnline: true,
         });
         store.recalcUnread();
+
+        if (msg.receiverId === me && msg.senderId !== me) {
+          showChatMessageNotification({
+            senderId: partnerId,
+            senderName: name,
+            content: safe.content,
+            messageId: msg.id,
+          });
+        }
         break;
       }
       case 'message:read': {
@@ -290,6 +305,25 @@ class RoommatWS {
       case 'request:update': {
         const p = payload as { requestId?: string; status?: 'ACCEPTED' | 'REJECTED' } | null;
         if (p?.requestId && p?.status) store.updateRequestStatus(p.requestId, p.status);
+        break;
+      }
+      case 'notification:new': {
+        const p = payload as Record<string, unknown> | null;
+        if (!p || p._id == null) break;
+        const n: PushNotificationPayload = {
+          _id: String(p._id),
+          title: typeof p.title === 'string' ? p.title : 'Notification',
+          description: typeof p.description === 'string' ? p.description : undefined,
+          type: typeof p.type === 'string' ? p.type : 'system',
+          payload:
+            p.payload && typeof p.payload === 'object' && !Array.isArray(p.payload)
+              ? (p.payload as Record<string, unknown>)
+              : undefined,
+          isRead: Boolean(p.isRead),
+          createdAt: typeof p.createdAt === 'string' ? p.createdAt : undefined,
+        };
+        dispatchNotificationNewEvent(n);
+        showBrowserNotificationFromPayload(n);
         break;
       }
       default:

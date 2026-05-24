@@ -860,14 +860,19 @@ export const listingService = {
       let items: Record<string, unknown>[];
       if (hasGeo) {
         const paramsNear = buildPropertyListQueryParams(filter, true);
-        const paramsRest = buildPropertyListQueryParams(filter, false);
-        const [nearRes, restRes] = await Promise.all([
-          apiClient.get<unknown>(`/api/v1/properties?${paramsNear.toString()}`),
-          apiClient.get<unknown>(`/api/v1/properties?${paramsRest.toString()}`),
-        ]);
-        items = sortFeaturedFirst(
-          mergeNearbyFirstThenRest(unwrapItems(nearRes.data), unwrapItems(restRes.data)),
-        );
+        if (filter?.nearbyOnly) {
+          const nearRes = await apiClient.get<unknown>(`/api/v1/properties?${paramsNear.toString()}`);
+          items = sortFeaturedFirst(unwrapItems(nearRes.data));
+        } else {
+          const paramsRest = buildPropertyListQueryParams(filter, false);
+          const [nearRes, restRes] = await Promise.all([
+            apiClient.get<unknown>(`/api/v1/properties?${paramsNear.toString()}`),
+            apiClient.get<unknown>(`/api/v1/properties?${paramsRest.toString()}`),
+          ]);
+          items = sortFeaturedFirst(
+            mergeNearbyFirstThenRest(unwrapItems(nearRes.data), unwrapItems(restRes.data)),
+          );
+        }
       } else {
         const params = buildPropertyListQueryParams(filter, false);
         const { data } = await apiClient.get<unknown>(`/api/v1/properties?${params.toString()}`);

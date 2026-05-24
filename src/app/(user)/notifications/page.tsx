@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import { Modal } from '@/components/ui/Modal';
 import { notificationService, type ApiNotification } from '@/services/modules/notification.service';
+import { pushService } from '@/services/modules/push.service';
 import { formatRelativeTime } from '@/lib/utils/formatRelativeTime';
 
 type RowCategory = 'listing' | 'message' | 'match' | 'system' | 'review' | 'alert';
@@ -92,6 +93,8 @@ export default function NotificationsPage() {
   const [loading, setLoading] = useState(true);
   const [detail, setDetail] = useState<ApiNotification | null>(null);
 
+  const [pushBusy, setPushBusy] = useState(false);
+
   const load = useCallback(async () => {
     setLoading(true);
     try {
@@ -107,6 +110,40 @@ export default function NotificationsPage() {
   useEffect(() => {
     void load();
   }, [load]);
+
+  useEffect(() => {
+    const onNew = (e: Event) => {
+      const detail = (e as CustomEvent<ApiNotification>).detail;
+      if (!detail?._id) return;
+      setItems((prev) => {
+        if (prev.some((x) => x._id === detail._id)) return prev;
+        return [detail, ...prev];
+      });
+    };
+    window.addEventListener('roommat:notification:new', onNew);
+    return () => window.removeEventListener('roommat:notification:new', onNew);
+  }, []);
+
+  const enablePush = async () => {
+    if (!pushService.supportsWebPush()) {
+      toast.error('Not supported', 'Your browser does not support push notifications.');
+      return;
+    }
+    setPushBusy(true);
+    try {
+      const perm = await pushService.requestPermission();
+      if (perm !== 'granted') {
+        toast.error('Permission denied', 'Allow notifications in your browser settings to receive alerts.');
+        return;
+      }
+      await pushService.subscribeAndSave();
+      toast.success('Enabled', 'You will receive browser notifications for new alerts.');
+    } catch (e) {
+      toast.error('Could not enable', e instanceof Error ? e.message : '');
+    } finally {
+      setPushBusy(false);
+    }
+  };
 
   const unreadCount = items.filter((n) => !n.isRead).length;
 
@@ -159,6 +196,24 @@ export default function NotificationsPage() {
             </button>
           )}
         </div>
+
+        {pushService.supportsWebPush() &&
+        typeof Notification !== 'undefined' &&
+        Notification.permission !== 'granted' ? (
+          <div className="mx-4 mb-3 rounded-xl border border-primary/20 bg-primary/5 px-4 py-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+            <p className="text-xs text-gray-700 leading-relaxed">
+              Enable browser notifications to get alerts when you receive messages or listing updates.
+            </p>
+            <button
+              type="button"
+              disabled={pushBusy}
+              onClick={() => void enablePush()}
+              className="shrink-0 rounded-full bg-primary px-4 py-2 text-xs font-semibold text-white hover:opacity-90 disabled:opacity-50"
+            >
+              {pushBusy ? 'Enabling…' : 'Enable push'}
+            </button>
+          </div>
+        ) : null}
 
         <div className="mx-4 overflow-hidden rounded-2xl bg-white shadow-sm">
           {loading ? (
