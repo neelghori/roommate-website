@@ -86,7 +86,9 @@ export const metadata: Metadata = {
   },
   manifest: '/site.webmanifest',
   category: 'real estate',
-  // verification: { google: 'YOUR_SEARCH_CONSOLE_TOKEN' },
+  verification: {
+    google: 'nl-UEhWpej-sCCf8NFhbbjYsVMDSC3UJEw8_WaeXc40',
+  },
 };
 
 export const viewport: Viewport = {
