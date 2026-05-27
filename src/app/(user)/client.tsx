@@ -52,11 +52,17 @@ export default function HomePageClient({ initialListings }: HomePageClientProps 
   const [geoLookupDone, setGeoLookupDone] = useState(false);
   const [profileGeoPending, setProfileGeoPending] = useState(false);
   const observerRef = React.useRef<HTMLDivElement>(null);
+  const seededInitialListingsRef = React.useRef(false);
+  const listingsRef = React.useRef<Listing[]>([]);
   const toast = useToast();
   const user = useAuthStore((s) => s.user);
 
   const filters = useFilterStore((s) => s.filters);
   const { visibleCount, loadMore, resetPagination, listings, setListings } = useListingStore();
+
+  useEffect(() => {
+    listingsRef.current = listings;
+  }, [listings]);
 
   useEffect(() => {
     const loc = user?.location?.trim();
@@ -103,6 +109,8 @@ export default function HomePageClient({ initialListings }: HomePageClientProps 
   }, [filters, activeTab, nearCoords, profileGeoCoords]);
 
   const geoCenter = nearCoords ?? profileGeoCoords;
+  const renderedListings =
+    listings.length > 0 ? listings : activeTab === 'All' ? (initialListings ?? []) : listings;
 
   const nearbyLocating =
     activeTab === 'Nearby' &&
@@ -110,10 +118,16 @@ export default function HomePageClient({ initialListings }: HomePageClientProps 
     (!geoLookupDone || (Boolean(user?.location?.trim()) && profileGeoPending));
 
   useEffect(() => {
-    if (initialListings?.length && listings.length === 0 && activeTab === 'All' && !filters.city && !filters.search) {
+    if (
+      initialListings?.length &&
+      listings.length === 0 &&
+      activeTab === 'All' &&
+      !seededInitialListingsRef.current
+    ) {
       setListings(initialListings);
+      seededInitialListingsRef.current = true;
     }
-  }, [initialListings, listings.length, activeTab, filters.city, filters.search, setListings]);
+  }, [initialListings, listings.length, activeTab, setListings]);
 
   useEffect(() => {
     if (nearbyLocating) return;
@@ -127,13 +141,16 @@ export default function HomePageClient({ initialListings }: HomePageClientProps 
         if (!cancelled) {
           const msg = e instanceof Error ? e.message : 'Unknown error';
           toast.error('Could not load listings', msg);
-          setListings([]);
+          // Keep server-seeded HTML/data when live API request fails.
+          if (listingsRef.current.length === 0 && initialListings?.length) {
+            setListings(initialListings);
+          }
         }
       });
     return () => {
       cancelled = true;
     };
-  }, [apiFilter, nearbyLocating, setListings, toast]);
+  }, [apiFilter, nearbyLocating, setListings, toast, initialListings]);
 
   useEffect(() => {
     resetPagination();
@@ -169,15 +186,15 @@ export default function HomePageClient({ initialListings }: HomePageClientProps 
   /** Nearby: within radius when geo known; else listings that have map pins only. */
   const filteredListings = useMemo(() => {
     if (activeTab !== 'Nearby') {
-      return listings;
+      return renderedListings;
     }
     if (geoCenter) {
-      return listings.filter((l) => listingWithinRadiusKm(l, geoCenter, NEARBY_RADIUS_KM));
+      return renderedListings.filter((l) => listingWithinRadiusKm(l, geoCenter, NEARBY_RADIUS_KM));
     }
-    return listings.filter(
+    return renderedListings.filter(
       (l) => typeof l.latitude === 'number' && typeof l.longitude === 'number',
     );
-  }, [listings, activeTab, geoCenter]);
+  }, [renderedListings, activeTab, geoCenter]);
 
   const handleTabChange = (value: string) => {
     setActiveTab(value);
@@ -250,7 +267,7 @@ export default function HomePageClient({ initialListings }: HomePageClientProps 
             <div className="inline-flex items-center gap-2 bg-white/20 rounded-full px-3 py-1.5">
               <span className="w-2 h-2 rounded-full bg-green-400 flex-shrink-0 animate-pulse" />
               <span className="text-white text-xs font-semibold">
-                {listings.length} published listing{listings.length !== 1 ? 's' : ''} on Roommat
+                {renderedListings.length} published listing{renderedListings.length !== 1 ? 's' : ''} on Roommat
               </span>
             </div>
           </div>

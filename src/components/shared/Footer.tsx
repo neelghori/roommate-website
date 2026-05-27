@@ -40,6 +40,7 @@ const InstagramSVG = ({ size = 18 }: { size?: number }) => (
 
 const FOOTER_LINKS = {
   company: [
+    { label: 'About Us', href: '/about' },
     { label: 'Privacy Policy', href: '/privacy' },
     { label: 'Terms of Service', href: '/terms' },
   ],

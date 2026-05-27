@@ -35,7 +35,7 @@ function ExploreFallback() {
 }
 
 export default async function ExplorePage() {
-  const listings = await fetchListingsForSeo(24);
+  const listings = await fetchListingsForSeo(100);
 
   const itemListJsonLd = buildItemListJsonLd(
     'Explore PG listings Ahmedabad',

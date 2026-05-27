@@ -14,7 +14,11 @@ const LIFESTYLE_FILTER_OPTIONS = [
   'Pet Friendly', 'Working', 'Student',
 ];
 
-export default function RoommatesPageClient() {
+type RoommatesPageClientProps = {
+  initialProfiles?: RoommateProfile[];
+};
+
+export default function RoommatesPageClient({ initialProfiles = [] }: RoommatesPageClientProps) {
   const [search, setSearch] = useState('');
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [showFilters, setShowFilters] = useState(false); // mobile only
@@ -43,8 +47,13 @@ export default function RoommatesPageClient() {
   }, [search, selectedTags]);
 
   useEffect(() => {
+    if (!search.trim() && selectedTags.length === 0 && initialProfiles.length) {
+      setProfiles(initialProfiles);
+      setListState('ok');
+      return;
+    }
     void loadProfiles();
-  }, [loadProfiles]);
+  }, [initialProfiles, loadProfiles, search, selectedTags]);
 
   const toggleTag = (tag: string) => {
     setSelectedTags((prev) =>

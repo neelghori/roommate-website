@@ -6,6 +6,8 @@ export function isPublicGuestRoute(pathname: string): boolean {
   const p = pathname.replace(/\/$/, '') || '/';
 
   if (p === '/') return true;
+  if (p === '/about') return true;
+  if (p === '/privacy' || p === '/terms') return true;
   if (p === '/explore' || p.startsWith('/explore/')) return true;
   if (p === '/roommates') return true;
   if (p.startsWith('/roommates/')) {

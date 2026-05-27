@@ -1,5 +1,6 @@
 import type { MetadataRoute } from 'next';
 import { fetchPublicListingsForSitemap } from '@/lib/seo/listing';
+import { fetchRoommatesForSeo } from '@/lib/seo/fetch-roommates';
 import { SITE_URL } from '@/lib/seo/site';
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
@@ -11,6 +12,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${SITE_URL}/roommates`, lastModified: now, changeFrequency: 'daily', priority: 0.9 },
     { url: `${SITE_URL}/login`, lastModified: now, changeFrequency: 'monthly', priority: 0.4 },
     { url: `${SITE_URL}/register`, lastModified: now, changeFrequency: 'monthly', priority: 0.5 },
+    { url: `${SITE_URL}/about`, lastModified: now, changeFrequency: 'monthly', priority: 0.6 },
     { url: `${SITE_URL}/terms`, lastModified: now, changeFrequency: 'yearly', priority: 0.3 },
     { url: `${SITE_URL}/privacy`, lastModified: now, changeFrequency: 'yearly', priority: 0.3 },
   ];
@@ -23,5 +25,13 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: 0.8,
   }));
 
-  return [...staticPages, ...listingPages];
+  const roommateProfiles = await fetchRoommatesForSeo(200);
+  const roommatePages: MetadataRoute.Sitemap = roommateProfiles.map((p) => ({
+    url: `${SITE_URL}/roommates/${p.id}`,
+    lastModified: p.updatedAt ? new Date(p.updatedAt) : now,
+    changeFrequency: 'weekly' as const,
+    priority: 0.75,
+  }));
+
+  return [...staticPages, ...listingPages, ...roommatePages];
 }
