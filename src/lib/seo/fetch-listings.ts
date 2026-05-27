@@ -15,12 +15,12 @@ function unwrapItems(body: unknown): Record<string, unknown>[] {
   return [];
 }
 
-/** Server-side listing fetch for HTML content + ItemList schema (ISR 1h). */
-export async function fetchListingsForSeo(limit = 24): Promise<Listing[]> {
+/** Server-side listing fetch for HTML content + ItemList schema (ISR configurable). */
+export async function fetchListingsForSeo(limit = 24, revalidateSeconds = 3600): Promise<Listing[]> {
   try {
     const params = new URLSearchParams({ page: '1', limit: String(Math.min(limit, 100)) });
     const res = await fetch(`${API_BASE}/api/v1/properties?${params}`, {
-      next: { revalidate: 3600 },
+      next: { revalidate: revalidateSeconds },
       headers: { Accept: 'application/json' },
     });
     if (!res.ok) return [];

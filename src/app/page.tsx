@@ -6,7 +6,7 @@ import { buildItemListJsonLd } from '@/lib/seo/json-ld';
 import { buildPageMetadata, SITE_URL } from '@/lib/seo/site';
 import HomePageClient from './(user)/client';
 
-export const revalidate = 3600;
+export const revalidate = 10;
 
 export const metadata = buildPageMetadata({
   title: 'Verified PG & Shared Flats in Ahmedabad',
@@ -27,7 +27,7 @@ export const metadata = buildPageMetadata({
 });
 
 export default async function HomePage() {
-  const listings = await fetchListingsForSeo(24);
+  const listings = await fetchListingsForSeo(100, 10);
 
   const itemListJsonLd = buildItemListJsonLd(
     'PG and shared flat listings in Ahmedabad',

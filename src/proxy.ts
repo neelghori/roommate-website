@@ -1,6 +1,6 @@
 /**
- * middleware.ts
- * Route protection middleware.
+ * proxy.ts
+ * Route protection proxy.
  *
  * Security model:
  * - Auth pages: /login, /register, /forgot-password, /reset-password (always allowed)
@@ -24,15 +24,15 @@ const PUBLIC_ROUTES = [
 
 const ADMIN_PREFIX = '/admin';
 
-export function middleware(request: NextRequest) {
+export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  // ── Always allow public routes ──────────────────────────────────────────────
+  // Always allow public routes.
   if (PUBLIC_ROUTES.some((route) => pathname.startsWith(route))) {
     return NextResponse.next();
   }
 
-  // ── BACKEND INTEGRATION: Replace mock block with real JWT check ─────────────
+  // BACKEND INTEGRATION: Replace mock block with real JWT check.
   //
   // const sessionToken = request.cookies.get('roommat-session')?.value;
   //
@@ -54,7 +54,7 @@ export function middleware(request: NextRequest) {
   //   return NextResponse.redirect(new URL('/403', request.url));
   // }
   //
-  // ── End of BACKEND INTEGRATION block ────────────────────────────────────────
+  // End of BACKEND INTEGRATION block.
 
   void ADMIN_PREFIX; // referenced in backend block above
 

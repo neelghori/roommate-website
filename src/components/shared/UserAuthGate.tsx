@@ -15,12 +15,20 @@ export function UserAuthGate({ children }: { children: React.ReactNode }) {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const pathname = usePathname();
   const router = useRouter();
+  const currentPath = pathname || '/';
+  const isPublicRoute = isPublicGuestRoute(currentPath);
 
   useEffect(() => {
     if (!sessionReady || isAuthenticated) return;
-    if (isPublicGuestRoute(pathname)) return;
-    router.replace(loginHrefForProtectedPath(pathname || '/'));
-  }, [sessionReady, isAuthenticated, pathname, router]);
+    if (isPublicRoute) return;
+    router.replace(loginHrefForProtectedPath(currentPath));
+  }, [sessionReady, isAuthenticated, isPublicRoute, currentPath, router]);
+
+  // Never block public pages behind client-session bootstrap; this keeps
+  // server-rendered HTML crawlable for SEO bots that do not run JS.
+  if (isPublicRoute) {
+    return <>{children}</>;
+  }
 
   if (!sessionReady) {
     return (
@@ -30,7 +38,7 @@ export function UserAuthGate({ children }: { children: React.ReactNode }) {
     );
   }
 
-  if (!isAuthenticated && !isPublicGuestRoute(pathname)) {
+  if (!isAuthenticated) {
     return (
       <div className="min-h-[50vh] flex items-center justify-center text-gray-500 text-sm">
         Redirecting to sign in…
