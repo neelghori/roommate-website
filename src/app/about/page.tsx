@@ -1,5 +1,5 @@
 import { JsonLd } from '@/components/seo/JsonLd';
-import { buildPageMetadata, SITE_URL, SOCIAL } from '@/lib/seo/site';
+import { buildPageMetadata, mergePageKeywords, SITE_URL, SOCIAL } from '@/lib/seo/site';
 import AboutPageClient from './client';
 
 export const metadata = buildPageMetadata({
@@ -7,15 +7,7 @@ export const metadata = buildPageMetadata({
   description:
     "Roommat is Ahmedabad's most trusted platform for verified PG rooms, shared flats, and studio apartments. Learn about our mission to make finding a home simple, safe, and transparent.",
   path: '/about',
-  keywords: [
-    'about Roommat',
-    'PG in Ahmedabad',
-    'verified PG Ahmedabad',
-    'shared flat Ahmedabad',
-    'room for rent Ahmedabad',
-    'paying guest Ahmedabad',
-    'roommat.in',
-  ],
+  keywords: mergePageKeywords('about Roommat', 'trusted PG platform Ahmedabad'),
 });
 
 const aboutOrganizationJsonLd = {

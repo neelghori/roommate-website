@@ -18,7 +18,7 @@ export async function GET(req: NextRequest) {
     const res = await fetch(url, {
       headers: {
         Accept: 'application/json',
-        'User-Agent': 'RoomMateWebsite/1.0',
+        'User-Agent': 'RoommatWebsite/1.0',
       },
       cache: 'no-store',
     });

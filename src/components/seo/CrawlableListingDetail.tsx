@@ -12,7 +12,7 @@ export function CrawlableListingDetail({ listing }: { listing: SeoListingSnapsho
     `${listing.title} available for ${rent} per month in ${listing.city || 'Ahmedabad'}.`;
 
   return (
-    <article className="sr-only" aria-label="Listing details">
+    <article className="seo-crawl-block" aria-label="Listing details">
       <h1>{listing.title}</h1>
       <p>
         Rent: {rent}/month. Location: {listing.city}

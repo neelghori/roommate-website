@@ -35,22 +35,75 @@ export function resolveOgImageUrl(image?: string | null): string {
 export const SUPPORT_EMAIL = process.env.NEXT_PUBLIC_SUPPORT_EMAIL ?? 'support@roommat.in';
 export const SUPPORT_PHONE = process.env.NEXT_PUBLIC_SUPPORT_PHONE ?? '8866566752';
 
+/**
+ * Search-intent terms — keep "roommate" spellings for Google; product brand is Roommat elsewhere.
+ */
+export const ROOMMATE_SEO_KEYWORDS = [
+  'roommate',
+  'roommates',
+  'find roommate',
+  'roommate finder',
+  'roommate finder Ahmedabad',
+  'find roommate Ahmedabad',
+  'roommate search Ahmedabad',
+  'roommate Gandhinagar',
+  'compatible roommate',
+  'flatmate Ahmedabad',
+  'looking for roommate',
+  'need a roommate',
+  'roommate matching',
+  'roommate app India',
+  'roommate for students Ahmedabad',
+  'female roommate Ahmedabad',
+  'male roommate Ahmedabad',
+  'vegetarian roommate Ahmedabad',
+] as const;
+
 export const DEFAULT_KEYWORDS = [
   'roommat',
   'roommat.in',
+  'Roommat',
+  'roommat living',
+  'roommat PG',
+  ...ROOMMATE_SEO_KEYWORDS,
   'PG in Ahmedabad',
   'PG Gandhinagar',
+  'best PG Ahmedabad',
+  'cheap PG Ahmedabad',
+  'PG for girls Ahmedabad',
+  'PG for boys Ahmedabad',
+  'PG for students Ahmedabad',
+  'PG without brokerage Ahmedabad',
   'shared flat Ahmedabad',
+  'flat for rent Ahmedabad',
+  '2BHK shared flat Ahmedabad',
   'room for rent Ahmedabad',
+  'single room rent Ahmedabad',
   'paying guest Ahmedabad',
-  'roommate finder Ahmedabad',
-  'find roommate Ahmedabad',
+  'paying guest near me',
   'flat sharing Ahmedabad',
   'co-living Ahmedabad',
+  'studio apartment Ahmedabad',
+  'PG Satellite Ahmedabad',
+  'PG Navrangpura',
+  'PG Bodakdev',
+  'PG Vastrapur',
+  'PG SG Highway',
+  'PG Prahlad Nagar',
+  'PG Thaltej',
+  'PG Maninagar',
   'PG near me Ahmedabad',
   'verified PG listings',
-  'roommate app India',
+  'no brokerage PG Ahmedabad',
+  'furnished PG Ahmedabad',
+  'AC PG Ahmedabad',
+  'Gujarat PG app',
 ] as const;
+
+/** Merge global SEO keywords with page-specific terms (deduped). */
+export function mergePageKeywords(...extra: string[]): string[] {
+  return [...new Set([...DEFAULT_KEYWORDS, ...extra])];
+}
 
 export const SEO_AREAS = [
   'Satellite',

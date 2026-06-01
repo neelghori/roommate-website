@@ -1,4 +1,4 @@
-import { buildPageMetadata } from '@/lib/seo/site';
+import { buildPageMetadata, mergePageKeywords } from '@/lib/seo/site';
 import RegisterPageClient from './client';
 
 export const metadata = buildPageMetadata({
@@ -6,7 +6,8 @@ export const metadata = buildPageMetadata({
   description:
     'Sign up free on roommat.in to find verified PG rooms, shared flats, and compatible roommates in Ahmedabad & Gandhinagar.',
   path: '/register',
-  keywords: ['roommat signup', 'create roommate account', 'register roommat', 'free PG app India'],
+  keywords: mergePageKeywords('roommat signup', 'create roommate account', 'free PG app India'),
+  noIndex: true,
 });
 
 export default function RegisterPage() {

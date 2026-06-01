@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { notFound } from 'next/navigation';
 import { JsonLd } from '@/components/seo/JsonLd';
 import { CrawlableListingDetail } from '@/components/seo/CrawlableListingDetail';
 import {
@@ -21,13 +22,18 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 export default async function ListingDetailLayout({ children, params }: Props) {
   const { id } = await params;
   const listing = await fetchListingForSeo(id);
+
+  if (!listing) {
+    notFound();
+  }
+
   const jsonLd = buildListingPageJsonLd(listing, id);
 
   return (
     <>
       <JsonLd data={jsonLd} />
-      {listing ? <CrawlableListingDetail listing={listing} /> : null}
       {children}
+      <CrawlableListingDetail listing={listing} />
     </>
   );
 }

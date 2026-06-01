@@ -37,7 +37,6 @@ export const metadata: Metadata = {
   publisher: SITE_NAME,
   applicationName: SITE_NAME,
   alternates: {
-    canonical: SITE_URL,
     languages: { 'en-IN': SITE_URL },
   },
   robots: {

@@ -142,7 +142,7 @@ export default function ExplorePageClient({ initialListings }: ExplorePageClient
         {/* Heading */}
         <div className="max-w-2xl mx-auto text-center mb-7 relative z-10">
           <p className="text-white/60 text-xs font-semibold uppercase tracking-widest mb-3">
-            🏠 Roommate &amp; PG Finder
+            🏠 Roommat — PG &amp; Roommate Finder
           </p>
           <p className="text-3xl lg:text-5xl font-extrabold text-white mb-3 leading-tight" role="heading" aria-level={1}>
             Find Your Perfect Space

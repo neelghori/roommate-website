@@ -3,7 +3,8 @@ import { JsonLd } from '@/components/seo/JsonLd';
 import { CrawlableListings } from '@/components/seo/CrawlableListings';
 import { fetchListingsForSeo } from '@/lib/seo/fetch-listings';
 import { buildItemListJsonLd } from '@/lib/seo/json-ld';
-import { buildPageMetadata, SITE_URL } from '@/lib/seo/site';
+import { buildPageMetadata, mergePageKeywords, SITE_URL } from '@/lib/seo/site';
+import { SeoLandingBlurb } from '@/components/seo/SeoLandingBlurb';
 import HomePageClient from './(user)/client';
 
 export const revalidate = 10;
@@ -13,17 +14,11 @@ export const metadata = buildPageMetadata({
   description:
     'Browse verified PG rooms, shared flats, and studio apartments in Ahmedabad & Gandhinagar on roommat.in. Compare rent, photos, and amenities. Find your perfect space today!',
   path: '/',
-  keywords: [
-    'PG in Ahmedabad',
-    'shared flat Ahmedabad',
-    'room for rent Ahmedabad',
-    'paying guest Ahmedabad',
-    'PG Bodakdev',
-    'PG Satellite Ahmedabad',
-    'PG Navrangpura',
-    'flat sharing Ahmedabad',
-    'roommat.in',
-  ],
+  keywords: mergePageKeywords(
+    'homepage PG Ahmedabad',
+    'book PG online Ahmedabad',
+    'list room Ahmedabad',
+  ),
 });
 
 export default async function HomePage() {
@@ -45,10 +40,11 @@ export default async function HomePage() {
   return (
     <>
       <JsonLd data={itemListJsonLd} />
-      <CrawlableListings listings={listings} />
       <UserAuthGate>
         <HomePageClient initialListings={listings} />
       </UserAuthGate>
+      <CrawlableListings listings={listings} />
+      <SeoLandingBlurb variant="home" />
     </>
   );
 }
