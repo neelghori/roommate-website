@@ -87,16 +87,8 @@ const securityHeaders = [
 ];
 
 const nextConfig: NextConfig = {
-  async redirects() {
-    return [
-      {
-        source: '/:path*',
-        has: [{ type: 'host', value: 'www.roommat.in' }],
-        destination: 'https://roommat.in/:path*',
-        permanent: true,
-      },
-    ];
-  },
+  // Do not redirect www ↔ apex here — hosting (Vercel, Cloudflare) should own that
+  // once. App-level redirects caused ERR_TOO_MANY_REDIRECTS when both layers ran.
   images: {
     remotePatterns: [
       {

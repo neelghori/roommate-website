@@ -25,14 +25,6 @@ const PUBLIC_ROUTES = [
 const ADMIN_PREFIX = '/admin';
 
 export function proxy(request: NextRequest) {
-  const host = request.headers.get('host') ?? '';
-  if (host.startsWith('www.')) {
-    const url = request.nextUrl.clone();
-    url.host = host.slice(4);
-    url.protocol = 'https:';
-    return NextResponse.redirect(url, 308);
-  }
-
   const { pathname } = request.nextUrl;
 
   // Always allow public routes.
