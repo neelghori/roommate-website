@@ -120,6 +120,7 @@ export function buildListingPageMetadata(listing: SeoListingSnapshot | null, id:
       title: 'Property Listing',
       description: 'View PG and shared accommodation listings on Roommat in Ahmedabad & Gandhinagar.',
       path: `/listings/${id}`,
+      noIndex: true,
     });
   }
 

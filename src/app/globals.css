@@ -701,3 +701,36 @@ input.roommat-inline-search:focus-visible {
   font-weight: 600;
   color: #34d399;
 }
+
+/* Server-rendered SEO blocks — visible HTML for Google (avoids soft 404) */
+.seo-crawl-block {
+  max-width: 56rem;
+  margin: 0 auto;
+  padding: 1.5rem 1rem 2rem;
+  font-size: 0.875rem;
+  line-height: 1.6;
+  color: #4b5563;
+}
+
+.seo-crawl-block h1,
+.seo-crawl-block h2 {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #111827;
+  margin: 0 0 0.5rem;
+}
+
+.seo-crawl-block p {
+  margin: 0 0 0.5rem;
+}
+
+.seo-crawl-block a {
+  color: #1b8f8f;
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.seo-crawl-block a:hover {
+  color: #0e6060;
+}

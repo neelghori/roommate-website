@@ -3,7 +3,8 @@ import { JsonLd } from '@/components/seo/JsonLd';
 import { CrawlableListings } from '@/components/seo/CrawlableListings';
 import { fetchListingsForSeo } from '@/lib/seo/fetch-listings';
 import { buildItemListJsonLd } from '@/lib/seo/json-ld';
-import { buildPageMetadata, SITE_URL } from '@/lib/seo/site';
+import { buildPageMetadata, mergePageKeywords, SITE_URL } from '@/lib/seo/site';
+import { SeoLandingBlurb } from '@/components/seo/SeoLandingBlurb';
 import ExplorePageClient from './client';
 
 export const revalidate = 3600;
@@ -13,17 +14,11 @@ export const metadata = buildPageMetadata({
   description:
     'Explore verified PG, shared flat, and roommate listings in Ahmedabad & Gandhinagar on roommat.in. Filter by area, rent range, and amenities.',
   path: '/explore',
-  keywords: [
+  keywords: mergePageKeywords(
     'explore PG Ahmedabad',
     'find room Ahmedabad',
-    'PG Satellite Ahmedabad',
-    'PG Navrangpura',
-    'PG Bodakdev',
-    'PG Vastrapur',
-    'cheap PG Ahmedabad',
-    'PG for girls Ahmedabad',
-    'PG for boys Ahmedabad',
-  ],
+    'search PG listings Ahmedabad',
+  ),
 });
 
 function ExploreFallback() {
@@ -53,10 +48,11 @@ export default async function ExplorePage() {
   return (
     <>
       <JsonLd data={itemListJsonLd} />
-      <CrawlableListings listings={listings} />
       <Suspense fallback={<ExploreFallback />}>
         <ExplorePageClient initialListings={listings} />
       </Suspense>
+      <CrawlableListings listings={listings} />
+      <SeoLandingBlurb variant="explore" />
     </>
   );
 }
