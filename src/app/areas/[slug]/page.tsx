@@ -1,10 +1,21 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { Footer } from '@/components/shared/Footer';
+import { Breadcrumb } from '@/components/seo/Breadcrumb';
+import { SeoPageShell } from '@/components/seo/SeoPageShell';
 import { JsonLd } from '@/components/seo/JsonLd';
 import { AREA_PAGES, getAreaBySlug } from '@/lib/seo/areas';
-import { buildBreadcrumbJsonLd } from '@/lib/seo/json-ld';
+import { getAreaFaqs, getAreaIntro } from '@/lib/seo/area-content';
+import { fetchListingsForSeo } from '@/lib/seo/fetch-listings';
+import {
+  buildBreadcrumbJsonLd,
+  buildFaqPageJsonLd,
+  buildItemListJsonLd,
+} from '@/lib/seo/json-ld';
+import { listingMatchesArea } from '@/lib/listingLocationMatch';
+import { formatRentRange } from '@/lib/utils/format';
 import { buildPageMetadata, mergePageKeywords, SITE_NAME, SITE_URL } from '@/lib/seo/site';
+
+export const revalidate = 3600;
 
 type Props = { params: Promise<{ slug: string }> };
 
@@ -43,13 +54,20 @@ export default async function AreaLandingPage({ params }: Props) {
   if (!area) notFound();
 
   const exploreHref = `/explore?q=${encodeURIComponent(area.name)}`;
-  const roommatesHref = `/roommates`;
+  const roommatesHref = '/roommates';
+  const faqs = getAreaFaqs(area);
+  const intro = getAreaIntro(area);
+
+  const allListings = await fetchListingsForSeo(100, 3600);
+  const areaListings = allListings.filter((l) => listingMatchesArea(l, area.name)).slice(0, 12);
 
   const breadcrumb = buildBreadcrumbJsonLd([
     { name: 'Home', path: '/' },
-    { name: 'Explore', path: '/explore' },
+    { name: 'Areas', path: '/areas' },
     { name: area.name, path: `/areas/${area.slug}` },
   ]);
+
+  const faqJsonLd = buildFaqPageJsonLd(faqs);
 
   const webPageJsonLd = {
     '@context': 'https://schema.org',
@@ -70,34 +88,47 @@ export default async function AreaLandingPage({ params }: Props) {
     },
   };
 
+  const jsonLdBlocks: Record<string, unknown>[] = [breadcrumb, faqJsonLd, webPageJsonLd];
+
+  if (areaListings.length > 0) {
+    jsonLdBlocks.push(
+      buildItemListJsonLd(
+        `PG listings in ${area.name}`,
+        `Verified PG and shared flats in ${area.name}, ${area.city}`,
+        areaListings.slice(0, 10).map((l) => ({
+          id: l.id,
+          title: l.title,
+          url: `${SITE_URL}/listings/${l.id}`,
+          price: l.price,
+          maxPrice: l.maxPrice,
+          city: l.city,
+        })),
+      ),
+    );
+  }
+
   return (
     <>
-      <JsonLd data={[breadcrumb, webPageJsonLd]} />
-      <div className="min-h-[100dvh] flex flex-col bg-background">
-        <main className="flex-1 max-w-3xl mx-auto w-full px-4 sm:px-6 py-10 lg:py-14">
-          <nav className="text-sm text-gray-500 mb-6" aria-label="Breadcrumb">
-            <Link href="/" className="hover:text-primary-600">
-              Home
-            </Link>
-            <span className="mx-2">/</span>
-            <Link href="/explore" className="hover:text-primary-600">
-              Explore
-            </Link>
-            <span className="mx-2">/</span>
-            <span className="text-gray-800 font-medium">{area.name}</span>
-          </nav>
+      <JsonLd data={jsonLdBlocks} />
+      <SeoPageShell pageSuffix={area.name}>
+          <Breadcrumb
+            className="mb-6"
+            items={[
+              { label: 'Home', href: '/' },
+              { label: 'Areas', href: '/areas' },
+              { label: area.name },
+            ]}
+          />
 
           <section className="seo-crawl-block !max-w-none !p-0 !bg-transparent !border-0">
             <h1>PG &amp; rooms in {area.name}, {area.city}</h1>
+            <p>{intro}</p>
             <p>
-              Browse verified paying guest rooms, shared flats, and roommate-friendly listings in{' '}
-              {area.name}. Filter by budget, furnishing, and amenities on {SITE_NAME} — no brokerage,
-              direct chat with owners.
-            </p>
-            <p>
-              <Link href={exploreHref}>View listings in {area.name}</Link>
+              <Link href={exploreHref}>View all listings in {area.name}</Link>
               {' · '}
               <Link href={roommatesHref}>Find roommates in {area.city}</Link>
+              {' · '}
+              <Link href="/areas">All areas</Link>
             </p>
           </section>
 
@@ -116,6 +147,44 @@ export default async function AreaLandingPage({ params }: Props) {
             </Link>
           </div>
 
+          {areaListings.length > 0 ? (
+            <section className="mt-10" aria-labelledby="area-listings-heading">
+              <h2 id="area-listings-heading" className="text-base font-bold text-gray-800 mb-3">
+                Featured listings in {area.name}
+              </h2>
+              <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                {areaListings.map((l) => (
+                  <li key={l.id}>
+                    <Link
+                      href={`/listings/${l.id}`}
+                      className="block rounded-xl border border-gray-100 bg-white px-4 py-3 shadow-sm hover:border-primary-200 transition-colors"
+                    >
+                      <span className="font-semibold text-gray-900">{l.title}</span>
+                      <span className="block text-sm text-gray-500 mt-0.5">
+                        {formatRentRange(l.price, l.maxPrice)}/month
+                        {l.location ? ` · ${l.location}` : ''}
+                      </span>
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          ) : null}
+
+          <section className="mt-10" aria-labelledby="area-faq-heading">
+            <h2 id="area-faq-heading" className="text-base font-bold text-gray-800 mb-4">
+              Frequently asked questions
+            </h2>
+            <dl className="space-y-4">
+              {faqs.map((f) => (
+                <div key={f.question} className="rounded-xl border border-gray-100 bg-white px-4 py-3">
+                  <dt className="font-semibold text-gray-900 text-sm">{f.question}</dt>
+                  <dd className="mt-1.5 text-sm text-gray-600 leading-relaxed">{f.answer}</dd>
+                </div>
+              ))}
+            </dl>
+          </section>
+
           <section className="mt-10 text-sm text-gray-600">
             <h2 className="text-base font-bold text-gray-800 mb-2">Other popular areas</h2>
             <ul className="flex flex-wrap gap-x-3 gap-y-2">
@@ -128,9 +197,7 @@ export default async function AreaLandingPage({ params }: Props) {
               ))}
             </ul>
           </section>
-        </main>
-        <Footer />
-      </div>
+      </SeoPageShell>
     </>
   );
 }

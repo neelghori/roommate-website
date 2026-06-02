@@ -4,6 +4,15 @@ import type { SeoListingSnapshot } from '@/lib/seo/listing';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL?.trim().replace(/\/$/, '') || 'http://localhost:5000';
 
+const SEO_FETCH_TIMEOUT_MS = 8_000;
+
+function seoFetchTimeoutSignal(): AbortSignal | undefined {
+  if (typeof AbortSignal !== 'undefined' && 'timeout' in AbortSignal) {
+    return AbortSignal.timeout(SEO_FETCH_TIMEOUT_MS);
+  }
+  return undefined;
+}
+
 function unwrapItems(body: unknown): Record<string, unknown>[] {
   if (!body || typeof body !== 'object') return [];
   const root = body as Record<string, unknown>;
@@ -22,6 +31,7 @@ export async function fetchListingsForSeo(limit = 24, revalidateSeconds = 3600):
     const res = await fetch(`${API_BASE}/api/v1/properties?${params}`, {
       next: { revalidate: revalidateSeconds },
       headers: { Accept: 'application/json' },
+      signal: seoFetchTimeoutSignal(),
     });
     if (!res.ok) return [];
     const body = (await res.json()) as unknown;

@@ -36,6 +36,8 @@ export function SeoLandingBlurb({ variant }: SeoLandingBlurbProps) {
             <Link href={`/areas/${area.slug}`}>{area.name}</Link>
           </span>
         ))}
+        {' · '}
+        <Link href="/areas">View all areas</Link>
       </p>
     </section>
   );

@@ -48,6 +48,7 @@ const FOOTER_LINKS = {
     { label: 'PG in Ahmedabad', href: '/explore?q=PG' },
     { label: 'Shared Flats', href: '/explore?q=Flat' },
     { label: 'Roommates', href: '/roommates' },
+    { label: 'Browse by Area', href: '/areas' },
     { label: 'Post Property', href: '/listings/add' },
   ],
   popular_areas: [
