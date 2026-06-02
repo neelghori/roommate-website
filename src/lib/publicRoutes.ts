@@ -9,6 +9,7 @@ export function isPublicGuestRoute(pathname: string): boolean {
   if (p === '/about') return true;
   if (p === '/privacy' || p === '/terms') return true;
   if (p === '/explore' || p.startsWith('/explore/')) return true;
+  if (p === '/areas' || p.startsWith('/areas/')) return true;
   if (p === '/roommates') return true;
   if (p.startsWith('/roommates/')) {
     if (p === '/roommates/profile' || p.startsWith('/roommates/profile/')) return false;

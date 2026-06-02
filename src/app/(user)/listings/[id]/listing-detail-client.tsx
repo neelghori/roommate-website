@@ -45,6 +45,7 @@ import { useAuthStore } from '@/store/authStore';
 import { ListingAmenityIcon } from '@/components/features/ListingAmenityIcon';
 import { ListingYoutubeLink } from '@/components/features/ListingYoutubeLink';
 import { ListingYoutubeSection } from '@/components/features/ListingYoutubeSection';
+import { Breadcrumb } from '@/components/seo/Breadcrumb';
 import { trackEvent } from '@/lib/analytics/ga';
 
 const BADGE_VARIANT_MAP: Record<string, 'hot' | 'limited' | 'new'> = {
@@ -311,8 +312,17 @@ export default function ListingDetailClient({
     <UserLayout pageSuffix="Listing Detail" showSearch={false} showFab={false}>
       <div className="max-w-[1440px] mx-auto pb-8 px-0 lg:px-10 xl:px-14 lg:pt-4">
 
-        {/* Back button */}
-        <div className="px-4 lg:px-0 py-3">
+        <div className="px-4 lg:px-0 py-3 space-y-2">
+          <Breadcrumb
+            items={[
+              { label: 'Home', href: '/' },
+              { label: 'Explore', href: '/explore' },
+              {
+                label:
+                  listing.title.length > 48 ? `${listing.title.slice(0, 48)}…` : listing.title,
+              },
+            ]}
+          />
           <button
             type="button"
             onClick={() => router.back()}

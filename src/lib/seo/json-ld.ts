@@ -183,6 +183,21 @@ export function buildItemListJsonLd(
   };
 }
 
+export function buildFaqPageJsonLd(faqs: { question: string; answer: string }[]) {
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'FAQPage',
+    mainEntity: faqs.map((f) => ({
+      '@type': 'Question',
+      name: f.question,
+      acceptedAnswer: {
+        '@type': 'Answer',
+        text: f.answer,
+      },
+    })),
+  };
+}
+
 export function buildBreadcrumbJsonLd(items: { name: string; path: string }[]) {
   return {
     '@context': 'https://schema.org',
