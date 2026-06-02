@@ -1,5 +1,6 @@
 import Link from 'next/link';
-import { SEO_AREAS, SITE_NAME } from '@/lib/seo/site';
+import { AREA_PAGES } from '@/lib/seo/areas';
+import { SITE_NAME } from '@/lib/seo/site';
 
 type SeoLandingBlurbProps = {
   variant: 'home' | 'explore' | 'roommates';
@@ -29,10 +30,10 @@ export function SeoLandingBlurb({ variant }: SeoLandingBlurbProps) {
       <p>{body}</p>
       <p>
         Popular areas:{' '}
-        {SEO_AREAS.map((area, i) => (
-          <span key={area}>
+        {AREA_PAGES.map((area, i) => (
+          <span key={area.slug}>
             {i > 0 ? ' · ' : ''}
-            <Link href={`/explore?q=${encodeURIComponent(area)}`}>{area}</Link>
+            <Link href={`/areas/${area.slug}`}>{area.name}</Link>
           </span>
         ))}
       </p>

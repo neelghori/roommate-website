@@ -27,6 +27,10 @@ function buildConnectSrcDirective(): string {
   addUrlOrigin(process.env.NEXT_PUBLIC_SITE_URL);
   addUrlOrigin(process.env.NEXT_PUBLIC_WS_URL);
 
+  /** GA4 measurement beacons */
+  origins.add("https://www.google-analytics.com");
+  origins.add("https://www.googletagmanager.com");
+
   /** Maps JavaScript API + Places (autocomplete, place details use XHR to googleapis/gstatic). */
   origins.add("https://maps.googleapis.com");
   origins.add("https://*.googleapis.com");
@@ -40,8 +44,8 @@ function buildConnectSrcDirective(): string {
 function buildContentSecurityPolicy(): string {
   return [
     "default-src 'self'",
-    /** Maps JS API + Google Identity Services (gsi/client). */
-    "script-src 'self' 'unsafe-eval' 'unsafe-inline' https://maps.googleapis.com https://*.gstatic.com https://accounts.google.com",
+    /** Maps JS API + Google Identity Services + GA4 (gtag.js). */
+    "script-src 'self' 'unsafe-eval' 'unsafe-inline' https://maps.googleapis.com https://*.gstatic.com https://accounts.google.com https://www.googletagmanager.com",
     "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://accounts.google.com",
     "font-src 'self' https://fonts.gstatic.com",
     // `https:` listing/resident photos from S3, CloudFront, or any HTTPS CDN (URLs are server-controlled).

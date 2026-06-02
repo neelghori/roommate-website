@@ -6,10 +6,15 @@ export default function robots(): MetadataRoute.Robots {
     rules: [
       {
         userAgent: '*',
-        allow: ['/', '/about', '/explore', '/roommates', '/listings/', '/login', '/register', '/terms', '/privacy'],
+        allow: ['/', '/about', '/explore', '/roommates', '/listings/', '/areas/', '/terms', '/privacy'],
         disallow: [
           '/admin',
           '/admin-sign-in',
+          '/login',
+          '/register',
+          '/forgot-password',
+          '/reset-password',
+          '/verify-email',
           '/api/',
           '/profile',
           '/chat',
@@ -19,6 +24,7 @@ export default function robots(): MetadataRoute.Robots {
           '/onboarding',
           '/requests',
           '/matches',
+          '/roommates/profile',
           '/listings/add',
           '/*/edit',
         ],

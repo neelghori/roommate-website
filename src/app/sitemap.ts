@@ -1,6 +1,7 @@
 import type { MetadataRoute } from 'next';
 import { fetchPublicListingsForSitemap } from '@/lib/seo/listing';
 import { fetchRoommatesForSeo } from '@/lib/seo/fetch-roommates';
+import { AREA_PAGES } from '@/lib/seo/areas';
 import { SITE_URL } from '@/lib/seo/site';
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
@@ -23,6 +24,13 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: 0.8,
   }));
 
+  const areaPages: MetadataRoute.Sitemap = AREA_PAGES.map((area) => ({
+    url: `${SITE_URL}/areas/${area.slug}`,
+    lastModified: now,
+    changeFrequency: 'weekly' as const,
+    priority: 0.7,
+  }));
+
   const roommateProfiles = await fetchRoommatesForSeo(200);
   const roommatePages: MetadataRoute.Sitemap = roommateProfiles.map((p) => ({
     url: `${SITE_URL}/roommates/${p.id}`,
@@ -31,5 +39,5 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: 0.75,
   }));
 
-  return [...staticPages, ...listingPages, ...roommatePages];
+  return [...staticPages, ...areaPages, ...listingPages, ...roommatePages];
 }

@@ -26,6 +26,7 @@ import { TermsDocumentBody } from '@/components/legal/TermsDocumentBody';
 import { PrivacyDocumentBody } from '@/components/legal/PrivacyDocumentBody';
 import { AuthBrandPanel, AUTH_SITE_SLOGAN, PanelFeatureList } from '@/components/shared/AuthBrandPanel';
 import { AuthActivityFeed } from '@/components/shared/AuthActivityFeed';
+import { trackEvent } from '@/lib/analytics/ga';
 
 /* ── Password strength ─────────────────────────────────────────── */
 function getStrength(pw: string): { score: number; label: string; colorClass: string; hexColor: string } {
@@ -95,6 +96,7 @@ export default function RegisterPageClient() {
       const res = await authService.loginWithGoogle(idToken, role);
       setUser(res.user);
       wsService.connect(getAccessToken() ?? undefined);
+      trackEvent('sign_up', { method: 'google', role });
       success('Account created', 'You are signed in with Google.');
       router.push('/');
     } catch (err) {
@@ -111,6 +113,7 @@ export default function RegisterPageClient() {
         name: data.name, email: data.email,
         phone: data.phone, password: data.password, role: data.role,
       });
+      trackEvent('sign_up', { method: 'email', role: data.role });
       if (result.emailVerificationSent) {
         success('Account created', 'We sent a confirmation email click the link to verify your address.');
       } else {
