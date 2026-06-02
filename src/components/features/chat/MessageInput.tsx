@@ -5,6 +5,7 @@ import { Send } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { sendMessageSchema } from '@/lib/validations/chat.schema';
+import { trackEvent } from '@/lib/analytics/ga';
 
 type FormValues = {
   content: string;
@@ -50,6 +51,7 @@ export const MessageInput: React.FC<MessageInputProps> = ({
   const onSubmit = (data: FormValues) => {
     if (typingTimerRef.current) clearTimeout(typingTimerRef.current);
     onTypingStop?.();
+    trackEvent('chat_message_send', { source: 'chat_input' });
     onSend(data.content);
     reset();
   };

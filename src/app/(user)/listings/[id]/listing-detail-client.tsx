@@ -7,7 +7,7 @@
  *           sticky right column (price, owner, CTAs)
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import {
   ChevronLeft,
@@ -45,6 +45,7 @@ import { useAuthStore } from '@/store/authStore';
 import { ListingAmenityIcon } from '@/components/features/ListingAmenityIcon';
 import { ListingYoutubeLink } from '@/components/features/ListingYoutubeLink';
 import { ListingYoutubeSection } from '@/components/features/ListingYoutubeSection';
+import { trackEvent } from '@/lib/analytics/ga';
 
 const BADGE_VARIANT_MAP: Record<string, 'hot' | 'limited' | 'new'> = {
   Hot: 'hot',
@@ -110,6 +111,7 @@ export default function ListingDetailClient({
   const [removingResidentIndex, setRemovingResidentIndex] = useState<number | null>(null);
   const [showResidentsViewModal, setShowResidentsViewModal] = useState(false);
   const [residentsForViewModal, setResidentsForViewModal] = useState<ListingResidentSnapshot[]>([]);
+  const trackedListingIds = useRef<Set<string>>(new Set());
   /** Gallery hero index reset when navigating to another listing or image count shrinks. */
   const [photoIndex, setPhotoIndex] = useState(0);
 
@@ -224,6 +226,16 @@ export default function ListingDetailClient({
     setPhotoIndex((p) => (p >= n ? 0 : p));
   }, [listing?.id, listing?.images?.length]);
 
+  useEffect(() => {
+    if (!listing?.id || trackedListingIds.current.has(listing.id)) return;
+    trackedListingIds.current.add(listing.id);
+    trackEvent('listing_view', {
+      listing_id: listing.id,
+      listing_type: listing.type,
+      city: listing.city,
+    });
+  }, [listing?.id, listing?.type, listing?.city]);
+
   if (loadState === 'loading') {
     return (
       <UserLayout pageSuffix="Listing" showFab={false}>
@@ -260,6 +272,11 @@ export default function ListingDetailClient({
   const handleMessageOwner = () => {
     if (!listing.ownerId || isOwner) return;
     const path = `/chat/${listing.ownerId}`;
+    trackEvent('chat_start', {
+      source: 'listing_detail',
+      listing_id: listing.id,
+      owner_id: listing.ownerId,
+    });
     if (!user?.id) {
       router.push(`/login?next=${encodeURIComponent(path)}`);
       return;

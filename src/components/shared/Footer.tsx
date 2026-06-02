@@ -51,11 +51,11 @@ const FOOTER_LINKS = {
     { label: 'Post Property', href: '/listings/add' },
   ],
   popular_areas: [
-    { label: 'Satellite', href: '/explore?q=Satellite' },
-    { label: 'Navrangpura', href: '/explore?q=Navrangpura' },
-    { label: 'Vastrapur', href: '/explore?q=Vastrapur' },
-    { label: 'Prahladnagar', href: '/explore?q=Prahladnagar' },
-    { label: 'Bodakdev', href: '/explore?q=Bodakdev' },
+    { label: 'Satellite', href: '/areas/satellite' },
+    { label: 'Navrangpura', href: '/areas/navrangpura' },
+    { label: 'Vastrapur', href: '/areas/vastrapur' },
+    { label: 'Prahlad Nagar', href: '/areas/prahlad-nagar' },
+    { label: 'Bodakdev', href: '/areas/bodakdev' },
   ],
 };
 

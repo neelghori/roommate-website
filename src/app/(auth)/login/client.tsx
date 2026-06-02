@@ -20,6 +20,7 @@ import { sanitizeLoginNextPath } from '@/lib/loginRedirect';
 import { GoogleSignInButton } from '@/components/auth/GoogleSignInButton';
 import { authService, GoogleRoleRequiredError } from '@/services/modules/auth.service';
 import type { User } from '@/types';
+import { trackEvent } from '@/lib/analytics/ga';
 
 const FEATURES = [
   { Icon: Sparkles,    title: 'Smart Matching',      desc: 'Rooms and roommates tailored to your lifestyle'       },
@@ -42,6 +43,10 @@ export default function LoginPageClient() {
   const finishGoogleSession = (res: { user: User; token: string; isNew: boolean }) => {
     setUser(res.user);
     wsService.connect(getAccessToken() ?? undefined);
+    trackEvent(res.isNew ? 'sign_up' : 'login', {
+      method: 'google',
+      role: res.user.role,
+    });
     success(
       res.isNew ? 'Welcome to Roommat!' : 'Welcome back!',
       res.isNew ? 'Your Google account is ready.' : `Signed in as ${res.user.name}`,
@@ -80,6 +85,7 @@ export default function LoginPageClient() {
       const res = await authService.login(data);
       setUser(res.user);
       wsService.connect(getAccessToken() ?? undefined);
+      trackEvent('login', { method: 'email', role: res.user.role });
       success('Welcome back!', `Logged in as ${res.user.name}`);
       router.push(sanitizeLoginNextPath(searchParams.get('next')));
     } catch (err) {

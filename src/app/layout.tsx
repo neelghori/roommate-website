@@ -2,12 +2,15 @@
  * Root layout — fonts, providers, global SEO (roommat.in).
  */
 import type { Metadata, Viewport } from 'next';
+import { Suspense } from 'react';
 import { Inter } from 'next/font/google';
 import Script from 'next/script';
 import './globals.css';
 import { Providers } from '@/components/shared/Providers';
 import { JsonLd } from '@/components/seo/JsonLd';
+import { PageViewTracker } from '@/components/analytics/PageViewTracker';
 import { buildRootJsonLd } from '@/lib/seo/json-ld';
+import { getGaMeasurementId } from '@/lib/analytics/ga';
 import {
   DEFAULT_KEYWORDS,
   DEFAULT_OG_IMAGE,
@@ -23,6 +26,8 @@ const inter = Inter({
   display: 'swap',
 });
 
+const gaId = getGaMeasurementId();
+
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
   title: {
@@ -37,6 +42,7 @@ export const metadata: Metadata = {
   publisher: SITE_NAME,
   applicationName: SITE_NAME,
   alternates: {
+    canonical: SITE_URL,
     languages: { 'en-IN': SITE_URL },
   },
   robots: {
@@ -111,19 +117,29 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <link rel="dns-prefetch" href="https://res.cloudinary.com" />
       </head>
       <body suppressHydrationWarning>
-        <Script
-          src="https://www.googletagmanager.com/gtag/js?id=G-QM5VC8T540"
-          strategy="afterInteractive"
-        />
-        <Script id="gtag-init" strategy="afterInteractive">
-          {`
-            window.dataLayer = window.dataLayer || [];
-            function gtag(){dataLayer.push(arguments);}
-            gtag('js', new Date());
-            gtag('config', 'G-QM5VC8T540');
-          `}
-        </Script>
-        <Providers>{children}</Providers>
+        {gaId ? (
+          <>
+            <Script
+              src={`https://www.googletagmanager.com/gtag/js?id=${gaId}`}
+              strategy="afterInteractive"
+            />
+            <Script id="gtag-init" strategy="afterInteractive">
+              {`
+                window.dataLayer = window.dataLayer || [];
+                function gtag(){dataLayer.push(arguments);}
+                window.gtag = gtag;
+                gtag('js', new Date());
+                gtag('config', '${gaId}');
+              `}
+            </Script>
+          </>
+        ) : null}
+        <Providers>
+          <Suspense fallback={null}>
+            <PageViewTracker />
+          </Suspense>
+          {children}
+        </Providers>
       </body>
     </html>
   );
