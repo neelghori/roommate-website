@@ -207,14 +207,17 @@ export function PropertyAddressFields({
 
   React.useEffect(() => {
     let active = true;
+    console.log('[RoomMat Maps] Loading Google Maps script...');
     void loadGooglePlacesScript()
       .then(() => {
         if (!active) return;
         const maps = getGoogleMaps()?.maps;
         if (!maps?.places) {
+          console.error('[RoomMat Maps] Script loaded but Places library is unavailable. Check that Places API is enabled in Google Cloud Console for this key.');
           setPlacesError('Google Places library is unavailable.');
           return;
         }
+        console.log('[RoomMat Maps] Google Maps + Places loaded successfully.');
         autocompleteSvcRef.current = new maps.places.AutocompleteService();
         const div = document.createElement('div');
         placesSvcRef.current = new maps.places.PlacesService(div);
@@ -222,6 +225,7 @@ export function PropertyAddressFields({
       })
       .catch((e) => {
         if (!active) return;
+        console.error('[RoomMat Maps] Failed to load Google Maps script:', e);
         setPlacesError(e instanceof Error ? e.message : 'Could not load Google Places');
       });
     return () => {
