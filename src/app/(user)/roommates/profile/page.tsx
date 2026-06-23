@@ -30,10 +30,30 @@ const ROLE_OPTIONS = [
   { label: 'Veg only (preference)', value: 'Veg Only' },
 ];
 
+const INDIAN_STATES = [
+  { label: 'Select State', value: '' },
+  { label: 'Gujarat', value: 'Gujarat' },
+  { label: 'Maharashtra', value: 'Maharashtra' },
+  { label: 'Delhi', value: 'Delhi' },
+  { label: 'Karnataka', value: 'Karnataka' },
+  { label: 'Rajasthan', value: 'Rajasthan' },
+  { label: 'Madhya Pradesh', value: 'Madhya Pradesh' },
+  { label: 'Uttar Pradesh', value: 'Uttar Pradesh' },
+  { label: 'Tamil Nadu', value: 'Tamil Nadu' },
+  { label: 'Telangana', value: 'Telangana' },
+  { label: 'West Bengal', value: 'West Bengal' },
+  { label: 'Haryana', value: 'Haryana' },
+  { label: 'Punjab', value: 'Punjab' },
+  { label: 'Goa', value: 'Goa' },
+  { label: 'Kerala', value: 'Kerala' },
+  { label: 'Other', value: 'Other' },
+];
+
 const defaultValues: TenantRoommateProfileFormData = {
   displayName: '',
   occupation: '',
   location: '',
+  state: '',
   monthlyBudget: 10000,
   moveInDate: '',
   bio: '',
@@ -75,6 +95,7 @@ export default function TenantRoommateProfilePage() {
             displayName: p.displayName,
             occupation: p.occupation,
             location: p.location,
+            state: p.state || '',
             monthlyBudget: p.monthlyBudget,
             moveInDate: p.moveInDate.slice(0, 10),
             bio: p.bio,
@@ -166,6 +187,19 @@ export default function TenantRoommateProfilePage() {
               placeholder="e.g. Arjun Sharma"
               error={errors.displayName?.message}
               {...register('displayName')}
+            />
+
+            <Controller
+              name="state"
+              control={control}
+              render={({ field }) => (
+                <Select
+                  label="State *"
+                  options={INDIAN_STATES}
+                  error={errors.state?.message}
+                  {...field}
+                />
+              )}
             />
 
             <Input

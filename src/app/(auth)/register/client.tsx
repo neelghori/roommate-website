@@ -28,6 +28,8 @@ import { AuthBrandPanel, AUTH_SITE_SLOGAN, PanelFeatureList } from '@/components
 import { AuthActivityFeed } from '@/components/shared/AuthActivityFeed';
 import { trackEvent } from '@/lib/analytics/ga';
 
+import { shouldCompleteProfile } from '@/config/rolesConfig';
+
 /* ── Password strength ─────────────────────────────────────────── */
 function getStrength(pw: string): { score: number; label: string; colorClass: string; hexColor: string } {
   if (!pw) return { score: 0, label: '', colorClass: '', hexColor: '' };
@@ -98,7 +100,11 @@ export default function RegisterPageClient() {
       wsService.connect(getAccessToken() ?? undefined);
       trackEvent('sign_up', { method: 'google', role });
       success('Account created', 'You are signed in with Google.');
-      router.push('/');
+      if (shouldCompleteProfile(res.user)) {
+        router.push('/profile-completion');
+      } else {
+        router.push('/');
+      }
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Google sign-up failed.';
       toastError('Google sign-up failed', message);

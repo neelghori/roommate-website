@@ -17,6 +17,7 @@ export type TenantRoommateProfileMine = {
   displayName: string;
   occupation: string;
   location: string;
+  state: string;
   monthlyBudget: number;
   moveInDate: string;
   bio: string;
@@ -148,6 +149,7 @@ export function mapTenantRoommateApiToProfile(raw: unknown): RoommateProfile | n
     createdAt: typeof raw.createdAt === 'string' ? raw.createdAt : undefined,
     updatedAt: typeof raw.updatedAt === 'string' ? raw.updatedAt : undefined,
     professionalType: typeof raw.professionalType === 'string' ? raw.professionalType : undefined,
+    state: typeof raw.state === 'string' && raw.state.trim() ? raw.state.trim() : undefined,
     age: typeof raw.age === 'number' && Number.isFinite(raw.age) ? raw.age : undefined,
     gender: typeof raw.gender === 'string' ? raw.gender : undefined,
     roommateGenderPreference:
@@ -191,6 +193,7 @@ export type TenantRoommateListParams = {
   tags?: string[];
   tagsMatch?: 'all' | 'any';
   budget?: number;
+  state?: string;
 };
 
 function listQueryKey(params?: TenantRoommateListParams): string {
@@ -200,6 +203,7 @@ function listQueryKey(params?: TenantRoommateListParams): string {
   if (params.tags?.length) parts.push(`t=${[...params.tags].sort().join(',')}`);
   if (params.tagsMatch) parts.push(`m=${params.tagsMatch}`);
   if (params.budget != null && Number.isFinite(params.budget)) parts.push(`b=${Math.round(params.budget)}`);
+  if (params.state?.trim()) parts.push(`st=${encodeURIComponent(params.state.trim())}`);
   return parts.join('&');
 }
 
@@ -221,6 +225,7 @@ export const tenantRoommateProfileService = {
         if (params?.budget != null && Number.isFinite(params.budget)) {
           q.set('budget', String(Math.round(params.budget)));
         }
+        if (params?.state?.trim()) q.set('state', params.state.trim());
         const qs = q.toString();
         const url = qs ? `/api/v1/tenant-roommate-profiles?${qs}` : '/api/v1/tenant-roommate-profiles';
         const res = await apiClient.get<unknown>(url);
@@ -267,6 +272,7 @@ export const tenantRoommateProfileService = {
         displayName: body.displayName,
         occupation: body.occupation,
         location: body.location,
+        state: body.state,
         monthlyBudget: body.monthlyBudget,
         moveInDate: body.moveInDate,
         bio: body.bio,
@@ -282,4 +288,19 @@ export const tenantRoommateProfileService = {
       throw new Error(apiErr(err, 'Could not save your roommate profile'));
     }
   },
+
+  async getStates(): Promise<string[]> {
+    try {
+      const res = await apiClient.get<unknown>('/api/v1/tenant-roommate-profiles/states');
+      const inner = isRecord(res.data) ? res.data.data : null;
+      if (isRecord(inner) && Array.isArray(inner.states)) {
+        return inner.states as string[];
+      }
+      return [];
+    } catch (err) {
+      throw new Error(apiErr(err, 'Could not load active states'));
+    }
+  },
 };
+
+export default tenantRoommateProfileService;

@@ -15,6 +15,7 @@ import { RoommateProfile } from '@/types';
 import { ProfileCard } from '@/components/features/ProfileCard';
 import { tenantRoommateProfileService } from '@/services/modules/tenantRoommateProfile.service';
 import { useAuthStore } from '@/store/authStore';
+import { useFilterStore } from '@/store/filterStore';
 
 type RoleTab = 'All' | 'Student' | 'Working' | 'Veg Only';
 
@@ -38,6 +39,7 @@ export const RoommateFinderPanel: React.FC<RoommateFinderPanelProps> = ({
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const viewerUserId = useAuthStore((s) => s.user?.id);
   const controlled = profilesProp !== undefined;
+  const stateFilter = useFilterStore((s) => s.filters.state);
   const [fetched, setFetched] = useState<RoommateProfile[]>([]);
   const [loadState, setLoadState] = useState<'idle' | 'loading' | 'error'>(() =>
     controlled ? 'idle' : 'loading',
@@ -48,14 +50,14 @@ export const RoommateFinderPanel: React.FC<RoommateFinderPanelProps> = ({
     if (controlled) return;
     setLoadState('loading');
     try {
-      const items = await tenantRoommateProfileService.list();
+      const items = await tenantRoommateProfileService.list({ state: stateFilter });
       setFetched(items);
       setLoadState('idle');
     } catch {
       setFetched([]);
       setLoadState('error');
     }
-  }, [controlled]);
+  }, [controlled, stateFilter]);
 
   useEffect(() => {
     void load();

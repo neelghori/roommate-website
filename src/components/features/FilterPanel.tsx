@@ -20,6 +20,9 @@ import { POPULAR_AREAS } from '@/lib/staticData';
 import { amenityService, type ApiAmenity } from '@/services/modules/amenity.service';
 import type { GenderPreference } from '@/types';
 import { AmenityIcon, isAmenityIconKey } from '@/lib/amenities/amenity-icon';
+import { useAuthStore } from '@/store/authStore';
+import { profileCompletionRoles } from '@/config/rolesConfig';
+import tenantRoommateProfileService from '@/services/modules/tenantRoommateProfile.service';
 
 /* ─── Static data ─────────────────────────────────────────────────── */
 
@@ -130,14 +133,36 @@ function TriggerBtn({
 
 export const FilterPanel: React.FC = () => {
   const { filters, setFilter, setFilters, resetFilters } = useFilterStore();
-  const [openDropdown, setOpenDropdown] = useState<'budget' | 'amenities' | 'gender' | 'location' | null>(null);
+  const { user } = useAuthStore();
+  const [cachedRole, setCachedRole] = useState<string | null>(null);
+
+  useEffect(() => {
+    Promise.resolve().then(() => {
+      if (user) {
+        setCachedRole(user.role);
+      } else if (typeof window !== 'undefined') {
+        setCachedRole(localStorage.getItem('roommat_user_role'));
+      } else {
+        setCachedRole(null);
+      }
+    });
+  }, [user]);
+
+  const activeRole = user?.role || cachedRole;
+  const isTargetRole = !!(activeRole && profileCompletionRoles.includes(activeRole.toLowerCase()));
+
+  const [openDropdown, setOpenDropdown] = useState<'budget' | 'amenities' | 'gender' | 'location' | 'state' | null>(null);
   const [amenitiesMaster, setAmenitiesMaster] = useState<ApiAmenity[]>([]);
   const [amenitiesLoadState, setAmenitiesLoadState] = useState<'loading' | 'ready' | 'error'>('loading');
+  const [statesList, setStatesList] = useState<string[]>([]);
+  const [statesLoadState, setStatesLoadState] = useState<'loading' | 'ready' | 'error'>('loading');
   const barRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     let cancelled = false;
-    setAmenitiesLoadState('loading');
+    Promise.resolve().then(() => {
+      if (!cancelled) setAmenitiesLoadState('loading');
+    });
     amenityService
       .list()
       .then((rows) => {
@@ -156,6 +181,30 @@ export const FilterPanel: React.FC = () => {
       cancelled = true;
     };
   }, []);
+
+  useEffect(() => {
+    if (!isTargetRole) return;
+    let cancelled = false;
+    Promise.resolve().then(() => {
+      if (!cancelled) setStatesLoadState('loading');
+    });
+    tenantRoommateProfileService
+      .getStates()
+      .then((states) => {
+        if (cancelled) return;
+        setStatesList(states);
+        setStatesLoadState('ready');
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setStatesList([]);
+          setStatesLoadState('error');
+        }
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [isTargetRole]);
 
   /** Keep saved chip names aligned with master `name` strings (case + removed stale labels). */
   useEffect(() => {
@@ -192,7 +241,7 @@ export const FilterPanel: React.FC = () => {
     return () => document.removeEventListener('mousedown', handler);
   }, [openDropdown]);
 
-  const toggle = (name: 'budget' | 'amenities' | 'gender' | 'location') =>
+  const toggle = (name: 'budget' | 'amenities' | 'gender' | 'location' | 'state') =>
     setOpenDropdown((prev) => (prev === name ? null : name));
 
   /* ── helpers ── */
@@ -233,7 +282,8 @@ export const FilterPanel: React.FC = () => {
     !!filters.genderPreference ||
     !!filters.isVerified ||
     !!filters.city ||
-    !!filters.area;
+    !!filters.area ||
+    !!filters.state;
 
   const locationTriggerCount = (filters.city ? 1 : 0) + (filters.area ? 1 : 0);
 
@@ -243,6 +293,33 @@ export const FilterPanel: React.FC = () => {
       (p) => p.min === filters.minPrice && p.max === filters.maxPrice,
     )?.label ?? 'Custom'
     : null;
+
+  const getDropdownLeftClass = () => {
+    if (openDropdown === 'budget') return 'left-4';
+    if (openDropdown === 'location') return 'left-4 sm:left-24';
+    
+    if (isTargetRole) {
+      switch (openDropdown) {
+        case 'state':
+          return 'left-4 sm:left-48';
+        case 'amenities':
+          return 'left-4 sm:left-80';
+        case 'gender':
+          return 'left-4 sm:left-96';
+        default:
+          return 'left-4';
+      }
+    } else {
+      switch (openDropdown) {
+        case 'amenities':
+          return 'left-4 sm:left-48';
+        case 'gender':
+          return 'left-4 sm:left-72';
+        default:
+          return 'left-4';
+      }
+    }
+  };
 
   return (
     <div ref={barRef} className="relative">
@@ -265,6 +342,16 @@ export const FilterPanel: React.FC = () => {
           isOpen={openDropdown === 'location'}
           onClick={() => toggle('location')}
         />
+
+        {/* State */}
+        {isTargetRole && (
+          <TriggerBtn
+            label="People From"
+            count={filters.state ? 1 : 0}
+            isOpen={openDropdown === 'state'}
+            onClick={() => toggle('state')}
+          />
+        )}
 
         {/* Amenities */}
         <TriggerBtn
@@ -312,6 +399,9 @@ export const FilterPanel: React.FC = () => {
             {filters.area && (
               <ActiveChip label={filters.area} onRemove={clearArea} />
             )}
+            {filters.state && (
+              <ActiveChip label={filters.state} onRemove={() => setFilter('state', undefined)} />
+            )}
             {activeAmenities.map((a) => (
               <ActiveChip key={a} label={a} onRemove={() => toggleAmenityMaster(a)} />
             ))}
@@ -342,7 +432,8 @@ export const FilterPanel: React.FC = () => {
       {openDropdown && (
         <div
           className={[
-            'absolute left-4 top-full mt-2 z-50 bg-white rounded-2xl shadow-xl border border-gray-100 p-4 min-w-[260px]',
+            'absolute top-full mt-2 z-50 bg-white rounded-2xl shadow-xl border border-gray-100 p-4 min-w-[260px]',
+            getDropdownLeftClass(),
             openDropdown === 'amenities' ? 'max-w-[min(92vw,520px)]' : 'max-w-[340px]',
           ].join(' ')}
         >
@@ -528,6 +619,59 @@ export const FilterPanel: React.FC = () => {
                   );
                 })}
               </div>
+            </div>
+          )}
+
+          {/* State panel */}
+          {openDropdown === 'state' && (
+            <div>
+              <div className="flex items-center justify-between mb-3">
+                <p className="text-xs font-bold text-gray-500 uppercase tracking-wide">People From</p>
+                {filters.state && (
+                  <button
+                    type="button"
+                    onClick={() => { setFilter('state', undefined); setOpenDropdown(null); }}
+                    className="text-xs text-red-400 hover:text-red-600"
+                  >
+                    Clear
+                  </button>
+                )}
+              </div>
+              {statesLoadState === 'loading' && (
+                <p className="text-sm text-gray-500 py-6 text-center">Loading states…</p>
+              )}
+              {statesLoadState === 'error' && (
+                <p className="text-sm text-red-500 py-4 text-center">Could not load states.</p>
+              )}
+              {statesLoadState === 'ready' && statesList.length === 0 && (
+                <p className="text-sm text-gray-500 py-4 text-center">No states available.</p>
+              )}
+              {statesLoadState === 'ready' && statesList.length > 0 && (
+                <div className="flex flex-col gap-2 max-h-60 overflow-y-auto pr-1">
+                  {statesList.map((st) => {
+                    const active = filters.state === st;
+                    return (
+                      <button
+                        type="button"
+                        key={st}
+                        onClick={() => {
+                          setFilter('state', active ? undefined : st);
+                          setOpenDropdown(null);
+                        }}
+                        className={[
+                          'w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-sm font-medium border transition-all text-left',
+                          active
+                            ? 'bg-primary text-white border-transparent'
+                            : 'bg-gray-50 text-gray-700 border-gray-100 hover:border-teal-300 hover:bg-teal-50',
+                        ].join(' ')}
+                      >
+                        <span>📍 {st}</span>
+                        {active && <X size={14} />}
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
             </div>
           )}
         </div>

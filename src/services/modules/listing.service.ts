@@ -714,6 +714,7 @@ function buildPropertyListQueryParams(filter: ListingFilter | undefined, include
     }
   }
   if (filter?.city && filter.city !== 'All') params.set('city', filter.city);
+  if (filter?.state) params.set('state', filter.state);
   if (filter?.minPrice != null) params.set('minRent', String(filter.minPrice));
   if (filter?.type && filter.type !== 'All') {
     const apiType = UI_TO_API_LISTING_TYPE[filter.type as ListingType];
@@ -884,6 +885,10 @@ export const listingService = {
       }
       if (filter?.maxPrice != null) {
         listings = listings.filter((l) => (l.maxPrice ?? l.price) <= filter.maxPrice!);
+      }
+      if (filter?.state && String(filter.state).trim()) {
+        const stateLower = filter.state.trim().toLowerCase();
+        listings = listings.filter((l) => l.state?.trim().toLowerCase() === stateLower);
       }
       if (filter?.city && String(filter.city).trim()) {
         listings = listings.filter((l) => listingMatchesCity(l, filter.city));

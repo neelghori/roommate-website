@@ -15,6 +15,7 @@ export const tenantRoommateProfileFormSchema = z.object({
   displayName: z.string().trim().min(2, 'Name must be at least 2 characters').max(120),
   occupation: z.string().trim().min(2, 'Occupation is required').max(120),
   location: z.string().trim().min(3, 'Location is required').max(200),
+  state: z.string().trim().min(2, 'State is required').max(100),
   monthlyBudget: z
     .number({ error: 'Budget must be a number' })
     .int()

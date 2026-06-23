@@ -9,24 +9,40 @@ import { usePathname, useRouter } from 'next/navigation';
 import { useAuthStore } from '@/store/authStore';
 import { isPublicGuestRoute } from '@/lib/publicRoutes';
 import { loginHrefForProtectedPath } from '@/lib/loginRedirect';
+import { shouldCompleteProfile } from '@/config/rolesConfig';
 
 export function UserAuthGate({ children }: { children: React.ReactNode }) {
   const sessionReady = useAuthStore((s) => s.sessionReady);
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+  const user = useAuthStore((s) => s.user);
   const pathname = usePathname();
   const router = useRouter();
   const currentPath = pathname || '/';
   const isPublicRoute = isPublicGuestRoute(currentPath);
 
   useEffect(() => {
-    if (!sessionReady || isAuthenticated) return;
+    if (!sessionReady) return;
+
+    if (isAuthenticated) {
+      if (shouldCompleteProfile(user)) {
+        if (pathname !== '/profile-completion') {
+          router.replace('/profile-completion');
+        }
+      } else {
+        if (pathname === '/profile-completion') {
+          router.replace('/');
+        }
+      }
+      return;
+    }
+
     if (isPublicRoute) return;
     router.replace(loginHrefForProtectedPath(currentPath));
-  }, [sessionReady, isAuthenticated, isPublicRoute, currentPath, router]);
+  }, [sessionReady, isAuthenticated, isPublicRoute, currentPath, pathname, user, router]);
 
   // Never block public pages behind client-session bootstrap; this keeps
   // server-rendered HTML crawlable for SEO bots that do not run JS.
-  if (isPublicRoute) {
+  if (isPublicRoute && pathname !== '/profile-completion') {
     return <>{children}</>;
   }
 

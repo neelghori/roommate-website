@@ -36,6 +36,8 @@ export interface User {
   bookingCount: number;
   bio?: string;
   location?: string;
+  state?: string;
+  occupation?: string;
   budget?: number;
   moveInDate?: string;
   genderPreference?: GenderPreference;
@@ -78,6 +80,7 @@ export interface RoommateProfile {
   updatedAt?: string;
   /** From `User.professionalType` (e.g. `student`, `work_professional`). */
   professionalType?: string;
+  state?: string;
   gender?: string;
   roommateGenderPreference?: string;
   lifestyleSnippet?: {

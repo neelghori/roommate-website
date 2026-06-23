@@ -73,6 +73,9 @@ export const profileSchema = z.object({
         }, 'You must be between 16 and 120 years old'),
     ])
     .optional(),
+
+  state: z.string().max(50, 'State must be 50 characters or less').optional().or(z.literal('')),
+  occupation: z.string().max(100, 'Occupation must be 100 characters or less').optional().or(z.literal('')),
 });
 
 export const phoneVerificationSchema = z.object({

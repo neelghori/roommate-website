@@ -17,6 +17,8 @@ import { CURRENT_USER } from '@/mock/data/users';
 import { computeAgeFromDateOfBirthYmd, dateOfBirthYmdFromApi } from '@/lib/dateOfBirthAge';
 import { Camera, ArrowLeft, Loader2 } from 'lucide-react';
 import Link from 'next/link';
+import { Select } from '@/components/ui/Select';
+import { profileCompletionRoles } from '@/config/rolesConfig';
 
 const LIFESTYLE_OPTIONS = [
   { value: 'STUDENT',       label: '🎓 Student' },
@@ -31,6 +33,25 @@ const LIFESTYLE_OPTIONS = [
 ];
 
 const GENDER_OPTIONS = ['Any', 'Male', 'Female'] as const;
+
+const INDIAN_STATES = [
+  { label: 'Select State', value: '' },
+  { label: 'Gujarat', value: 'Gujarat' },
+  { label: 'Maharashtra', value: 'Maharashtra' },
+  { label: 'Delhi', value: 'Delhi' },
+  { label: 'Karnataka', value: 'Karnataka' },
+  { label: 'Rajasthan', value: 'Rajasthan' },
+  { label: 'Madhya Pradesh', value: 'Madhya Pradesh' },
+  { label: 'Uttar Pradesh', value: 'Uttar Pradesh' },
+  { label: 'Tamil Nadu', value: 'Tamil Nadu' },
+  { label: 'Telangana', value: 'Telangana' },
+  { label: 'West Bengal', value: 'West Bengal' },
+  { label: 'Haryana', value: 'Haryana' },
+  { label: 'Punjab', value: 'Punjab' },
+  { label: 'Goa', value: 'Goa' },
+  { label: 'Kerala', value: 'Kerala' },
+  { label: 'Other', value: 'Other' },
+];
 
 const AVATAR_MAX_BYTES = 5 * 1024 * 1024;
 const AVATAR_MIME = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'] as const;
@@ -52,6 +73,8 @@ function userToFormValues(u: User): ProfileFormData {
     lifestyle: (u.lifestyle as ProfileFormData['lifestyle']) ?? [],
     genderPreference: (u.genderPreference as ProfileFormData['genderPreference']) ?? 'Any',
     dateOfBirth: dateOfBirthYmdFromApi(u.dateOfBirth),
+    state: u.state ?? '',
+    occupation: u.occupation ?? '',
   };
 }
 
@@ -61,6 +84,7 @@ export default function EditProfilePage() {
   const { user, setUser } = useAuthStore();
   const profile = user ?? CURRENT_USER;
   const isRoommate = profile.role === 'ROOMMATE';
+  const isTargetRole = !!(profile.role && profileCompletionRoles.includes(profile.role.toLowerCase()));
 
   const [isSaving, setIsSaving] = useState(false);
   const [isLoadingProfile, setIsLoadingProfile] = useState(true);
@@ -72,6 +96,7 @@ export default function EditProfilePage() {
     handleSubmit,
     control,
     reset,
+    setError,
     formState: { errors, isDirty },
   } = useForm<ProfileFormData>({
     resolver: zodResolver(profileSchema),
@@ -140,6 +165,19 @@ export default function EditProfilePage() {
   );
 
   const onSubmit = async (data: ProfileFormData) => {
+    if (profile.role && profileCompletionRoles.includes(profile.role.toLowerCase())) {
+      let hasError = false;
+      if (!data.state) {
+        setError('state', { type: 'manual', message: 'State is required' });
+        hasError = true;
+      }
+      if (!data.occupation?.trim()) {
+        setError('occupation', { type: 'manual', message: 'Occupation is required' });
+        hasError = true;
+      }
+      if (hasError) return;
+    }
+
     setIsSaving(true);
     try {
       const updated = await userService.updateProfile({
@@ -151,6 +189,8 @@ export default function EditProfilePage() {
         genderPreference: data.genderPreference,
         lifestyle: data.lifestyle,
         dateOfBirth: data.dateOfBirth ?? '',
+        state: data.state,
+        occupation: data.occupation?.trim(),
       });
       setUser(updated);
       reset(userToFormValues(updated));
@@ -254,6 +294,20 @@ export default function EditProfilePage() {
               placeholder="e.g. Satellite, Ahmedabad"
               error={errors.location?.message}
               {...register('location')}
+            />
+
+            <Select
+              label={`State ${isTargetRole ? '*' : ''}`}
+              options={INDIAN_STATES}
+              error={errors.state?.message}
+              {...register('state')}
+            />
+
+            <Input
+              label={`Occupation ${isTargetRole ? '*' : ''}`}
+              placeholder="e.g. Software Engineer, Student"
+              error={errors.occupation?.message}
+              {...register('occupation')}
             />
 
             <div>

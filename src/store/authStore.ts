@@ -26,16 +26,27 @@ export const useAuthStore = create<AuthState>((set) => ({
   isLoading: false,
   isAdmin: false,
   sessionReady: false,
-  setUser: (user) =>
+  setUser: (user) => {
+    if (typeof window !== 'undefined') {
+      if (user?.role) {
+        localStorage.setItem('roommat_user_role', user.role);
+      } else {
+        localStorage.removeItem('roommat_user_role');
+      }
+    }
     set({
       user,
       isAuthenticated: !!user,
       isAdmin: user?.role === 'ADMIN',
-    }),
+    });
+  },
   setLoading: (isLoading) => set({ isLoading }),
   setSessionReady: (sessionReady) => set({ sessionReady }),
   logout: () => {
     clearAccessToken();
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('roommat_user_role');
+    }
     void import('@/services/wsService').then((m) => m.wsService.disconnect());
     set({
       user: null,

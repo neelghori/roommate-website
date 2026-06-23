@@ -338,6 +338,8 @@ export function mapApiUserToUser(
     avatarUrl,
     bio,
     location,
+    state: typeof raw.state === 'string' ? raw.state : undefined,
+    occupation: typeof raw.occupation === 'string' ? raw.occupation : undefined,
     budget,
     moveInDate,
     genderPreference,

@@ -132,6 +132,7 @@ export interface ListingFilter {
   genderPreference?: GenderPreference | 'Any';
   isVerified?: boolean;
   search?: string;
+  state?: string;
 }
 
 export interface Category {
