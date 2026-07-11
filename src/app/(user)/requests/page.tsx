@@ -1,13 +1,13 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { UserLayout } from '@/components/shared/UserLayout';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
 import { EmptyState } from '@/components/shared/EmptyState';
 import { useToast } from '@/hooks/useToast';
 import { timeAgo } from '@/lib/utils/format';
-import { ROOMMATE_REQUESTS_RECEIVED, ROOMMATE_REQUESTS_SENT } from '@/mock/data/users';
+import { userService } from '@/services/modules/user.service';
 import { RoommateRequest } from '@/types';
 import { Users, Check, X, Clock, Send } from 'lucide-react';
 
@@ -45,27 +45,57 @@ const Avatar = ({ name }: { name: string }) => {
 export default function RequestsPage() {
   const toast = useToast();
   const [activeTab, setActiveTab] = useState<'received' | 'sent'>('received');
-  const [received, setReceived] = useState<RoommateRequest[]>(ROOMMATE_REQUESTS_RECEIVED);
-  const [sent] = useState<RoommateRequest[]>(ROOMMATE_REQUESTS_SENT);
+  const [received, setReceived] = useState<RoommateRequest[]>([]);
+  const [sent, setSent] = useState<RoommateRequest[]>([]);
+  const [loadState, setLoadState] = useState<'loading' | 'ok' | 'error'>('loading');
+  const [busyId, setBusyId] = useState<string | null>(null);
+
+  const load = useCallback(async () => {
+    setLoadState('loading');
+    try {
+      const [rec, snt] = await Promise.all([
+        userService.getRequestsReceived(),
+        userService.getRequestsSent(),
+      ]);
+      setReceived(rec);
+      setSent(snt);
+      setLoadState('ok');
+    } catch {
+      setLoadState('error');
+    }
+  }, []);
+
+  useEffect(() => {
+    void load();
+  }, [load]);
 
   const pendingCount = received.filter((r) => r.status === 'PENDING').length;
 
-  // ── Accept / Reject handlers ──────────────────────────────────────────────
-  const handleAccept = (id: string) => {
-    // BACKEND: await userService.acceptRequest(id)
-    setReceived((prev) =>
-      prev.map((r) => (r.id === id ? { ...r, status: 'ACCEPTED' } : r))
-    );
-    toast.success('Request accepted!', 'You are now connected.');
+  // ── Accept / Reject handlers (optimistic, rolled back on error) ────────────
+  const respond = async (id: string, action: 'accept' | 'reject') => {
+    if (busyId) return;
+    const prev = received;
+    const nextStatus = action === 'accept' ? 'ACCEPTED' : 'REJECTED';
+    setBusyId(id);
+    setReceived((rs) => rs.map((r) => (r.id === id ? { ...r, status: nextStatus } : r)));
+    try {
+      if (action === 'accept') {
+        await userService.acceptRequest(id);
+        toast.success('Request accepted!', 'You are now connected.');
+      } else {
+        await userService.rejectRequest(id);
+        toast.info('Request rejected.');
+      }
+    } catch (err) {
+      setReceived(prev); // rollback
+      toast.error('Could not update request', err instanceof Error ? err.message : undefined);
+    } finally {
+      setBusyId(null);
+    }
   };
 
-  const handleReject = (id: string) => {
-    // BACKEND: await userService.rejectRequest(id)
-    setReceived((prev) =>
-      prev.map((r) => (r.id === id ? { ...r, status: 'REJECTED' } : r))
-    );
-    toast.info('Request rejected.');
-  };
+  const handleAccept = (id: string) => void respond(id, 'accept');
+  const handleReject = (id: string) => void respond(id, 'reject');
 
   // ── Tab bar ───────────────────────────────────────────────────────────────
   const tabs = [
@@ -95,6 +125,18 @@ export default function RequestsPage() {
           ))}
         </div>
 
+        {/* ── Load states ──────────────────────────────────────────────────── */}
+        {loadState === 'loading' ? (
+          <p className="text-center text-sm text-gray-500 py-10">Loading requests…</p>
+        ) : loadState === 'error' ? (
+          <div className="text-center py-10">
+            <p className="text-sm text-gray-500 mb-3">Could not load your requests.</p>
+            <Button variant="outline" size="sm" onClick={() => void load()}>
+              Retry
+            </Button>
+          </div>
+        ) : (
+          <>
         {/* ── Received tab ─────────────────────────────────────────────────── */}
         {activeTab === 'received' && (
           <div className="space-y-3">
@@ -138,6 +180,7 @@ export default function RequestsPage() {
                         <Button
                           variant="primary"
                           size="sm"
+                          disabled={busyId === req.id}
                           onClick={() => handleAccept(req.id)}
                           leftIcon={<Check size={13} />}
                         >
@@ -146,6 +189,7 @@ export default function RequestsPage() {
                         <Button
                           variant="outline"
                           size="sm"
+                          disabled={busyId === req.id}
                           onClick={() => handleReject(req.id)}
                           leftIcon={<X size={13} />}
                           className="text-red-500 border-red-200 hover:bg-red-50"
@@ -205,6 +249,8 @@ export default function RequestsPage() {
               ))
             )}
           </div>
+        )}
+          </>
         )}
       </div>
     </UserLayout>

@@ -12,6 +12,7 @@ import {
   type TenantRoommateProfileMine,
 } from '@/services/modules/tenantRoommateProfile.service';
 import { computeVibeCheck, type VibeCheckResult } from '@/lib/matching/vibeCheck';
+import { userService } from '@/services/modules/user.service';
 
 type ScoredMatch = {
   profile: RoommateProfile;
@@ -56,10 +57,22 @@ export default function MatchesPage() {
     void load();
   }, [load]);
 
-  const handleConnect = (match: ScoredMatch) => {
-    if (connected.has(match.profile.id)) return;
-    setConnected((prev) => new Set([...prev, match.profile.id]));
-    toast.success('Request Sent!', `Connect request sent to ${match.profile.name}.`);
+  const handleConnect = async (match: ScoredMatch) => {
+    const id = match.profile.id;
+    if (connected.has(id)) return;
+    // Optimistically mark connected, roll back if the request fails.
+    setConnected((prev) => new Set([...prev, id]));
+    try {
+      await userService.sendRequest(id);
+      toast.success('Request Sent!', `Connect request sent to ${match.profile.name}.`);
+    } catch (err) {
+      setConnected((prev) => {
+        const next = new Set(prev);
+        next.delete(id);
+        return next;
+      });
+      toast.error('Could not send request', err instanceof Error ? err.message : undefined);
+    }
   };
 
   const greatCount = useMemo(
@@ -165,7 +178,7 @@ export default function MatchesPage() {
                   key={match.profile.id}
                   match={match}
                   isConnected={connected.has(match.profile.id)}
-                  onConnect={() => handleConnect(match)}
+                  onConnect={() => void handleConnect(match)}
                 />
               ))}
             </div>
