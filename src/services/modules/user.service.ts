@@ -31,8 +31,9 @@ import {
   Match,
   Notification,
 } from '@/types';
-import { CURRENT_USER, MATCHES, ROOMMATE_REQUESTS_SENT, ROOMMATE_REQUESTS_RECEIVED } from '@/mock/data/users';
+import { MATCHES } from '@/mock/data/users';
 import { tenantRoommateProfileService } from '@/services/modules/tenantRoommateProfile.service';
+import { roommateRequestService } from '@/services/modules/roommateRequest.service';
 import { MOCK_NOTIFICATIONS } from '@/mock/data/notifications';
 import { apiClient } from '@/services/api';
 import { postMultipartForm } from '@/services/uploadForm';
@@ -164,28 +165,11 @@ export const userService = {
   /**
    * Send a roommate request.
    * BACKEND: POST /roommates/request
+   * `roommateId` is the profile/user id from the roommate list (for
+   * user-account rows the profile id equals the user id the API expects).
    */
   sendRequest: async (roommateId: string, message?: string): Promise<RoommateRequest> => {
-    await delay();
-    let target: RoommateProfile | null = null;
-    try {
-      target = await tenantRoommateProfileService.getById(roommateId);
-    } catch {
-      target = null;
-    }
-    const newRequest: RoommateRequest = {
-      id: `req${Date.now()}`,
-      senderId: 'u1',
-      receiverId: target?.userId ?? roommateId,
-      senderName: CURRENT_USER.name,
-      senderAvatar: CURRENT_USER.avatarInitial,
-      receiverName: target?.name ?? 'Unknown',
-      receiverAvatar: target?.avatarInitial ?? '??',
-      status: 'PENDING',
-      message,
-      createdAt: new Date().toISOString(),
-    };
-    return newRequest;
+    return roommateRequestService.send(roommateId, message);
   },
 
   /**
@@ -193,8 +177,7 @@ export const userService = {
    * BACKEND: GET /roommates/requests/sent
    */
   getRequestsSent: async (): Promise<RoommateRequest[]> => {
-    await delay();
-    return ROOMMATE_REQUESTS_SENT;
+    return roommateRequestService.getSent();
   },
 
   /**
@@ -202,8 +185,7 @@ export const userService = {
    * BACKEND: GET /roommates/requests/received
    */
   getRequestsReceived: async (): Promise<RoommateRequest[]> => {
-    await delay();
-    return ROOMMATE_REQUESTS_RECEIVED;
+    return roommateRequestService.getReceived();
   },
 
   /**
@@ -211,12 +193,7 @@ export const userService = {
    * BACKEND: PUT /roommates/requests/:id/accept
    */
   acceptRequest: async (requestId: string): Promise<RoommateRequest> => {
-    await delay(500);
-    const request = ROOMMATE_REQUESTS_RECEIVED.find((r) => r.id === requestId);
-    if (!request) {
-      throw new Error(`Request not found: ${requestId}`);
-    }
-    return { ...request, status: 'ACCEPTED' };
+    return roommateRequestService.accept(requestId);
   },
 
   /**
@@ -224,12 +201,7 @@ export const userService = {
    * BACKEND: PUT /roommates/requests/:id/reject
    */
   rejectRequest: async (requestId: string): Promise<RoommateRequest> => {
-    await delay(500);
-    const request = ROOMMATE_REQUESTS_RECEIVED.find((r) => r.id === requestId);
-    if (!request) {
-      throw new Error(`Request not found: ${requestId}`);
-    }
-    return { ...request, status: 'REJECTED' };
+    return roommateRequestService.reject(requestId);
   },
 
   /**
